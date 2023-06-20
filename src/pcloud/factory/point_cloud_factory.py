@@ -8,7 +8,7 @@ from abc import abstractmethod
 class PointCloudFactory:
     """
     :author: Alberto M. Esmoris Pena
-    :brief: Interface governing any point cloud factory.
+    Interface governing any point cloud factory.
     """
 
     # ---   INIT   --- #

@@ -44,13 +44,13 @@ python vl3d.py --train model_spec.json --pretrained model_file.model
 
 
 
-### Classification
+### Predictions
 
-Use a previously trained machine learning model to perform classification
-tasks.
+Use a previously trained machine learning model to compute prediction
+tasks, e.g., classification or regression.
 
 ```bash
-python vl3d.py --classify model_spec.json
+python vl3d.py --predict model_spec.json
 ```
 **NOT IMPLEMENTED**
 

@@ -9,7 +9,7 @@ from src.main.vl3d_exception import VL3DException
 class MinerException(VL3DException):
     """
     :author: Alberto M. Esmoris Pena
-    :brief: Class for exceptions related to data mining components.
+    Class for exceptions related to data mining components.
     See :class:`VL3DException`
     """
     def __init__(self, message=''):
@@ -22,7 +22,7 @@ class MinerException(VL3DException):
 class Miner:
     """
     :author: Alberto M. Esmoris Pena
-    :brief: Interface governing any miner.
+    Interface governing any miner.
     """
 
     # ---   INIT   --- #

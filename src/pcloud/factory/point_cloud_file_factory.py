@@ -9,7 +9,7 @@ from src.io.point_cloud_io import PointCloudIO
 class PointCloudFileFactory(PointCloudFactory):
     """
     :author: Alberto M. Esmoris Pena
-    :brief: Class to instantiate PointCloud objects from files.
+    Class to instantiate PointCloud objects from files.
     See :class:`PointCloud` and also :class:`PointCloudFactory`
     :ivar path: The path where the input point cloud file is located.
     :vartype path: str

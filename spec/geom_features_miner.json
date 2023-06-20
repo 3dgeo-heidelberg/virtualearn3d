@@ -1,0 +1,6 @@
+{
+  "miner": "GeometricFeatures",
+  "radius": 0.3,
+  "fnames": ["linearity", "planarity", "surface variation", "PCA1"],
+  "frenames": null
+}
