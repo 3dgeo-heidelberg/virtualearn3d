@@ -9,7 +9,7 @@ import jakteristics
 class GeomFeatsMiner(Miner):
     """
     :author: Alberto M. Esmoris Pena
-    :brief: Basic geometric features miner.
+    Basic geometric features miner.
     See :class:`Miner`
     :ivar radius: The radius (often in meters) attribute. Radius is 0.3 (often
         meters) by default.
@@ -26,6 +26,37 @@ class GeomFeatsMiner(Miner):
     :vartype frenames: list
     """
 
+    # ---  SPECIFICATION ARGUMENTS  --- #
+    # --------------------------------- #
+    @staticmethod
+    def extract_miner_args(spec):
+        """
+        Extract the arguments to initialize/instantiate a GeomFeatsMiner
+            from a key-word specification.
+        :param spec: The key-word specification containing the arguments.
+        :return: The arguments to initialize/instantiate a GeomFeatsMiner.
+        """
+        # Initialize
+        kwargs = {}
+        # Parse REQUIRED arguments
+        kwargs['radius'] = spec.get("radius", None)
+        if kwargs['radius'] is None:
+            raise ValueError(
+                'The geometric features miner REQUIRES a "radius" argument.\n'
+                'None was given.'
+            )
+        kwargs['fnames'] = spec.get("fnames", None)
+        if kwargs['fnames'] is None:
+            raise ValueError(
+                'The geometric features miner REQUIRES a "fnames" argument.\n'
+                'None was given.'
+            )
+        # Parse OPTIONAL arguments
+        kwargs['frenames'] = spec.get("frenames", None)
+        kwargs['nthreads'] = spec.get("nthreads", -1)
+        # Return
+        return kwargs
+
     # ---   INIT   --- #
     # ---------------- #
     def __init__(self, **kwargs):
@@ -41,7 +72,7 @@ class GeomFeatsMiner(Miner):
             be passed to the parent.
         """
         # Call parent init
-        super(Miner).__init__(**kwargs)
+        super().__init__(**kwargs)
         # Basic attributes of the GeomFeatsMiner
         self.radius = kwargs.get("radius", 0.3)
         self.fnames = kwargs.get("fnames", [
@@ -64,7 +95,8 @@ class GeomFeatsMiner(Miner):
         # Validate coordinates matrix
         if X.shape[1] != 3:
             raise MinerException(
-                "Geometric features are only supported for 3D point clouds."
+                "Geometric features are only supported for 3D point clouds.\n"
+                f'However, a {X.shape[1]}D point cloud was given.'
             )
         # Compute geometric features
         feats = jakteristics.compute_features(

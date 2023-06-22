@@ -14,7 +14,7 @@ class MinerException(VL3DException):
     """
     def __init__(self, message=''):
         # Call parent VL3DException
-        super(VL3DException).__init__(message)
+        super().__init__(message)
 
 
 # ---   CLASS   --- #

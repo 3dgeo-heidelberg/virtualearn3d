@@ -37,7 +37,7 @@ def main_vl3d(subtype):
     Execute the logic of the virtualearn3d application covering the entire
     training loop and the application of a trained model.
     :param str subtype: The string specifying the type of VL3D branch, i.e.,
-        mine, train, predict, eval, or pipeline
+        mine, train, predict, eval, or pipeline.
     """
     # Obtain JSON specification
     try:

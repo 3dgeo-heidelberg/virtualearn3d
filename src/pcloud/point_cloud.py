@@ -55,7 +55,7 @@ class PointCloud:
             self.las.X * scales[0] + offsets[0],
             self.las.Y * scales[1] + offsets[1],
             self.las.Z * scales[2] + offsets[2]
-        ])
+        ]).T
 
     # ---  UPDATE METHODS  --- #
     # ------------------------ #
@@ -93,7 +93,7 @@ class PointCloud:
         las = laspy.LasData(self.las.header)
         las.points = self.las.points.copy()
         las.add_extra_dims(extra_bytes)
-        for i in range(len(nfeats)):
+        for i in range(nfeats):
             las[fnames[i]] = feats[:, i]
         # Replace the old point cloud with the new one
         self.las = las

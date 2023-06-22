@@ -1,0 +1,39 @@
+{
+  "in_pcloud": [
+	"/hei/virtualearn3d/1_data/6_realistic_ground_with_near_trees_real/train/6_train_noground.laz",
+	"/hei/virtualearn3d/1_data/3_synthetic_wytham_woods_with_ground/output2_rework/tls_wytham_woods_train_merged_noground_B.laz"
+  ],
+  "out_pcloud": [
+	"/tmp/6_training_noground_*",
+    "/tmp/tls_wytham_woods_noground_B_*"
+  ],
+  "sequential_pipeline": [
+	{
+	  "miner": "GeometricFeatures",
+      "in_pcloud": null,
+	  "out_pcloud": "*geomfeats_r0_05.laz",
+	  "radius": 0.05,
+	  "fnames": ["linearity", "planarity", "surface_variation"],
+	  "frenames": ["linearity_r0_05", "planarity_r0_05", "surface_variation_r0_05"],
+	  "nthreads": -1
+	},
+	{
+	  "miner": "GeometricFeatures",
+	  "in_pcloud": null,
+	  "out_pcloud": "*geomfeats_r0_1.laz",
+	  "radius": 0.1,
+	  "fnames": ["linearity", "planarity", "surface_variation", "PCA1", "PCA2"],
+	  "frenames": ["linearity_r0_1", "planarity_r0_1", "surface_variation_r0_1", "PCA1_r0_1", "PCA2_r0_1"],
+      "nthreads": -1
+	},
+	{
+	  "miner": "GeometricFeatures",
+	  "in_pcloud": null,
+	  "out_pcloud": "*geomfeats_r0_15.laz",
+	  "radius": 0.15,
+	  "fnames": ["linearity", "planarity", "surface_variation", "number_of_neighbors", "verticality", "anisotropy"],
+	  "frenames": ["linearity_r0_15", "planarity_r0_15", "surface_variation_r0_15", "number_of_neighbors_r0_15", "verticality_r0_15", "anisotropy_r0_15"],
+      "nthreads": -1
+	}
+  ]
+}

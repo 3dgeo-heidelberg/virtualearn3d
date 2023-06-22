@@ -82,4 +82,4 @@ or the maximum number of iterations has been reached.
 ```bash
 python vl3d.py --pipeline pipeline_spec.json
 ```
-**NOT IMPLEMENTED**
+**IMPLEMENTING ...**
