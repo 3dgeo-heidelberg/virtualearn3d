@@ -81,6 +81,8 @@ class GeomFeatsMiner(Miner):
         self.nthreads = kwargs.get("nthreads", kwargs.get("n_jobs", -1))
         # Optional attribute to rename the computed features
         self.frenames = kwargs.get("frenames", None)
+        if self.frenames is None:
+            self.frenames = [fname+f'_r{self.radius}' for fname in self.fnames]
 
     # ---  MINER METHODS  --- #
     # ----------------------- #

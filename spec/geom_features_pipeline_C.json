@@ -1,0 +1,31 @@
+{
+  "in_pcloud": [
+	"/hei/virtualearn3d/1_data/6_realistic_ground_with_near_trees_real/train/6_train_noground.laz",
+	"/hei/virtualearn3d/1_data/3_synthetic_wytham_woods_with_ground/output2_rework/tls_wytham_woods_train_merged_noground_B.laz"
+  ],
+  "out_pcloud": [
+	"/tmp/6_training_noground_*",
+    "/tmp/tls_wytham_woods_noground_B_*"
+  ],
+  "sequential_pipeline": [
+	{
+	  "miner": "GeometricFeatures",
+	  "radius": 0.05,
+	  "fnames": ["linearity", "planarity", "surface_variation"]
+	},
+	{
+	  "miner": "GeometricFeatures",
+	  "radius": 0.1,
+	  "fnames": ["linearity", "planarity", "surface_variation", "PCA1", "PCA2"]
+	},
+	{
+	  "miner": "GeometricFeatures",
+	  "radius": 0.15,
+	  "fnames": ["linearity", "planarity", "surface_variation", "verticality", "anisotropy"]
+	},
+	{
+	  "writer": "Writer",
+ 	  "out_pcloud": "*geomfeats.laz"
+	}
+  ]
+}
