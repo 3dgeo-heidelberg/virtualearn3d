@@ -4,6 +4,7 @@ from src.pcloud.point_cloud_factory_facade import PointCloudFactoryFacade
 from src.io.point_cloud_io import PointCloudIO
 from src.io.io_utils import IOUtils
 from src.mining.geom_feats_miner import GeomFeatsMiner
+from src.mining.covar_feats_miner import CovarFeatsMiner
 import os
 import time
 
@@ -98,5 +99,7 @@ class MainMine:
         miner_low = miner.lower()
         if miner_low == 'geometricfeatures':
             return GeomFeatsMiner
+        if miner_low == "covariancefeatures":
+            return CovarFeatsMiner
         # An unknown miner was specified
         raise ValueError(f'There is no known miner "{miner}"')

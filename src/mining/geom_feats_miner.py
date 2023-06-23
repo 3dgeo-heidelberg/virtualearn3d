@@ -1,6 +1,7 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.mining.miner import Miner, MinerException
+from src.utils.dict_utils import DictUtils
 import jakteristics
 
 
@@ -22,7 +23,7 @@ class GeomFeatsMiner(Miner):
         implies using as many threads as available cores.
     :vartype nthreads: int
     :ivar frenames: Optional attribute to specify how to rename the mined
-        features. None by default.
+        features.
     :vartype frenames: list
     """
 
@@ -37,23 +38,14 @@ class GeomFeatsMiner(Miner):
         :return: The arguments to initialize/instantiate a GeomFeatsMiner.
         """
         # Initialize
-        kwargs = {}
-        # Parse REQUIRED arguments
-        kwargs['radius'] = spec.get("radius", None)
-        if kwargs['radius'] is None:
-            raise ValueError(
-                'The geometric features miner REQUIRES a "radius" argument.\n'
-                'None was given.'
-            )
-        kwargs['fnames'] = spec.get("fnames", None)
-        if kwargs['fnames'] is None:
-            raise ValueError(
-                'The geometric features miner REQUIRES a "fnames" argument.\n'
-                'None was given.'
-            )
-        # Parse OPTIONAL arguments
-        kwargs['frenames'] = spec.get("frenames", None)
-        kwargs['nthreads'] = spec.get("nthreads", -1)
+        kwargs = {
+            'radius': spec.get('radius', None),
+            'fnames': spec.get("fnames", None),
+            'frenames': spec.get("frenames", None),
+            'nthreads': spec.get("nthreads", None)
+        }
+        # Delete keys with None value
+        kwargs = DictUtils.delete_by_val(kwargs, None)
         # Return
         return kwargs
 
@@ -78,7 +70,7 @@ class GeomFeatsMiner(Miner):
         self.fnames = kwargs.get("fnames", [
             'linearity', 'planarity', 'sphericity'
         ])
-        self.nthreads = kwargs.get("nthreads", kwargs.get("n_jobs", -1))
+        self.nthreads = kwargs.get("nthreads", -1)
         # Optional attribute to rename the computed features
         self.frenames = kwargs.get("frenames", None)
         if self.frenames is None:
@@ -90,6 +82,7 @@ class GeomFeatsMiner(Miner):
         """
         Mine geometric features from the given pcloud.
         See :class:`Miner` and :method:`Miner.mine()`
+        :param pcloud: The point cloud to be mined.
         :return: The point cloud extended with geometric features.
         """
         # Obtain coordinates matrix
@@ -108,7 +101,4 @@ class GeomFeatsMiner(Miner):
             num_threads=self.nthreads
         )
         # Return point cloud extended with geometric features
-        return pcloud.add_features(
-            self.fnames if self.frenames is None else self.frenames,
-            feats
-        )
+        return pcloud.add_features(self.frenames, feats)

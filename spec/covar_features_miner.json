@@ -1,0 +1,13 @@
+{
+  "miner": "CovarianceFeatures",
+  "in_pcloud": "/home/uadmin/git/virtualearn3d/test_data/QuePet_BR01_01_2019-07-03_q2_TLS-on_c.laz",
+  "out_pcloud": "/tmp/QuePet_BR01_01_covarfeats.laz",
+  "neighborhood": "spherical",
+  "radius": 0.1,
+  "min_neighs": 3,
+  "mode": "Raw",
+  "optimize": false,
+  "fnames": ["Density", "Dimensionality"],
+  "frenames": ["density_r0_1", "linearity_r0_1", "planarity_r0_1", "scattering_r0_1", "verticality_r0_1"],
+  "nthreads": 12
+}
