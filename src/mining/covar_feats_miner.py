@@ -1,5 +1,6 @@
 # ---   IMPORTS   --- #
 # ------------------- #
+import src.main.main_logger as LOGGING
 from src.mining.miner import Miner, MinerException
 from src.utils.dict_utils import DictUtils
 import numpy as np
@@ -69,8 +70,7 @@ class CovarFeatsMiner(Miner):
         # Check if fnames contains all and something else
         if 'all' in kwargs['fnames'] and len(kwargs['fnames']) > 1:
             kwargs['fnames'] = ['all']
-            # TODO Rethink : Move this to INFO logging
-            print(
+            LOGGING.LOGGER.info(
                 "CovarFeatsMiner received 'all' together with more features.\n"
                 "'all' means all features are computed. "
                 "No need to specify further features."
@@ -96,7 +96,7 @@ class CovarFeatsMiner(Miner):
         self.fnames = kwargs.get("fnames", ["Density", "Dimensionality"])
         self.nthreads = kwargs.get("nthreads", -1)
         self.min_neighs = kwargs.get("min_neighs", None)
-        self.optimize = True
+        self.optimize = kwargs.get("optimize", False)
         # Optional attribute to rename the computed features
         self.frenames = kwargs.get("frenames", None)
         if self.frenames is None:
@@ -134,19 +134,12 @@ class CovarFeatsMiner(Miner):
         )
         # Compute covariance features
         pdal_pipeline = self.build_pdal_pipeline(X)
-        print(f'USING {self.nthreads} threads')  # TODO Remove
         pdal_pipeline.execute()
-        print(f'len(pdal_pipeline.arrays = {len(pdal_pipeline.arrays)}')  # TODO Remove
-        print(f'pdal_pipeline.arrays:\n{pdal_pipeline.arrays}')  # TODO Remove
-        print(f'pdal_pipeline.arrays[0]:\n{pdal_pipeline.arrays[0]}')  # TODO Remove
-        print(f'pdal_pipeline.arrays[0].shape = \n{pdal_pipeline.arrays[0].shape}')  # TODO Remove
         start_feat_idx = 5 if self.needs_optimal_neighborhood() else 3
         feats = np.array([
             pdal_pipeline.arrays[0][name]
             for name in pdal_pipeline.arrays[0].dtype.names[start_feat_idx:]]
         ).T
-        print(f'CovarFeatsMiner feats:\n{feats}')  # TODO Remove
-        print(f'CovarFeatsMiner feats.shape = {feats.shape}')  # TODO Remove
         # Return point cloud extended with covariance features
         return pcloud.add_features(self.frenames, feats)
 
@@ -186,7 +179,9 @@ class CovarFeatsMiner(Miner):
         if self.needs_optimal_neighborhood():
             spec.insert(0, {"type": "filters.optimalneighborhood"})
         # Return built pipeline from specification
-        return pdal.Pipeline(json.dumps(spec), arrays=[X])
+        pdal_json = json.dumps(spec)
+        LOGGING.LOGGER.debug(f'PDAL JSON specification:\n{pdal_json}')
+        return pdal.Pipeline(pdal_json, arrays=[X])
 
     # ---  CHECKS  --- #
     # ---------------- #

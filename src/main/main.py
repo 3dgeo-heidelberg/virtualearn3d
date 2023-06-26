@@ -1,5 +1,6 @@
 # ---   IMPORTS   --- #
 # ------------------- #
+import src.main.main_logger as LOGGING
 from src.main.main_args import ArgsParser
 from src.inout.json_io import JsonIO
 from src.main.main_mine import MainMine
@@ -16,6 +17,8 @@ def main():
     """
     The main entry point that governs the main branch that must be called.
     """
+    # Configure logging
+    LOGGING.main_logger_init()
     # Parse input arguments
     main_type, main_subtype = ArgsParser.parse_main_type(sys.argv)
     # Redirect through corresponding main branch
@@ -44,7 +47,7 @@ def main_vl3d(subtype):
     try:
         spec = JsonIO.read(sys.argv[2])
     except IndexError as iex:
-        print('Missing JSON specification argument')
+        LOGGING.LOGGER.error('Missing JSON specification argument')
         raise iex
     # Check subtype
     if subtype == 'mine':
@@ -71,4 +74,4 @@ def main_test():
     Execute the tests.
     """
     # TODO Rethink : Implement
-    print('main_test TODO yet ...')
+    LOGGING.LOGGER.warning('main_test TODO yet ...')

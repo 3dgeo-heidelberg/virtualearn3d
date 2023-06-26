@@ -1,6 +1,7 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.pipeline.sequential_pipeline import SequentialPipeline
+import src.main.main_logger as LOGGING
 import time
 
 
@@ -21,13 +22,13 @@ class MainPipeline:
 
         :param spec: Key-word specification.
         """
-        print('Starting pipeline ...\n')
+        LOGGING.LOGGER.info('Starting pipeline ...')
         start = time.perf_counter()
         pipeline_class = MainPipeline.extract_pipeline_class(spec)
         pipeline = pipeline_class(**spec)
         pipeline.run()
         end = time.perf_counter()
-        print(f'\nPipeline computed in {end-start:.3f} seconds')
+        LOGGING.LOGGER.info(f'Pipeline computed in {end-start:.3f} seconds')
 
     # ---  EXTRACT FORM SPEC  --- #
     # --------------------------- #

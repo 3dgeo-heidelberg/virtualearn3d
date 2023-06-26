@@ -1,11 +1,11 @@
 {
   "in_pcloud": [
-	"/hei/virtualearn3d/1_data/6_realistic_ground_with_near_trees_real/train/6_train_noground.laz",
-	"/hei/virtualearn3d/1_data/3_synthetic_wytham_woods_with_ground/output2_rework/tls_wytham_woods_train_merged_noground_B.laz"
+	"/home/uadmin/git/virtualearn3d/test_data/QuePet_BR01_01_2019-07-03_q2_TLS-on_c.laz",
+	"/home/uadmin/git/virtualearn3d/test_data/test_tree.laz"
   ],
   "out_pcloud": [
-	"/tmp/6_training_noground_*",
-    "/tmp/tls_wytham_woods_noground_B_*"
+	"/tmp/QuePet_BR01_*",
+    "/tmp/test_tree_*"
   ],
   "sequential_pipeline": [
 	{
@@ -16,7 +16,7 @@
 	{
 	  "miner": "GeometricFeatures",
 	  "radius": 0.1,
-	  "fnames": ["linearity", "planarity", "surface_variation", "PCA1", "PCA2"]
+	  "fnames": ["linearity", "planarity", "surface_variation", "eigenentropy", "omnivariance"]
 	},
 	{
 	  "miner": "GeometricFeatures",

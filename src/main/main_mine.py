@@ -1,5 +1,6 @@
 # ---   IMPORTS   --- #
 # ------------------- #
+import src.main.main_logger as LOGGING
 from src.pcloud.point_cloud_factory_facade import PointCloudFactoryFacade
 from src.inout.point_cloud_io import PointCloudIO
 from src.inout.io_utils import IOUtils
@@ -26,7 +27,7 @@ class MainMine:
 
         :param spec: Key-word specification
         """
-        print('Starting data mining ...')
+        LOGGING.LOGGER.info('Starting data mining ...')
         start = time.perf_counter()
         pcloud = PointCloudFactoryFacade.make_from_file(
             MainMine.extract_input_path(spec)
@@ -39,7 +40,9 @@ class MainMine:
             MainMine.extract_output_path(spec)
         )
         end = time.perf_counter()
-        print(f'Data mining computed in {end-start:.3f} seconds.')
+        LOGGING.LOGGEr.info(
+            f'Data mining computed in {end-start:.3f} seconds.'
+        )
 
     # ---  EXTRACT FROM SPEC  --- #
     # --------------------------- #

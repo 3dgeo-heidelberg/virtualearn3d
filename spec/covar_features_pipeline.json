@@ -1,0 +1,50 @@
+{
+  "in_pcloud": [
+	"/home/uadmin/git/virtualearn3d/test_data/QuePet_BR01_01_2019-07-03_q2_TLS-on_c.laz",
+	"/home/uadmin/git/virtualearn3d/test_data/test_tree.laz"
+  ],
+  "_in_pcloud": [
+	"/hei/virtualearn3d/1_data/6_realistic_ground_with_near_trees_real/train/6_train_noground.laz",
+	"/hei/virtualearn3d/1_data/3_synthetic_wytham_woods_with_ground/output2_rework/tls_wytham_woods_train_merged_noground_B.laz"
+  ],
+  "out_pcloud": [
+	"/tmp/QuePet_BR01_covarfeats.laz",
+	"/tmp/test_tree_covarfeats.laz"
+  ],
+  "sequential_pipeline": [
+	{
+		"miner": "CovarianceFeatures",
+		"neighborhood": "spherical",
+		"radius": 0.05,
+		"min_neighs": 3,
+		"mode": "Raw",
+		"optimize": false,
+		"fnames": ["Linearity", "Planarity", "SurfaceVariation"],
+		"frenames": ["linearity_r0_05", "planarity_r0_05", "surface_variation_r0_05"],
+		"nthreads": 12
+	},
+	{
+		"miner": "CovarianceFeatures",
+		"neighborhood": "spherical",
+		"radius": 0.1,
+		"min_neighs": 3,
+		"mode": "Raw",
+		"optimize": false,
+		"fnames": ["Linearity", "Planarity", "SurfaceVariation", "Eigenentropy", "Omnivariance"],
+		"frenames": ["linearity_r0_1", "planarity_r0_1", "surface_variation_r0_1", "eigenentropy_r0_1", "omnivariance_r0_1"],
+		"nthreads": 12
+	},
+	{
+		"miner": "CovarianceFeatures",
+		"neighborhood": "spherical",
+		"radius": 0.15,
+		"min_neighs": 3,
+		"mode": "Raw",
+		"optimize": false,
+		"fnames": ["Linearity", "Planarity", "SurfaceVariation", "Verticality", "Anisotropy"],
+		"frenames": ["linearity_r0_15", "planarity_r0_15", "surface_variation_r0_15", "verticality_r0_15", "anisotropy_r0_15"],
+		"nthreads": 12
+	}
+
+  ]
+}

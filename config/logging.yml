@@ -1,0 +1,29 @@
+version: 1
+
+
+formatters:
+  formatter_datetime:
+    format: '[%(asctime)s] (%(levelname)s): %(message)s'
+    datefmt: '%Y-%m-%d %H:%M:%S'
+
+
+handlers:
+  handler_console:
+    class: logging.StreamHandler
+    level: DEBUG
+    formatter: formatter_datetime
+    stream: ext://sys.stdout
+  handler_file:
+    class: logging.handlers.RotatingFileHandler
+    level: DEBUG
+    formatter: formatter_datetime
+    filename: virtualearn3d.log
+    maxBytes: 8388608
+    backupCount: 32
+
+
+loggers:
+  logger_vl3d:
+    level: DEBUG
+    handlers: [handler_console, handler_file]
+    propagate: no

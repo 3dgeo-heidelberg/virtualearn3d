@@ -1,6 +1,7 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from abc import abstractmethod
+import src.main.main_logger as LOGGING
 from src.main.vl3d_exception import VL3DException
 from src.inout.io_utils import IOUtils
 import os
@@ -75,8 +76,9 @@ class Pipeline:
         # Output point clouds
         self.out_pcloud = kwargs.get('out_pcloud', None)
         if self.out_pcloud is None:  # Info about no output point clouds
-            # TODO Rethink : Move this to an INFO logging message
-            print('A pipeline has been built with no output point clouds.')
+            LOGGING.LOGGER.info(
+                'A pipeline has been built with no output point clouds.'
+            )
         else:  # Validate the paths to output point clouds
             if isinstance(self.in_pcloud, (list, tuple)):  # Many paths
                 for path in self.out_pcloud:

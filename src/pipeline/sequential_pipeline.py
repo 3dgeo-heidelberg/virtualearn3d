@@ -1,6 +1,7 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.pipeline.pipeline import Pipeline, PipelineException
+import src.main.main_logger as LOGGING
 from src.main.main_mine import MainMine
 from src.mining.miner import Miner
 from src.pcloud.point_cloud_factory_facade import PointCloudFactoryFacade
@@ -87,7 +88,9 @@ class SequentialPipeline(Pipeline):
         :param out_pcloud: Optionally, the output path or prefix.
         :return: Nothing.
         """
-        print(f'SequentialPipeline running for "{in_pcloud}" ...')
+        LOGGING.LOGGER.info(
+            f'SequentialPipeline running for "{in_pcloud}" ...'
+        )
         start = time.perf_counter()
         # Load input
         pcloud = PointCloudFactoryFacade.make_from_file(in_pcloud)
@@ -114,7 +117,7 @@ class SequentialPipeline(Pipeline):
                 writer.write(pcloud)
         # Report execution time
         end = time.perf_counter()
-        print(
+        LOGGING.LOGGER.info(
             f'SequentialPipeline for "{in_pcloud}" '
             f'computed in {end-start:.3f} seconds.'
         )
