@@ -53,7 +53,7 @@ class PointCloud:
         for 3D point clouds only).
 
         :return: The matrix of coordinates representing the point cloud.
-        :rtype: :class:`np.array`
+        :rtype: :class:`np.ndarray`
         """
         scales, offsets = self.las.header.scales, self.las.header.offsets
         return np.array([
@@ -71,7 +71,7 @@ class PointCloud:
         :param fnames: The name of the features in a list or tuple format.
         :param feats: The matrix of features such that each column represents
             a feature and each row a point (as a numpy array). See
-            :class:`np.array`.
+            :class:`np.ndarray`.
         :param ftypes: The list or tuple of types representing the type for
             each new feature. If it is a single type, then all feature are
             assumed to have the same type.

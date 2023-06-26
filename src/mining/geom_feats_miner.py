@@ -18,7 +18,7 @@ class GeomFeatsMiner(Miner):
         meters) by default.
     :vartype radius: float
     :ivar fnames: The list of feature names (fnames) attribute.
-        ['linearity', 'planarity', 'sphericity] by default.
+        ['linearity', 'planarity', 'sphericity'] by default.
     :vartype fnames: list
     :ivar nthreads: The number of threads to be used for the parallel
         computation of the geometric features. Note using -1 (default value)

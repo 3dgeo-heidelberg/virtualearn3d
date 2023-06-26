@@ -16,7 +16,7 @@ class MainMine:
     """
     :author: Alberto M. Esmoris Pena
 
-    Class handling the entry point for data mining tasks
+    Class handling the entry point for data mining tasks.
     """
     # ---  MAIN METHOD  --- #
     # --------------------- #
@@ -40,7 +40,7 @@ class MainMine:
             MainMine.extract_output_path(spec)
         )
         end = time.perf_counter()
-        LOGGING.LOGGEr.info(
+        LOGGING.LOGGER.info(
             f'Data mining computed in {end-start:.3f} seconds.'
         )
 

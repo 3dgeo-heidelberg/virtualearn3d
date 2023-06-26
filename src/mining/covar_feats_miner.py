@@ -186,6 +186,13 @@ class CovarFeatsMiner(Miner):
     # ---  CHECKS  --- #
     # ---------------- #
     def needs_optimal_neighborhood(self):
+        """
+        Checks whether it is necessary to precompute the optimal neighborhood
+        before the covariance features or not.
+
+        :return: True if optimal neighborhood is necessary, False otherwise.
+        :rtype: bool
+        """
         return self.optimize or \
             "Density" in self.fnames or \
             "all" in self.fnames

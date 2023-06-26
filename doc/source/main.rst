@@ -28,6 +28,14 @@ main.main\_eval module
    :undoc-members:
    :show-inheritance:
 
+main.main\_logger module
+------------------------
+
+.. automodule:: main.main_logger
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 main.main\_mine module
 ----------------------
 
