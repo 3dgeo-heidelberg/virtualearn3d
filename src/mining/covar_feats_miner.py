@@ -13,8 +13,10 @@ class CovarFeatsMiner(Miner):
     """
     :author: Hannah Weiser
     :author: Alberto M. Esmoris Pena
+
     Basic covariance features miner.
-    See :class:`Miner`
+    See :class:`.Miner`
+
     :ivar neighborhood: The type of neighborhood, either "knn" or "spherical".
         Default is "spherical".
     :vartype neighborhood: str
@@ -46,7 +48,8 @@ class CovarFeatsMiner(Miner):
     def extract_miner_args(spec):
         """
         Extract the arguments to initialize/instantiate a CovarFeatsMiner
-            from a key-word specification.
+        from a key-word specification.
+
         :param spec: The key-word specification containing the arguments.
         :return: The arguments to initialize/instantiate a CovarFeatsMiner.
         """
@@ -80,7 +83,8 @@ class CovarFeatsMiner(Miner):
     def __init__(self, **kwargs):
         """
         Initialize an instance of CovarFeatsMiner.
-        :param **kwargs: The attributes for the CovarFeatsMiner that will also
+
+        :param kwargs: The attributes for the CovarFeatsMiner that will also
             be passed to the parent.
         """
         # Call parent init
@@ -110,7 +114,8 @@ class CovarFeatsMiner(Miner):
     def mine(self, pcloud):
         """
         Mine covariance features from the given pcloud.
-        See :class:`Miner` and :method:`Miner.mine()`
+        See :class:`.Miner` and :meth:`.miner.Miner.mine`
+
         :param pcloud: The point cloud to be mined.
         :return: The point cloud extended with covariance features.
         """
@@ -129,7 +134,7 @@ class CovarFeatsMiner(Miner):
         )
         # Compute covariance features
         pdal_pipeline = self.build_pdal_pipeline(X)
-        print('CCCC')  # TODO Remove
+        print(f'USING {self.nthreads} threads')  # TODO Remove
         pdal_pipeline.execute()
         print(f'len(pdal_pipeline.arrays = {len(pdal_pipeline.arrays)}')  # TODO Remove
         print(f'pdal_pipeline.arrays:\n{pdal_pipeline.arrays}')  # TODO Remove
@@ -150,6 +155,7 @@ class CovarFeatsMiner(Miner):
     def build_pdal_pipeline(self, X):
         """
         Build the PDAL pipeline to mine requested covariance features.
+
         :param X: The matrix of 3D coordinates.
         :return: Built PDAL pipeline.
         """
@@ -180,8 +186,6 @@ class CovarFeatsMiner(Miner):
         if self.needs_optimal_neighborhood():
             spec.insert(0, {"type": "filters.optimalneighborhood"})
         # Return built pipeline from specification
-        print(f'AAAA')  # TODO Remove
-        print(f'BBBB')  # TODO Remove
         return pdal.Pipeline(json.dumps(spec), arrays=[X])
 
     # ---  CHECKS  --- #

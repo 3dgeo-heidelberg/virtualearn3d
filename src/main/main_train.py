@@ -3,6 +3,7 @@
 class MainTrain:
     """
     :author: Alberto M. Esmoris Pena
+
     Class handling the entry point for training tasks
     """
     # ---  MAIN METHOD   --- #
@@ -11,6 +12,7 @@ class MainTrain:
     def main(spec):
         """
         Entry point logic for training tasks
+
         :param spec: Key-word specification
         """
         # TODO Rethink : Implement

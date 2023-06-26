@@ -10,8 +10,10 @@ import jakteristics
 class GeomFeatsMiner(Miner):
     """
     :author: Alberto M. Esmoris Pena
+
     Basic geometric features miner.
-    See :class:`Miner`
+    See :class:`.Miner`
+
     :ivar radius: The radius (often in meters) attribute. Radius is 0.3 (often
         meters) by default.
     :vartype radius: float
@@ -33,7 +35,8 @@ class GeomFeatsMiner(Miner):
     def extract_miner_args(spec):
         """
         Extract the arguments to initialize/instantiate a GeomFeatsMiner
-            from a key-word specification.
+        from a key-word specification.
+
         :param spec: The key-word specification containing the arguments.
         :return: The arguments to initialize/instantiate a GeomFeatsMiner.
         """
@@ -54,13 +57,16 @@ class GeomFeatsMiner(Miner):
     def __init__(self, **kwargs):
         """
         Initialize an instance of GeomFeatsMiner.
+
         The radius and feature names (fnames) are always assigned during
-            initialization. Their default values are 0.3 and the list
-            ['linearity', 'planarity', 'sphericity'], respectively.
+        initialization. Their default values are 0.3 and the list
+        ['linearity', 'planarity', 'sphericity'], respectively.
+
         The number of threads (nthreads or n_jobs) is also assigned during
-            initialization with a default value of -1 which means use as many
-            threads as available cores.
-        :param **kwargs: The attributes for the GeomFeatsMiner that will also
+        initialization with a default value of -1 which means use as many
+        threads as available cores.
+
+        :param kwargs: The attributes for the GeomFeatsMiner that will also
             be passed to the parent.
         """
         # Call parent init
@@ -81,9 +87,11 @@ class GeomFeatsMiner(Miner):
     def mine(self, pcloud):
         """
         Mine geometric features from the given pcloud.
-        See :class:`Miner` and :method:`Miner.mine()`
+        See :class:`.Miner` and :meth:`mining.Miner.mine()`
+
         :param pcloud: The point cloud to be mined.
         :return: The point cloud extended with geometric features.
+        :rtype: :class:`.PointCloud`
         """
         # Obtain coordinates matrix
         X = pcloud.get_coordinates_matrix()

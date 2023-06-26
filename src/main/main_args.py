@@ -3,13 +3,15 @@
 class ArgsParser:
     """
     :author: Alberto M. Esmoris Pena
+
     Class with util static methods to parse the input arguments often given
-        by command line.
+    by command line.
     """
     @staticmethod
     def parse_main_type(argv):
         """
         Find the main type of the requested execution branch.
+
         :param argv: The input arguments.
         :return: ("vl3d", x) for the virtualearn3d branch, ("test", None) for
             the test branch. In the case of the virtualearn3d branch, the x

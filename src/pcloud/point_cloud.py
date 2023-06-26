@@ -10,9 +10,10 @@ import laspy
 class PointCloudException(VL3DException):
     """
     :author: Alberto M. Esmoris Pena
-    :brief: Class for exceptions related to the PointCloud data structure and
-        associated methods.
-    See :class:`VL3DException`
+
+    Class for exceptions related to the PointCloud data structure and
+    associated methods.
+    See :class:`.VL3DException`
     """
     def __init__(self, message):
         # Call parent VL3DException
@@ -24,8 +25,10 @@ class PointCloudException(VL3DException):
 class PointCloud:
     """
     :author: Alberto M. Esmoris Pena
-    :brief: Base class representing the point cloud data structure and
+
+    Base class representing the point cloud data structure and
         providing basic data handling methods.
+
     :ivar las: The LASPY data structure representing the point cloud.
     :vartype las: See :mod:`laspy`
     """
@@ -35,8 +38,9 @@ class PointCloud:
     def __init__(self, las):
         """
         Initialize a PointCloud instance.
-        See the :class:`PointCloudFactoryFacade` for methods to successfully
-            built PointCloud instances, e.g., by reading a LAS file.
+        See the :class:`.PointCloudFactoryFacade` for methods to successfully
+        built PointCloud instances, e.g., by reading a LAS file.
+
         :param las: The LASPY datastructure representing the point cloud.
         """
         self.las = las
@@ -46,7 +50,8 @@ class PointCloud:
     def get_coordinates_matrix(self):
         """
         Obtain the matrix of coordinates representing the point cloud (supported
-            for 3D point clouds only).
+        for 3D point clouds only).
+
         :return: The matrix of coordinates representing the point cloud.
         :rtype: :class:`np.array`
         """
@@ -62,6 +67,7 @@ class PointCloud:
     def add_features(self, fnames, feats, ftypes="f"):
         """
         Add new features to the point cloud.
+
         :param fnames: The name of the features in a list or tuple format.
         :param feats: The matrix of features such that each column represents
             a feature and each row a point (as a numpy array). See

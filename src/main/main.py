@@ -1,7 +1,7 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.main.main_args import ArgsParser
-from src.io.json_io import JsonIO
+from src.inout.json_io import JsonIO
 from src.main.main_mine import MainMine
 from src.main.main_train import MainTrain
 from src.main.main_predict import MainPredict
@@ -36,6 +36,7 @@ def main_vl3d(subtype):
     """
     Execute the logic of the virtualearn3d application covering the entire
     training loop and the application of a trained model.
+
     :param str subtype: The string specifying the type of VL3D branch, i.e.,
         mine, train, predict, eval, or pipeline.
     """

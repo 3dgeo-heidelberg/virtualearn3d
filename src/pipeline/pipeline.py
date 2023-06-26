@@ -2,7 +2,7 @@
 # ------------------- #
 from abc import abstractmethod
 from src.main.vl3d_exception import VL3DException
-from src.io.io_utils import IOUtils
+from src.inout.io_utils import IOUtils
 import os
 
 
@@ -11,6 +11,7 @@ import os
 class PipelineException(VL3DException):
     """
     :author: Alberto M. Esmoris Pena
+
     Class for exceptions related to pipeline components.
     See :class:`VL3DException`
     """
@@ -24,8 +25,10 @@ class PipelineException(VL3DException):
 class Pipeline:
     """
     :author: Alberto M. Esmoris Pena
+
     Abstract class providing the interface for any pipeline and a common
         baseline implementation.
+
     :ivar in_pcloud: Either a string or a list of strings representing paths to
         input point clouds.
     :vartype in_pcloud: str or list
@@ -41,7 +44,8 @@ class Pipeline:
     def __init__(self, **kwargs):
         """
         Handles the root-level (most basic) initialization of any pipeline.
-        :param **kwargs: The attributes for the Pipeline.
+
+        :param kwargs: The attributes for the Pipeline.
         """
         # Input point clouds
         self.in_pcloud = kwargs.get("in_pcloud", None)
@@ -100,6 +104,7 @@ class Pipeline:
     def run(self):
         """
         Run the pipeline.
+
         :return: Nothing.
         """
         pass

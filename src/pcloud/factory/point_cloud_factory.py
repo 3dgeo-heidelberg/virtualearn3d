@@ -8,6 +8,7 @@ from abc import abstractmethod
 class PointCloudFactory:
     """
     :author: Alberto M. Esmoris Pena
+
     Interface governing any point cloud factory.
     """
 
@@ -22,7 +23,8 @@ class PointCloudFactory:
     def make(self):
         """
         Make a point cloud
+
         :return: The built point cloud.
-        :rtype: :class:`PointCloud`
+        :rtype: :class:`.PointCloud`
         """
         pass

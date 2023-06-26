@@ -3,6 +3,7 @@
 class MainPredict:
     """
     :author: Alberto M. Esmoris Pena
+
     Class handling the entry point for predictive tasks
     """
     # ---  MAIN METHOD   --- #
@@ -11,6 +12,7 @@ class MainPredict:
     def main(spec):
         """
         Entry point logic for predictive tasks
+
         :param spec: Key-word specification
         """
         # TODO Rethink : Implement

@@ -3,6 +3,7 @@
 class MainEval:
     """
     :author: Alberto M. Esmoris Pena
+
     Class handling the entry point for evaluation tasks
     """
     # ---  MAIN METHOD   --- #
@@ -11,6 +12,7 @@ class MainEval:
     def main(spec):
         """
         Entry point logic for evaluation tasks
+
         :param spec: Key-word specification
         """
         # TODO Rethink : Implement

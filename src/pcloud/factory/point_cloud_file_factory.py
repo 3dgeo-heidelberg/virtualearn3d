@@ -1,7 +1,7 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.pcloud.factory.point_cloud_factory import PointCloudFactory
-from src.io.point_cloud_io import PointCloudIO
+from src.inout.point_cloud_io import PointCloudIO
 
 
 # ---   CLASS   --- #
@@ -9,8 +9,10 @@ from src.io.point_cloud_io import PointCloudIO
 class PointCloudFileFactory(PointCloudFactory):
     """
     :author: Alberto M. Esmoris Pena
+
     Class to instantiate PointCloud objects from files.
-    See :class:`PointCloud` and also :class:`PointCloudFactory`
+    See :class:`.PointCloud` and also :class:`PointCloudFactory`
+
     :ivar path: The path where the input point cloud file is located.
     :vartype path: str
     """
@@ -20,6 +22,7 @@ class PointCloudFileFactory(PointCloudFactory):
     def __init__(self, path):
         """
         Initialize an instance of PointCloudFileFactory.
+
         :param path: The path to the file representing a point cloud (must be
             stored in LAS format).
         """
@@ -33,6 +36,6 @@ class PointCloudFileFactory(PointCloudFactory):
     def make(self):
         """
         Make a point cloud from a file.
-        See :method:`PointCloudFactory.make()`
+        See :meth:`point_cloud_factory.PointCloudFactory.make()`
         """
         return PointCloudIO.read(self.path)

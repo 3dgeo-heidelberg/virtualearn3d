@@ -9,6 +9,7 @@ import time
 class MainPipeline:
     """
     :author: Alberto M. Esmoris Pena
+
     Class handling the entry point for pipelines
     """
     # ---  MAIN METHOD   --- #
@@ -17,6 +18,7 @@ class MainPipeline:
     def main(spec):
         """
         Entry point logic for pipelines.
+
         :param spec: Key-word specification.
         """
         print('Starting pipeline ...\n')
@@ -33,9 +35,10 @@ class MainPipeline:
     def extract_pipeline_class(spec):
         """
         Extract the pipeline's class from the Key-word specification.
+
         :param spec: The key-word specification.
         :return: Class representing/realizing a pipeline.
-        :rtype: :class:`Pipeline`
+        :rtype: :class:`.Pipeline`
         """
         # Check pipeline class
         pipeline = spec.get("sequential_pipeline", None)

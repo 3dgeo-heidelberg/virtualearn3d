@@ -1,8 +1,8 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.pcloud.point_cloud_factory_facade import PointCloudFactoryFacade
-from src.io.point_cloud_io import PointCloudIO
-from src.io.io_utils import IOUtils
+from src.inout.point_cloud_io import PointCloudIO
+from src.inout.io_utils import IOUtils
 from src.mining.geom_feats_miner import GeomFeatsMiner
 from src.mining.covar_feats_miner import CovarFeatsMiner
 import os
@@ -14,6 +14,7 @@ import time
 class MainMine:
     """
     :author: Alberto M. Esmoris Pena
+
     Class handling the entry point for data mining tasks
     """
     # ---  MAIN METHOD  --- #
@@ -22,6 +23,7 @@ class MainMine:
     def main(spec):
         """
         Entry point logic for data mining tasks
+
         :param spec: Key-word specification
         """
         print('Starting data mining ...')
@@ -45,6 +47,7 @@ class MainMine:
     def extract_input_path(spec):
         """
         Extract the input path from the Key-word specification.
+
         :param spec: The key-word specification.
         :return: Input path as string.
         :rtype: str
@@ -66,6 +69,7 @@ class MainMine:
     def extract_output_path(spec):
         """
         Extract the output path from the Key-word specification.
+
         :param spec: The key-word specification.
         :return: Output path as string.
         :rtype: str
@@ -86,9 +90,10 @@ class MainMine:
     def extract_miner_class(spec):
         """
         Extract the miner's class from the Key-word specification.
+
         :param spec: The key-word specification.
         :return: Class representing/realizing a miner.
-        :rtype: :class:`Miner`
+        :rtype: :class:`.Miner`
         """
         miner = spec.get('miner', None)
         if miner is None:

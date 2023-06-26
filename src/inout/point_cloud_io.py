@@ -1,6 +1,6 @@
 # ---   IMPORTS   --- #
 # ------------------- #
-from src.io.io_utils import IOUtils
+from src.inout.io_utils import IOUtils
 from src.pcloud.point_cloud import PointCloud
 import laspy
 import os
@@ -11,8 +11,9 @@ import os
 class PointCloudIO:
     """
     :author: Alberto M. Esmoris Pena
+
     Class with util static methods for input/output operations related
-        to point clouds.
+    to point clouds.
     """
     # ---  READ / LOAD  --- #
     # --------------------- #
@@ -20,8 +21,9 @@ class PointCloudIO:
     def read(path):
         """
         Read a LAS/LAZ point cloud file.
+
         :param path: Path pointing to a LAS/LAZ point cloud file.
-        :return: :class:`PointCloud`
+        :return: :class:`.PointCloud`
         """
         # Validate input path as file
         IOUtils.validate_path_to_file(
@@ -35,7 +37,9 @@ class PointCloudIO:
     # ----------------------- #
     @staticmethod
     def write(pcloud, path):
-        """Write a LAS/LAZ point cloud file.
+        """
+        Write a LAS/LAZ point cloud file.
+
         :param pcloud: The point cloud to be written.
         :param path: Path where the LAS/LAZ file must be written.
         """

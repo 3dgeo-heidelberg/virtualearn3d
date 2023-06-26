@@ -4,7 +4,7 @@ from src.pipeline.pipeline import Pipeline, PipelineException
 from src.main.main_mine import MainMine
 from src.mining.miner import Miner
 from src.pcloud.point_cloud_factory_facade import PointCloudFactoryFacade
-from src.io.writer import Writer
+from src.inout.writer import Writer
 import time
 
 
@@ -13,6 +13,7 @@ import time
 class SequentialPipeline(Pipeline):
     """
     :author: Alberto M. Esmoris Pena
+
     Sequential pipeline (no loops, no recursion).
     See :class:`Pipeline`.
     """
@@ -22,9 +23,10 @@ class SequentialPipeline(Pipeline):
         """
         Initialize an instance of SequentialPipeline.
         A sequential pipeline execute the different components in the order
-            they are given.
+        they are given.
         See parent :class:`SequentialPipeline`
-        :param **kwargs: The attributes for the SequentialPipeline
+
+        :param kwargs: The attributes for the SequentialPipeline
         :ivar sequence: The sequence of components defining the
             SequentialPipeline.
         :vartype sequence: list
@@ -61,6 +63,7 @@ class SequentialPipeline(Pipeline):
     def run(self):
         """
         Run the sequential pipeline.
+
         :return: Nothing.
         """
         # List of input point clouds (even if just one is given)
@@ -79,6 +82,7 @@ class SequentialPipeline(Pipeline):
     def run_case(self, in_pcloud, out_pcloud=None):
         """
         Run the sequential pipeline for a particular input point cloud.
+
         :param in_pcloud: The input point cloud for this particular case.
         :param out_pcloud: Optionally, the output path or prefix.
         :return: Nothing.

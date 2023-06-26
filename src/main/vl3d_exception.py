@@ -1,7 +1,9 @@
 class VL3DException(Exception):
     """
     :author: Alberto M. Esmoris Pena
-    :brief: Base class for VirtuaLearn3D custom exceptions.
+
+    Base class for VirtuaLearn3D custom exceptions.
+
     :ivar message: The default message providing a string representation of
         the exception.
     :vartype message: str
