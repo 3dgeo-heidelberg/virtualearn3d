@@ -1,7 +1,7 @@
 {
 	"train": "RandomForestClassification",
 	"in_pcloud": "/home/uadmin/tmp/tmp_data/vl3d_ml/QuePet_BR01_geomfeats.laz",
-	"out_pcloud": "/tmp/RandomForest_QuePet_BR01.model",
+	"out_model": "/tmp/RandomForest_QuePet_BR01.model",
 	"fnames": [
 		"linearity_r0.05", "planarity_r0.05", "surface_variation_r0.05",
 		"linearity_r0.1", "planarity_r0.1", "surface_variation_r0.1", "eigenentropy_r0.1", "omnivariance_r0.1",

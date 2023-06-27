@@ -15,6 +15,7 @@ class PointCloudIO:
     Class with util static methods for input/output operations related
     to point clouds.
     """
+
     # ---  READ / LOAD  --- #
     # --------------------- #
     @staticmethod
@@ -42,11 +43,12 @@ class PointCloudIO:
 
         :param pcloud: The point cloud to be written.
         :param path: Path where the LAS/LAZ file must be written.
+        :return: Nothing
         """
         # Validate output directory
         IOUtils.validate_path_to_directory(
             os.path.dirname(path),
-            'The parent of the output path is not a directory:'
+            'The parent of the output point cloud path is not a directory:'
         )
         # Write output point cloud
         pcloud.las.write(path)

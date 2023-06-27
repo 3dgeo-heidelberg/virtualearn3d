@@ -26,7 +26,7 @@ the loop.
 ```bash
 python vl3d.py --train model_spec.json
 ```
-**NOT IMPLEMENTED**
+**IMPLEMENTING**
 
 
 
@@ -39,7 +39,7 @@ below will often be used during the loop.
 ```bash
 python vl3d.py --train model_spec.json --pretrained model_file.model
 ```
-**IMPLEMENTING**
+**NOT IMPLEMENTED**
 
 
 
