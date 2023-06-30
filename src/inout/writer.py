@@ -73,7 +73,7 @@ class Writer:
     @staticmethod
     def extract_writer_class(spec):
         """
-        Extract the miner's class from the Key-word specification.
+        Extract the miner's class from the key-word specification.
 
         :param spec: The key-word specification.
         :return: Class representing/realizing a miner.

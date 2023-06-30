@@ -49,7 +49,7 @@ class MainMine:
     @staticmethod
     def extract_input_path(spec):
         """
-        Extract the input path from the Key-word specification.
+        Extract the input path from the key-word specification.
 
         :param spec: The key-word specification.
         :return: Input path as string.
@@ -71,7 +71,7 @@ class MainMine:
     @staticmethod
     def extract_output_path(spec):
         """
-        Extract the output path from the Key-word specification.
+        Extract the output path from the key-word specification.
 
         :param spec: The key-word specification.
         :return: Output path as string.
@@ -92,7 +92,7 @@ class MainMine:
     @staticmethod
     def extract_miner_class(spec):
         """
-        Extract the miner's class from the Key-word specification.
+        Extract the miner's class from the key-word specification.
 
         :param spec: The key-word specification.
         :return: Class representing/realizing a miner.

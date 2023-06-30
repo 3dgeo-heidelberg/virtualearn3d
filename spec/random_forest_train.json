@@ -1,5 +1,5 @@
 {
-	"train": "RandomForestClassification",
+	"train": "RandomForestClassifier",
 	"in_pcloud": "/home/uadmin/tmp/tmp_data/vl3d_ml/QuePet_BR01_geomfeats.laz",
 	"out_model": "/tmp/RandomForest_QuePet_BR01.model",
 	"fnames": [
@@ -13,7 +13,7 @@
 	"autoval_size": 0.2,
 	"num_folds": 5,
 	"model_args": {
-		"n_estimators": 400,
+		"n_estimators": 4,
 		"criterion": "entropy",
 		"max_depth": 20,
 		"min_samples_split": 5,
@@ -24,13 +24,23 @@
 		"min_impurity_decrease": 0.0,
 		"bootstrap": true,
 		"oob_score": false,
-		"n_jobs": -1,
+		"n_jobs": 4,
 		"warm_start": false,
 		"class_weight": null,
 		"ccp_alpha": 0.0,
 		"max_samples": 0.8
 	},
 	"autoval_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
+	"imputer": {
+		"imputer": "RemovalImputer",
+		"target_val": "NaN"
+	},
+	"_imputer": {
+		"imputer": "UnivariateImputer",
+		"target_val": "NaN",
+		"strategy": "mean",
+		"constant_val": 0,
+	},
 	"hyperparameter_tuning": {
 		"tuner": "GridSearch",
 		"hyper_parameters": ["n_estimators", "max_depth", "max_samples"]

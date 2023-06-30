@@ -2,6 +2,8 @@
 # ------------------- #
 from abc import abstractmethod
 from src.main.vl3d_exception import VL3DException
+from src.utils.dict_utils import DictUtils
+from src.utils.imputer import Imputer
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import StratifiedKFold
 import numpy as np
@@ -42,6 +44,8 @@ class Model:
     :vartype shuffle_points: bool
     :ivar num_folds: The number of folds, i.e. K for K-Folding.
     :vartype num_folds: int
+    :ivar imputer: The imputer to deal with missing values (can be None).
+    :vartype imputer: :class:`.Imputer`
     :ivar fnames: The list of feature names (fnames) attribute. These features
         must correspond to the features in the input point cloud for
         training and predictions.
@@ -50,6 +54,32 @@ class Model:
         the random computations of the model.
     :vartype random_seed: int
     """
+
+    # ---  SPECIFICATION ARGUMENTS  --- #
+    # --------------------------------- #
+    @staticmethod
+    def extract_model_args(spec):
+        """
+        Extract the arguments to initialize/instantiate a Model from a
+        key-word specification.
+
+        :param spec: The key-word specification containing the arguments.
+        :return: The arguments to initialize/instantiate a Model.
+        """
+        # Initialize
+        kwargs = {
+            'training_type': spec.get('training_type', None),
+            'random_seed': spec.get('random_seed', None),
+            'shuffle_points': spec.get('shuffle_points', None),
+            'autoval_size': spec.get('autoval_size', None),
+            'num_folds': spec.get('num_folds', None),
+            'imputer': spec.get('imputer', None),
+            'fnames': spec.get('fnames', None)
+        }
+        # Delete keys with None value
+        kwargs = DictUtils.delete_by_val(kwargs, None)
+        # Return
+        return kwargs
 
     # ---   INIT   --- #
     # ---------------- #
@@ -65,12 +95,17 @@ class Model:
         self.shuffle_points = kwargs.get("shuffle_points", True)
         self.autoval_size = kwargs.get("autoval_size", 0.2)
         self.num_folds = kwargs.get("num_folds", 5)
+        self.imputer = kwargs.get("imputer", None)
+        if self.imputer is not None:
+            imputer_class = Imputer.extract_imputer_class(self.imputer)
+            self.imputer = imputer_class(
+                **imputer_class.extract_imputer_args(self.imputer)
+            )
         self.fnames = kwargs.get("fnames", None)
         if self.fnames is None:
             raise ModelException(
                 "No feature names were specified for the model."
             )
-        pass
 
     # ---   MODEL METHODS   --- #
     # ------------------------- #
@@ -99,7 +134,7 @@ class Model:
         :return: The point-wise predictions.
         :rtype: :class:`np.ndarray`
         """
-        X = pcloud.get_features_matrix(self.fnames)
+        X = pcloud.get_features_matrix(self.fnames)  # Often named F instead
         return self._predict(X)
 
     # ---   TRAINING METHODS   --- #

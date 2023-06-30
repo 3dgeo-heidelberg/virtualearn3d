@@ -62,6 +62,27 @@ class PointCloud:
             self.las.Z * scales[2] + offsets[2]
         ]).T
 
+    def get_features_matrix(self, fnames):
+        """
+        Obtain the matrix of features representing the point cloud.
+
+        :param list fnames: The name of the point cloud's attributes
+        corresponding to the features of interest.
+        :return: The matrix of features representing the point cloud.
+        :rtype: :class:`np.ndarray`
+        """
+        return np.array([self.las[fname] for fname in fnames]).T
+
+    def get_classes_vector(self):
+        """
+        Obtain a vector which components represent the point-wise classes of
+        the point cloud.
+
+        :return: The vector of classes.
+        :rtype: :class:`np.ndarray`
+        """
+        return self.las.classification
+
     # ---  UPDATE METHODS  --- #
     # ------------------------ #
     def add_features(self, fnames, feats, ftypes="f"):

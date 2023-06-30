@@ -1,6 +1,7 @@
 from src.model.classification_model import ClassificationModel
 from sklearn.ensemble import RandomForestClassifier
 import src.main.main_logger as LOGGING
+from src.utils.dict_utils import DictUtils
 import time
 
 
@@ -15,7 +16,30 @@ class RandomForestClassificationModel(ClassificationModel):
 
     :ivar model_args: The arguments to initialize a new RandomForest model.
     :vartype model_args: dict
+    :ivar model: The internal representation of the model.
+    :vartype model: :class:`RandomForestClassifier`
     """
+
+    # ---  SPECIFICATION ARGUMENTS  --- #
+    # --------------------------------- #
+    @staticmethod
+    def extract_model_args(spec):
+        """
+        Extract the arguments to initialize/instantiate a
+        RandomForestClassificationModel from a key-word specification.
+
+        :param spec: The key-word specification containing the arguments.
+        :return: The arguments to initialize/instantiate a
+            RandomForestClassificationModel
+        """
+        # Initialize from parent
+        kwargs = ClassificationModel.extract_model_args(spec)
+        # Extract particular arguments for Random Forest
+        kwargs['model_args'] = spec.get('model_args', None)
+        # Delete keys with None value
+        kwargs = DictUtils.delete_by_val(kwargs, None)
+        # Return
+        return kwargs
 
     # ---   INIT   --- #
     # ---------------- #

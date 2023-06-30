@@ -4,6 +4,7 @@ from abc import ABC
 
 from src.model.model import Model
 import src.main.main_logger as LOGGING
+from src.utils.dict_utils import DictUtils
 from sklearn.metrics import accuracy_score, precision_score, recall_score, \
     f1_score, jaccard_score, matthews_corrcoef, cohen_kappa_score
 import numpy as np
@@ -17,6 +18,27 @@ class ClassificationModel(Model, ABC):
 
     Abstract class providing some baseline methods for classification models.
     """
+
+    # ---  SPECIFICATION ARGUMENTS  --- #
+    # --------------------------------- #
+    @staticmethod
+    def extract_model_args(spec):
+        """
+        Extract the arguments to initialize/instantiate a ClassificationModel
+        from a key-word specification.
+
+        :param spec: The key-word specification containing the arguments.
+        :return: The arguments to initialize/instantiate a ClassificationModel
+        """
+        # Initialize from parent
+        kwargs = Model.extract_model_args(spec)
+        # Extract particular arguments for classification models
+        kwargs['autoval_metrics'] = spec.get('autoval_metrics', None)
+        # Delete keys with None value
+        kwargs = DictUtils.delete_by_val(kwargs, None)
+        # Return
+        return kwargs
+
     # ---   INIT   --- #
     # ---------------- #
     def __init__(self, **kwargs):
