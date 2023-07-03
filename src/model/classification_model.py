@@ -151,3 +151,32 @@ class ClassificationModel(Model, ABC):
             metrics.append(cohen_kappa_score)
         return metrics
 
+    # ---  PICKLE METHODS  --- #
+    # ------------------------ #
+    def __getstate__(self):
+        """
+        Method to be called when saving the serialized classification model.
+
+        :return: The state's dictionary of the object
+        """
+        state = self.__dict__.copy()
+        # Remove metrics (because they use lambda functions)
+        del state['autoval_metrics']
+        # Return state dictionary
+        return state
+
+    def __setstate__(self, state):
+        """
+        Method to be called when loading and deserializing a previously
+        serialized classification model.
+
+        :param state: The state's dictionary of the saved classification model.
+        :return: Nothing, but modifies the internal state of the object.
+        """
+        # Defualt update
+        self.__dict__.update(state)
+        # Recompute lambda functions
+        if self.autoval_metrics_names is not None:
+            self.autoval_metrics = self.autoval_metrics_from_names(
+                self.autoval_metrics_names
+            )

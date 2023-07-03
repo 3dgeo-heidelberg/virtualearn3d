@@ -83,6 +83,7 @@ class MainTrain:
             os.path.dirname(path),
             'Cannot find the directory to write the trained model:'
         )
+        return path
 
     @staticmethod
     def extract_model_class(spec):

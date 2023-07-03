@@ -3,7 +3,7 @@
 from abc import abstractmethod
 from src.main.vl3d_exception import VL3DException
 from src.utils.dict_utils import DictUtils
-from src.utils.imputer import Imputer
+from src.utils.imputer_utils import ImputerUtils
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import StratifiedKFold
 import numpy as np
@@ -97,7 +97,7 @@ class Model:
         self.num_folds = kwargs.get("num_folds", 5)
         self.imputer = kwargs.get("imputer", None)
         if self.imputer is not None:
-            imputer_class = Imputer.extract_imputer_class(self.imputer)
+            imputer_class = ImputerUtils.extract_imputer_class(self.imputer)
             self.imputer = imputer_class(
                 **imputer_class.extract_imputer_args(self.imputer)
             )
@@ -135,6 +135,8 @@ class Model:
         :rtype: :class:`np.ndarray`
         """
         X = pcloud.get_features_matrix(self.fnames)  # Often named F instead
+        if self.imputer is not None:
+            X = self.imputer.impute(X)
         return self._predict(X)
 
     # ---   TRAINING METHODS   --- #
@@ -179,6 +181,8 @@ class Model:
         """
         X = pcloud.get_features_matrix(self.fnames)
         y = pcloud.get_classes_vector()
+        if self.imputer is not None:
+            X, y = self.imputer.impute(X, y)
         self.training(X, y)
         return self
 
@@ -199,6 +203,8 @@ class Model:
         """
         X = pcloud.get_features_matrix(self.fnames)
         y = pcloud.get_classes_vector()
+        if self.imputer is not None:
+            X, y = self.imputer.impute(X, y)
         Xtrain, Xtest, ytrain, ytest = train_test_split(
             X, y,
             test_size=self.autoval_size,
@@ -234,6 +240,8 @@ class Model:
         """
         X = pcloud.get_features_matrix(self.fnames)
         y = pcloud.get_classes_vector()
+        if self.imputer is not None:
+            X, y = self.imputer.impute(X, y)
         self.training(X, y)
         skf = StratifiedKFold(
             n_splits=self.num_folds,

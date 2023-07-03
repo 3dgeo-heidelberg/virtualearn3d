@@ -61,4 +61,3 @@ class ModelIO:
             )
         # Write output model
         joblib.dump(model, path)
-

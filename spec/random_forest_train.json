@@ -39,7 +39,7 @@
 		"imputer": "UnivariateImputer",
 		"target_val": "NaN",
 		"strategy": "mean",
-		"constant_val": 0,
+		"constant_val": 0
 	},
 	"hyperparameter_tuning": {
 		"tuner": "GridSearch",
