@@ -1,6 +1,6 @@
 # ---   IMPORTS   --- #
 # ------------------- #
-from src.utils.imputer import Imputer, ImputerException
+from src.utils.imput.imputer import Imputer
 from sklearn.impute import SimpleImputer
 
 

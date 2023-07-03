@@ -1,7 +1,9 @@
 # ---   IMPORTS   --- #
 # ------------------- #
-from src.utils.imputer import Imputer, ImputerException
+from src.utils.imput.imputer import Imputer, ImputerException
+import src.main.main_logger as LOGGING
 import numpy as np
+import time
 
 
 # ---   CLASS   --- #
@@ -31,6 +33,7 @@ class RemovalImputer(Imputer):
         The fundamental imputation logic defining the removal imputer
         See :class:`.Imputer`
         """
+        start = time.perf_counter()
         # Check
         if F is None:
             raise ImputerException(
@@ -41,6 +44,12 @@ class RemovalImputer(Imputer):
             nan_mask = np.bitwise_or.reduce(np.isnan(F), axis=1)
         else:
             nan_mask = np.bitwise_or.reduce(F == self.target_val, axis=1)
+        # Log imputation
+        end = time.perf_counter()
+        LOGGING.LOGGER.info(
+            f'RemovalImputer removed {np.count_nonzero(nan_mask)} points with '
+            f'missing values "{self.target_val}" in {end-start:.3f} seconds.'
+        )
         # Return
         if y is not None:
             return F[~nan_mask], y[~nan_mask]

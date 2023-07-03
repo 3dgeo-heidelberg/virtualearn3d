@@ -56,6 +56,25 @@ class RandomForestClassificationModel(ClassificationModel):
         self.model_args = kwargs.get("model_args", None)
         self.model = None
 
+    # ---   MODEL METHODS   --- #
+    # ------------------------- #
+    def prepare_model(self):
+        """
+        Prepare a random forest classifier with current model arguments
+
+        :return: The prepared model itself. Note it is also assigned as the
+            model attribute of the object/instance.
+        """
+        if self.model_args is not None:
+            self.model = RandomForestClassifier(**self.model_args)
+        else:
+            LOGGING.LOGGER.info(
+                "Preparing RandomForestClassificationModel with no "
+                "`model_args`"
+            )
+            self.model = RandomForestClassifier()
+        return self.model
+
     # ---   TRAINING METHODS   --- #
     # ---------------------------- #
     def training(self, X, y):
@@ -68,19 +87,13 @@ class RandomForestClassificationModel(ClassificationModel):
         :return: Nothing, but the model itself is updated.
         """
         # Initialize model instance
-        if self.model_args is not None:
-            self.model = RandomForestClassifier(**self.model_args)
-        else:
-            LOGGING.LOGGER.info(
-                "Training RandomForestClassificationModel with no `model_args`"
-            )
-            self.model = RandomForestClassifier()
+        self.prepare_model()
         # Train the model
         start = time.perf_counter()
         self.model = self.model.fit(X, y)
         end = time.perf_counter()
         LOGGING.LOGGER.info(
-            'RandomForestClassificationModel trained in'
+            'RandomForestClassificationModel trained in '
             f'{end-start:.3f} seconds'
         )
 

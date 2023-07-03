@@ -157,7 +157,7 @@ class ClassificationModel(Model, ABC):
         """
         Method to be called when saving the serialized classification model.
 
-        :return: The state's dictionary of the object
+        :return: The state's dictionary of the object.
         """
         state = self.__dict__.copy()
         # Remove metrics (because they use lambda functions)

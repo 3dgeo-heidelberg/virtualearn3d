@@ -43,6 +43,15 @@
 	},
 	"hyperparameter_tuning": {
 		"tuner": "GridSearch",
-		"hyper_parameters": ["n_estimators", "max_depth", "max_samples"]
+		"hyperparameters": ["n_estimators", "max_depth", "max_samples"],
+		"nthreads": -1,
+		"num_folds": 5,
+		"pre_dispatch": 8,
+		"grid": {
+			"n_estimators": [2, 4, 8],
+			"max_depth": [15, 20, 27],
+			"max_samples": [0.6, 0.8, 0.9]
+		},
+		"report_path": "/tmp/hyper_grid_search.log"
 	}
 }

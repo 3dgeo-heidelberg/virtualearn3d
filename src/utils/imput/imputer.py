@@ -1,10 +1,9 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from abc import abstractmethod
+from src.main.vl3d_exception import VL3DException
 from src.utils.dict_utils import DictUtils
 import numpy as np
-
-from src.main.vl3d_exception import VL3DException
 
 
 # ---   EXCEPTIONS   --- #

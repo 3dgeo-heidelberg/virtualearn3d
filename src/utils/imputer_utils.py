@@ -1,7 +1,7 @@
 # ---   IMPORTS   --- #
 # ------------------- #
-from src.utils.removal_imputer import RemovalImputer
-from src.utils.univariate_imputer import UnivariateImputer
+from src.utils.imput.removal_imputer import RemovalImputer
+from src.utils.imput.univariate_imputer import UnivariateImputer
 
 
 # ---   CLASS   --- #

@@ -4,6 +4,7 @@ from abc import abstractmethod
 from src.main.vl3d_exception import VL3DException
 from src.utils.dict_utils import DictUtils
 from src.utils.imputer_utils import ImputerUtils
+from src.utils.tuner_utils import TunerUtils
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import StratifiedKFold
 import numpy as np
@@ -74,6 +75,7 @@ class Model:
             'autoval_size': spec.get('autoval_size', None),
             'num_folds': spec.get('num_folds', None),
             'imputer': spec.get('imputer', None),
+            'hyperparameter_tuning': spec.get('hyperparameter_tuning', None),
             'fnames': spec.get('fnames', None)
         }
         # Delete keys with None value
@@ -101,6 +103,12 @@ class Model:
             self.imputer = imputer_class(
                 **imputer_class.extract_imputer_args(self.imputer)
             )
+        self.hypertuner = kwargs.get("hyperparameter_tuning", None)
+        if self.hypertuner is not None:
+            hypertuner_class = TunerUtils.extract_tuner_class(self.hypertuner)
+            self.hypertuner = hypertuner_class(
+                **hypertuner_class.extract_tuner_args(self.hypertuner)
+            )
         self.fnames = kwargs.get("fnames", None)
         if self.fnames is None:
             raise ModelException(
@@ -117,6 +125,11 @@ class Model:
         :return: The trained model.
         :rtype: :class:`.Model`
         """
+        # Tune hyperparameters (model_args might be replaced)
+        if self.hypertuner is not None:
+            self.prepare_model()
+            self.hypertuner.tune(self, pcloud)
+        # The training itself
         trainT = self.training_type.lower()
         if trainT == 'base':
             return self.train_base(pcloud)
@@ -138,6 +151,17 @@ class Model:
         if self.imputer is not None:
             X = self.imputer.impute(X)
         return self._predict(X)
+
+    @abstractmethod
+    def prepare_model(self):
+        """
+        Prepare the model so its model attribute (i.e., model.model) can be
+        used, for instance by an hyperparameter tuner.
+
+        :return: The prepared model itself. However, the prepared model must be
+            automatically assigned as an attribute of the object/instance too.
+        """
+        pass
 
     # ---   TRAINING METHODS   --- #
     # ---------------------------- #
