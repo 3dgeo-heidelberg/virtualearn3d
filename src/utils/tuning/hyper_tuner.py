@@ -3,6 +3,7 @@
 from abc import ABC
 from src.utils.tuning.tuner import Tuner, TunerException
 from src.utils.dict_utils import DictUtils
+import src.main.main_logger as LOGGING
 
 
 # ---   CLASS   --- #
@@ -65,6 +66,45 @@ class HyperTuner(Tuner, ABC):
                 'Hyperparameter tuning is not possible without '
                 'hyperparameters. Empty set was given.'
             )
+
+    # ---  HYPERTUNER METHODS  --- #
+    # ---------------------------- #
+    def update_model(self, model, search, features=None):
+        """
+        Update model from result.
+
+        :param model: The model to be updated. See :class:`.Model`
+        :param search: The search to update the model.
+        :param features: The features matrix (OPTIONAL, i.e., can be None).
+        :return: The updated model.
+        :rtype: :class:`.Model`
+        """
+        # Extract from search and features
+        best_args = search.best_params_
+        best_index = search.best_index_
+        best_score = search.best_score_
+        results = search.cv_results_
+        num_points = len(features) if features is not None else '?'
+        # Update model (and build log message)
+        best_info = 'Consequences of random search on hyperparameters:'
+        for model_arg_key in best_args.keys():
+            best_info += '\nModel argument "{arg_name}" ' \
+                         'from {arg_old} to {arg_new}'.format(
+                arg_name=model_arg_key,
+                arg_old=model.model_args[model_arg_key],
+                arg_new=best_args[model_arg_key]
+            )
+            model.model_args[model_arg_key] = best_args[model_arg_key]
+        best_info += '\nExpected score with new arguments: ' \
+            f'{100*best_score:.3f} ' \
+            f'+- {100*results["std_test_score"][best_index]:.3f}\n' \
+            f'Expected training time per {num_points} points ' \
+            'with new arguments: ' \
+            f'{results["mean_fit_time"][best_index]:.3f} ' \
+            f'+-{results["std_fit_time"][best_index]:.3f} seconds'
+        LOGGING.LOGGER.info(best_info)
+        # Return updated model
+        return model
 
     # ---   STATIC UTILS   --- #
     # ------------------------ #

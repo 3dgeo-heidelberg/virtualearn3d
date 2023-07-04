@@ -118,28 +118,8 @@ class HyperGridSearch(HyperTuner):
         )
         if self.report_path is not None:
             hsreport.to_file(self.report_path)
-        # Update model args
-        # TODO Rethink : Logic below to HyperTuner.updateModel method
-        best_args = gs.best_params_
-        best_info = 'Consequences of grid search on hyperparameters:'
-        for model_arg_key in best_args.keys():
-            best_info += '\nModel argument "{arg_name}" ' \
-                'from {arg_old} to {arg_new}'.format(
-                    arg_name=model_arg_key,
-                    arg_old=model.model_args[model_arg_key],
-                    arg_new=best_args[model_arg_key]
-                )
-            model.model_args[model_arg_key] = best_args[model_arg_key]
-        best_index = gs.best_index_
-        best_info += '\nExpected score with new arguments: '\
-            f'{100*gs.best_score_:.3f} '\
-            f'+- {100*gs.cv_results_["std_test_score"][best_index]:.3f}\n'\
-            f'Expected training time per {len(F)} points with new arguments: '\
-            f'{gs.cv_results_["mean_fit_time"][best_index]:.3f} '\
-            f'+- {gs.cv_results_["std_fit_time"][best_index]:.3f}'
-        LOGGING.LOGGER.info(best_info)
-        # Return tuned model
-        return model
+        # Update model args and return tuned model
+        return self.update_model(model, gs, F)
 
     # ---   STATIC UTILS   --- #
     # ------------------------ #

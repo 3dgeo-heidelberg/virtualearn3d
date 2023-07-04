@@ -41,7 +41,7 @@
 		"strategy": "mean",
 		"constant_val": 0
 	},
-	"_hyperparameter_tuning": {
+	"hyperparameter_tuning": {
 		"tuner": "GridSearch",
 		"hyperparameters": ["n_estimators", "max_depth", "max_samples"],
 		"nthreads": -1,
@@ -54,11 +54,11 @@
 		},
 		"report_path": "/tmp/hyper_grid_search.log"
 	},
-	"hyperparameter_tuning": {
+	"_hyperparameter_tuning": {
 		"tuner": "RandomSearch",
 		"hyperparameters": ["n_estimators", "max_depth", "ccp_alpha", "min_impurity_decrease", "criterion"],
 		"nthreads": -1,
-		"iterations": 64,
+		"iterations": 32,
 		"num_folds": 5,
 		"pre_dispatch": 8,
 		"distributions": {
