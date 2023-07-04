@@ -65,3 +65,10 @@ class HyperTuner(Tuner, ABC):
                 'Hyperparameter tuning is not possible without '
                 'hyperparameters. Empty set was given.'
             )
+
+    # ---   STATIC UTILS   --- #
+    # ------------------------ #
+    @staticmethod
+    def kwargs_hyperparameters_from_spec(kwargs, spec):
+        # TODO Rethink : Implement (see grid and random search static utils)
+        pass

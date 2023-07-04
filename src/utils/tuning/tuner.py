@@ -46,7 +46,7 @@ class Tuner:
         Tune the given model on givel point cloud (if any).
 
         :param model: The model to be tuned. See :class:`.Model`
-        :param pcloud: The (OPTIONAL) point cloud involved in the tuning.
+        :param pcloud: The point cloud involved in the tuning.
             See :class:`.PointCloud`
         :return: The tuned model.
         :rtype: :class:`.Model`

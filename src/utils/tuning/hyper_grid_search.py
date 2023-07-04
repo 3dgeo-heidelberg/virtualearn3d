@@ -17,7 +17,22 @@ class HyperGridSearch(HyperTuner):
 
     Class to apply grid search on the hyperparameter space of a model.
 
-    # TODO Rethink : Document attributes
+    :ivar nthreads: Number of threads to run parallel grid search nodes.
+        Note that the model might have nthreads too. In this case, it is
+        important that the number of threads from the grid search and the
+        number of threads from the model itself are considered together.
+    :vartype nthreads: int
+    :ivar num_folds: Number of folds to train and validate the model on a
+        kfolding scheme for each node in the grid search.
+    :vartype num_folds: int
+    :ivar pre_dispatch: How many jobs are dispatched during the parallel
+        execution. It can be useful to prevent dispatching more jobs than
+        those that can be processed by the CPUs.
+    :vartype pre_dispatch: int or str
+    :ivar grid: Dictionary which elements are lists. Each list in the
+        dictionary represents the values that must be searched for the
+        parameter referenced by the key.
+    :vartype grid: dict
     """
 
     # ---  SPECIFICATION ARGUMENTS  --- #
@@ -42,7 +57,6 @@ class HyperGridSearch(HyperTuner):
         DictUtils.delete_by_val(kwargs, None)
         # Return
         return kwargs
-
 
     # ---   INIT   --- #
     # ---------------- #
@@ -76,7 +90,7 @@ class HyperGridSearch(HyperTuner):
         Also, see :meth:`tuner.Tuner.tune`
 
         :param model: The model which hyperparameters must be tuned.
-        :param pcloud: The input point cloud (can be None).
+        :param pcloud: The input point cloud (cannot be None).
         """
         # Compute grid search
         start = time.perf_counter()
@@ -86,7 +100,7 @@ class HyperGridSearch(HyperTuner):
             cv=self.num_folds,
             n_jobs=self.nthreads,
             pre_dispatch=self.pre_dispatch,
-            refit=True
+            refit=False
         )
         F = pcloud.get_features_matrix(model.fnames)
         y = pcloud.get_classes_vector()
@@ -105,6 +119,7 @@ class HyperGridSearch(HyperTuner):
         if self.report_path is not None:
             hsreport.to_file(self.report_path)
         # Update model args
+        # TODO Rethink : Logic below to HyperTuner.updateModel method
         best_args = gs.best_params_
         best_info = 'Consequences of grid search on hyperparameters:'
         for model_arg_key in best_args.keys():
@@ -115,8 +130,13 @@ class HyperGridSearch(HyperTuner):
                     arg_new=best_args[model_arg_key]
                 )
             model.model_args[model_arg_key] = best_args[model_arg_key]
+        best_index = gs.best_index_
         best_info += '\nExpected score with new arguments: '\
-            f'{100*gs.best_score_:.3f}'
+            f'{100*gs.best_score_:.3f} '\
+            f'+- {100*gs.cv_results_["std_test_score"][best_index]:.3f}\n'\
+            f'Expected training time per {len(F)} points with new arguments: '\
+            f'{gs.cv_results_["mean_fit_time"][best_index]:.3f} '\
+            f'+- {gs.cv_results_["std_fit_time"][best_index]:.3f}'
         LOGGING.LOGGER.info(best_info)
         # Return tuned model
         return model
@@ -133,6 +153,7 @@ class HyperGridSearch(HyperTuner):
         :return: The updated kwargs.
         :rtype: dict
         """
+        # TODO Rethink : Implement by calling HyperTuner.kwargs_hyperparameters_from_spec
         hpnames = kwargs.get('hyperparameters', None)
         grid = kwargs.get('grid', None)
         # Handle cases
@@ -140,7 +161,7 @@ class HyperGridSearch(HyperTuner):
             return kwargs
         gnames = [key for key in grid.keys()]  # Grid keys as parameter names
         if hpnames is None:  # If grid is given but no hyperparameters
-            # The hyperparameters must be taken from grid names
+            # The hyperparameters must be taken from grid names (keys)
             kwargs['hyperparameters'] = gnames
             return kwargs
         # Both, grid and hyperparameters are given

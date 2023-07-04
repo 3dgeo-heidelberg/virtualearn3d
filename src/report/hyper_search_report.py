@@ -1,6 +1,7 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.report.report import Report
+import numpy as np
 
 
 # ---   CLASS   --- #
@@ -44,19 +45,26 @@ class HyperSearchReport(Report):
             s += f'{param_name:16.16},'
         if has_train_scores:
             s += 'mean_train,std_train ,'
-        s += 'mean_test ,std_test  ,mean_time ,std_time  \n'
+        s += 'mean_test ,std_test  ,mean_time ,std_time  '
+        # Determine sort
+        I = np.argsort(self.results["mean_test_score"])
         # Populate body
         nrows = len(params)
-        for i in range(nrows):
+        for jrow in range(nrows):
+            i = I[jrow]
             paramsi = params[i]
+            s += '\n'
             for param_key in paramsi.keys():
-                s += f'{str(paramsi[param_key]):16.16},'
+                if isinstance(paramsi[param_key], str):
+                    s += f'{paramsi[param_key]:16.16},'
+                else:
+                    s += f'{str(paramsi[param_key]):8.8}        ,'
             if has_train_scores:
                 s += f'  {str(100*self.results["mean_train_score"][i]):8.8},'
                 s += f'  {str(100*self.results["std_train_score"][i]):8.8},'
             s += f'  {str(100*self.results["mean_test_score"][i]):8.8},'
             s += f'  {str(100*self.results["std_test_score"][i]):8.8},'
-            s += f'  {str(self.results["mean_score_time"][i]):8.8},'
-            s += f'  {str(self.results["std_score_time"][i]):8.8}\n'
+            s += f'  {str(self.results["mean_fit_time"][i]):8.8},'
+            s += f'  {str(self.results["std_fit_time"][i]):8.8}'
         # Return
         return s

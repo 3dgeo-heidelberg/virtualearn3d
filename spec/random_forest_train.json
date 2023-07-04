@@ -41,7 +41,7 @@
 		"strategy": "mean",
 		"constant_val": 0
 	},
-	"hyperparameter_tuning": {
+	"_hyperparameter_tuning": {
 		"tuner": "GridSearch",
 		"hyperparameters": ["n_estimators", "max_depth", "max_samples"],
 		"nthreads": -1,
@@ -53,5 +53,38 @@
 			"max_samples": [0.6, 0.8, 0.9]
 		},
 		"report_path": "/tmp/hyper_grid_search.log"
+	},
+	"hyperparameter_tuning": {
+		"tuner": "RandomSearch",
+		"hyperparameters": ["n_estimators", "max_depth", "ccp_alpha", "min_impurity_decrease", "criterion"],
+		"nthreads": -1,
+		"iterations": 64,
+		"num_folds": 5,
+		"pre_dispatch": 8,
+		"distributions": {
+			"n_estimators": {
+				"distribution": "randint",
+				"start": 2,
+				"end": 17
+			},
+			"max_depth": {
+				"distribution": "randint",
+				"start": 10,
+				"end": 31
+			},
+			"ccp_alpha": {
+				"distribution": "uniform",
+				"start": 0.0,
+				"offset": 0.05
+			},
+			"min_impurity_decrease": {
+				"distribution": "normal",
+				"mean": 0.01,
+				"stdev": 0.001
+			},
+			"criterion": ["gini", "entropy", "log_loss"]
+		},
+		"report_path": "/tmp/hyper_random_search.log"
 	}
+
 }
