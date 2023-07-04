@@ -67,7 +67,10 @@ class HyperGridSearch(HyperTuner):
         :param kwargs: The attributes for the HyperGridSearch
         """
         # Call parent's init
-        kwargs = HyperGridSearch.kwargs_hyperparameters_from_grid(kwargs)
+        kwargs = HyperTuner.kwargs_hyperparameters_from_spec(
+            kwargs,
+            kwargs.get('grid', None)
+        )
         super().__init__(**kwargs)
         # Basic attributes of the HyperGridSearch
         self.nthreads = kwargs.get('nthreads', -1)
@@ -102,11 +105,7 @@ class HyperGridSearch(HyperTuner):
             pre_dispatch=self.pre_dispatch,
             refit=False
         )
-        F = pcloud.get_features_matrix(model.fnames)
-        y = pcloud.get_classes_vector()
-        if model.imputer is not None:
-            F, y = model.imputer.impute(F, y)
-        gs = gs.fit(F, y)
+        gs = HyperTuner.search(model, gs, pcloud)
         end = time.perf_counter()
         LOGGING.LOGGER.info(
             f'Computed grid search in {end-start:.3f} seconds.'
@@ -119,40 +118,4 @@ class HyperGridSearch(HyperTuner):
         if self.report_path is not None:
             hsreport.to_file(self.report_path)
         # Update model args and return tuned model
-        return self.update_model(model, gs, F)
-
-    # ---   STATIC UTILS   --- #
-    # ------------------------ #
-    @staticmethod
-    def kwargs_hyperparameters_from_grid(kwargs):
-        """
-        Update the key-word arguments (kwargs) to derive the hyperparameters
-        from the grid.
-
-        :param kwargs: The kwargs to be updated.
-        :return: The updated kwargs.
-        :rtype: dict
-        """
-        # TODO Rethink : Implement by calling HyperTuner.kwargs_hyperparameters_from_spec
-        hpnames = kwargs.get('hyperparameters', None)
-        grid = kwargs.get('grid', None)
-        # Handle cases
-        if grid is None:  # If no grid continue (error will arise later)
-            return kwargs
-        gnames = [key for key in grid.keys()]  # Grid keys as parameter names
-        if hpnames is None:  # If grid is given but no hyperparameters
-            # The hyperparameters must be taken from grid names (keys)
-            kwargs['hyperparameters'] = gnames
-            return kwargs
-        # Both, grid and hyperparameters are given
-        hpnames.sort()  # Sort hyperparameter's names
-        gnames.sort()  # Sort grid keys the same way
-        hpnames_equals_grid = hpnames == gnames  # Compare sorted lists
-        if not hpnames_equals_grid:  # If hyperparameters differ from grid
-            raise TunerException(
-                'HyperGridSearch received an ambiguous specification. '
-                'Hyperparameters and grid do not match exactly.\n'
-                f'Hyperparameters: {hpnames}\n'
-                f'Grid parameters: {gnames}'
-            )
-        return kwargs
+        return self.update_model(model, gs, pcloud)

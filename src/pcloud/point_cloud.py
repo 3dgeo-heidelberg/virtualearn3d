@@ -47,6 +47,15 @@ class PointCloud:
 
     # ---  ACCESS-ONLY METHODS  --- #
     # ----------------------------- #
+    def get_num_points(self):
+        """
+        Obtain the number of points in the point cloud.
+
+        :return: Number of points in the point cloud.
+        :rtype: int
+        """
+        return len(self.las.X)
+
     def get_coordinates_matrix(self):
         """
         Obtain the matrix of coordinates representing the point cloud (supported

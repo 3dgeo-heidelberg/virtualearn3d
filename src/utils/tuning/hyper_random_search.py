@@ -54,8 +54,9 @@ class HyperRandomSearch(HyperTuner):
         :param kwargs: The attributes for the HyperRandomSearch
         """
         # Call parent's init
-        kwargs = HyperRandomSearch.kwargs_hyperparameters_from_distributions(
-            kwargs
+        kwargs = HyperTuner.kwargs_hyperparameters_from_spec(
+            kwargs,
+            kwargs.get('distributions', None)
         )
         super().__init__(**kwargs)
         # Baic attributes of the HyperRandomSearch
@@ -93,11 +94,7 @@ class HyperRandomSearch(HyperTuner):
             pre_dispatch=self.pre_dispatch,
             refit=False
         )
-        F = pcloud.get_features_matrix(model.fnames)
-        y = pcloud.get_classes_vector()
-        if model.imputer is not None:
-            F, y = model.imputer.impute(F, y)
-        rs = rs.fit(F, y)
+        rs = HyperTuner.search(model, rs, pcloud)
         end = time.perf_counter()
         LOGGING.LOGGER.info(
             f'Computed random search in {end-start:.3f} seconds.'
@@ -110,44 +107,10 @@ class HyperRandomSearch(HyperTuner):
         if self.report_path is not None:
             hsreport.to_file(self.report_path)
         # Update model args and return tuned model
-        return self.update_model(model, rs, F)
+        return self.update_model(model, rs, pcloud)
 
     # ---   STATIC UTILS   --- #
     # ------------------------ #
-    @staticmethod
-    def kwargs_hyperparameters_from_distributions(kwargs):
-        """
-        Update the key-word arguments (kwargs) to derive the hyperparameters
-        from the distributions.
-
-        :param kwargs: The kwargs to be updated
-        :return: The updated kwargs
-        :rtype: dict
-        """
-        # TODO Rethink : Implement by calling HyperTuner.kwargs_hyperparameters_from_spec
-        hpnames = kwargs.get('hyperparameters', None)
-        distros = kwargs.get('distributions', None)
-        # Handle cases
-        if distros is None:  # If no distributions continue (error later)
-            return kwargs
-        dnames = [key for key in distros.keys()]  # Distribution keys as pnames
-        if hpnames is None:  # If no hyperparameters are given
-            # The hyperparameters must be taken from distribution names (keys)
-            kwargs['hyperparameters'] = dnames
-            return kwargs
-        # Both, distributions and hyperparameters are given
-        hpnames.sort()  # Sort hyperparameter names
-        dnames.sort()  # Sort distribution keys the same way
-        hpnames_equals_distros = hpnames == dnames  # Compare sorted lists
-        if not hpnames_equals_distros:  # If hyperparams differ from distros
-            raise TunerException(
-                'HyperRandomSearch received an ambiguous specification. '
-                'Hyperparameters and distributions do not match exactly.\n'
-                f'Hyperparameters: {hpnames}\n'
-                f'Distribution parameters: {dnames}'
-            )
-        return kwargs
-
     @staticmethod
     def build_distributions(distributions):
         """

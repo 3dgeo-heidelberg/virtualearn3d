@@ -69,13 +69,34 @@ class HyperTuner(Tuner, ABC):
 
     # ---  HYPERTUNER METHODS  --- #
     # ---------------------------- #
-    def update_model(self, model, search, features=None):
+    @staticmethod
+    def search(model, search, pcloud):
+        """
+        Compute the search of the best hyperparameters for the given model
+        on the given point cloud.
+
+        :param model: The model which hyperparameters must be tuned. See
+            :class:`.Model`.
+        :param search: The search object (must have a fit method to be applied
+            on a features matrix and a vector of classes, i.e., F and y).
+        :param pcloud: The point cloud representing the input data for the
+            search.
+        """
+        F = pcloud.get_features_matrix(model.fnames)
+        y = pcloud.get_classes_vector()
+        if model.imputer is not None:
+            F, y = model.imputer.impute(F, y)
+        return search.fit(F, y)
+
+
+    @staticmethod
+    def update_model(model, search, pcloud=None):
         """
         Update model from result.
 
         :param model: The model to be updated. See :class:`.Model`
         :param search: The search to update the model.
-        :param features: The features matrix (OPTIONAL, i.e., can be None).
+        :param features: The input point cloud (OPTIONAL, i.e., can be None).
         :return: The updated model.
         :rtype: :class:`.Model`
         """
@@ -84,7 +105,7 @@ class HyperTuner(Tuner, ABC):
         best_index = search.best_index_
         best_score = search.best_score_
         results = search.cv_results_
-        num_points = len(features) if features is not None else '?'
+        num_points = pcloud.get_num_points() if pcloud is not None else '?'
         # Update model (and build log message)
         best_info = 'Consequences of random search on hyperparameters:'
         for model_arg_key in best_args.keys():
@@ -101,7 +122,7 @@ class HyperTuner(Tuner, ABC):
             f'Expected training time per {num_points} points ' \
             'with new arguments: ' \
             f'{results["mean_fit_time"][best_index]:.3f} ' \
-            f'+-{results["std_fit_time"][best_index]:.3f} seconds'
+            f'+- {results["std_fit_time"][best_index]:.3f} seconds'
         LOGGING.LOGGER.info(best_info)
         # Return updated model
         return model
@@ -110,5 +131,35 @@ class HyperTuner(Tuner, ABC):
     # ------------------------ #
     @staticmethod
     def kwargs_hyperparameters_from_spec(kwargs, spec):
-        # TODO Rethink : Implement (see grid and random search static utils)
-        pass
+        """
+        Update the key-word arguments (kwargs) to derive the hyperparameters
+        from the specification. In case there are explicitly given
+        hyperparameters, they must match exactly with the specification.
+
+        :param kwargs: The key-word arguments to be updated.
+        :param spec: The specification, often a dictionary contained inside the
+            key-word arguments.
+        :return: The updated key-word arguments.
+        """
+        # Extract the name of  the hyperparameters
+        hpnames = kwargs.get('hyperparameters', None)
+        # Handle cases
+        if spec is None:  # If no specification, then continue (error later)
+            return kwargs
+        snames = [key for key in spec.keys()]  # Spec. keys as param. names
+        if hpnames is None:  # If no hyperparameters are given
+            # The hyperparameters must be taken from spec. names (keys)
+            kwargs['hyperparameters'] = snames
+            return kwargs
+        # Both, specification and hyperparameters are given
+        hpnames.sort()  # Sort hyperparameter names
+        snames.sort()  # Sort specification's keys the same way
+        hpnames_equals_snames = hpnames == snames  # Compare sorted lists
+        if not hpnames_equals_snames:  # If hyperparams differ from spec.
+            raise TunerException(
+                'HyperTuner received an ambiguous specification. '
+                'Hyperparameters and specification do not match exactly.\n'
+                f'Hyperparameters: {hpnames}\n'
+                f'Specified parameters: {snames}'
+            )
+        return kwargs
