@@ -19,6 +19,26 @@ class HyperRandomSearch(HyperTuner):
     Class to apply random search on the hyperparameter space of a model.
 
     # TODO Rethink : Document attributes
+    :ivar nthreads: Number of threads to run parallel grid search nodes.
+        Note that the model might have nthreads too. In this case, it is
+        important that the number of threads from the grid search and the
+        number of threads from the model itself are considered together.
+    :vartype nthreads: int
+    :ivar num_folds: Number of folds to train and validate the model on a
+        kfolding scheme for each node in the grid search.
+    :vartype num_folds: int
+    :ivar iterations: The number of iterations. Each iteration will randomly
+        select values from the random distributions to test a model.
+    :vartype iterations: int
+    :ivar distributions: Dictionary which elements are dictionaries that define
+        a particular distribution to generate random values for a concrete
+        hyperparameter.
+    :vartype distributions: dict
+    :ivar pre_dispatch: How many jobs are dispatched during the parallel
+        execution. It can be useful to prevent dispatching more jobs than
+        those that can be processed by the CPUs.
+    :vartype pre_dispatch: int or str
+    :ivar num_folds:
     """
 
     # ---  SPECIFICATION ARGUMENTS  --- #

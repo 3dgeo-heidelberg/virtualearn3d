@@ -76,7 +76,7 @@ class PointCloud:
         Obtain the matrix of features representing the point cloud.
 
         :param list fnames: The name of the point cloud's attributes
-        corresponding to the features of interest.
+            corresponding to the features of interest.
         :return: The matrix of features representing the point cloud.
         :rtype: :class:`np.ndarray`
         """

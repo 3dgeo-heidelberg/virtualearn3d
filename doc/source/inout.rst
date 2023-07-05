@@ -20,6 +20,14 @@ inout.json\_io module
    :undoc-members:
    :show-inheritance:
 
+inout.model\_io module
+----------------------
+
+.. automodule:: inout.model_io
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 inout.point\_cloud\_io module
 -----------------------------
 

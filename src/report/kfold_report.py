@@ -12,7 +12,7 @@ class KFoldReport(Report):
     Class to handle reports related to k-folding.
     See :class:`.Report`.
     See also :class:`Model`, :meth:`model.Model.train_stratified_kfold,
-        :class:`KFoldEvaluator`, and :class:`KFoldEvaluation`.
+    :class:`KFoldEvaluator`, and :class:`KFoldEvaluation`.
 
     :ivar problem_name: See :class:`.Evaluator`
     :ivar metric_names: See :class:`.KFoldEvaluation`
@@ -29,7 +29,8 @@ class KFoldReport(Report):
         :param mu: See :class:`.KFoldEvaluation`
         :param sigma: See :class:`.KFoldEvaluation`
         :param Q: See :class:`.KFoldEvaluation`
-        :param kwargs: The key-word arguments defining the report's attributes.
+        :param kwargs: The key-word arguments defining the report's
+            attributes.
         """
         # Call parent's init
         super().__init__(**kwargs)

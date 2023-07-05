@@ -27,3 +27,4 @@ loggers:
     level: DEBUG
     handlers: [handler_console, handler_file]
     propagate: no
+

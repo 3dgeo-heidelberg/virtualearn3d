@@ -29,7 +29,7 @@ class Plot:
     :ivar path: The path to save the plot to a file.
     :vartype path: str
     :ivar show: The boolean flag controlling whether to show the plot (True)
-    or not (False).
+        or not (False).
     :vartype show: bool
     """
     # ---   INIT   --- #
