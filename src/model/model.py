@@ -5,9 +5,12 @@ from src.main.vl3d_exception import VL3DException
 from src.utils.dict_utils import DictUtils
 from src.utils.imputer_utils import ImputerUtils
 from src.utils.tuner_utils import TunerUtils
+from src.eval.kfold_evaluator import KFoldEvaluator
+import src.main.main_logger as LOGGING
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import StratifiedKFold
 import numpy as np
+import time
 
 
 # ---   EXCEPTIONS   --- #
@@ -54,6 +57,9 @@ class Model:
     :ivar random_seed: Optional attribute to specify a fixed random seed for
         the random computations of the model.
     :vartype random_seed: int
+    :ivar stratkfold_plot_path: The path where the plot representing the
+        evaluation of the k-folding procedure must be written.
+    :vartype stratkfold_plot_path: str
     """
 
     # ---  SPECIFICATION ARGUMENTS  --- #
@@ -76,7 +82,8 @@ class Model:
             'num_folds': spec.get('num_folds', None),
             'imputer': spec.get('imputer', None),
             'hyperparameter_tuning': spec.get('hyperparameter_tuning', None),
-            'fnames': spec.get('fnames', None)
+            'fnames': spec.get('fnames', None),
+            'stratkfold_plot_path': spec.get('stratkfold_plot_path', None)
         }
         # Delete keys with None value
         kwargs = DictUtils.delete_by_val(kwargs, None)
@@ -114,6 +121,7 @@ class Model:
             raise ModelException(
                 "No feature names were specified for the model."
             )
+        self.stratkfold_plot_path = kwargs.get('stratkfold_plot_path', None)
 
     # ---   MODEL METHODS   --- #
     # ------------------------- #
@@ -125,29 +133,40 @@ class Model:
         :return: The trained model.
         :rtype: :class:`.Model`
         """
+        # Choose training method
+        trainT = self.training_type.lower()
+        if trainT == 'base':
+            training_method = self.train_base
+        elif trainT == 'autoval':
+            training_method = self.train_autoval
+        elif trainT == 'stratified_kfold':
+            training_method = self.train_stratified_kfold
+        else:
+            raise ModelException(
+                f'Unexpected training type: {self.training_type}'
+            )
         # Tune hyperparameters (model_args might be replaced)
         if self.hypertuner is not None:
             self.prepare_model()
             self.hypertuner.tune(self, pcloud)
         # The training itself
-        trainT = self.training_type.lower()
-        if trainT == 'base':
-            return self.train_base(pcloud)
-        elif trainT == 'autoval':
-            return self.train_autoval(pcloud)
-        elif trainT == 'stratified_kfold':
-            return self.train_stratified_kfold(pcloud)
-        raise ModelException(f'Unexpected training type: {self.training_type}')
+        return training_method(pcloud)
 
-    def predict(self, pcloud):
+    def predict(self, pcloud, X=None):
         """
         Use the model to compute predictions on the input point cloud.
 
         :param pcloud: The input point cloud to compute the predictions.
+        :param X: The input matrix of features where each row represents a
+            point from the point cloud (OPTIONAL). If given, X will be used as
+            point-wise features instead of pcloud. It is often named F in the
+            context of point clouds where the point cloud is a block matrix
+            P = [X|F].
         :return: The point-wise predictions.
         :rtype: :class:`np.ndarray`
         """
-        X = pcloud.get_features_matrix(self.fnames)  # Often named F instead
+        if X is None:
+            X = pcloud.get_features_matrix(self.fnames)  # Often named F instead
         if self.imputer is not None:
             X = self.imputer.impute(X)
         return self._predict(X)
@@ -166,7 +185,7 @@ class Model:
     # ---   TRAINING METHODS   --- #
     # ---------------------------- #
     @abstractmethod
-    def training(self, X, y):
+    def training(self, X, y, info=True):
         """
         The fundamental training logic defining the model.
 
@@ -175,11 +194,12 @@ class Model:
         :param X: The input matrix representing the point cloud, e.g., the
             geometric features matrix.
         :param y: The class for each point.
+        :param info: True to enable info log messages, False otherwise.
         :return: Nothing, but the model itself is updated.
         """
         pass
 
-    def autoval(self, y, yhat):
+    def autoval(self, y, yhat, info=True):
         """
         Auto validation during training.
 
@@ -189,6 +209,8 @@ class Model:
 
         :param y: The expected values.
         :param yhat: The predicted values.
+        :param info: True to log an info message with the auto validation,
+            False otherwise.
         :return: The results of the auto validation.
         """
         raise ModelException(
@@ -225,6 +247,7 @@ class Model:
         :return: The trained model.
         :rtype: :class:`.Model`
         """
+        # Training
         X = pcloud.get_features_matrix(self.fnames)
         y = pcloud.get_classes_vector()
         if self.imputer is not None:
@@ -236,8 +259,11 @@ class Model:
             stratify=y,
             random_state=self.random_seed
         )
-        self.training(Xtrain, ytrain)
-        # TODO Rethink : Auto validation
+        self.snames(Xtrain, ytrain)
+        # Auto validation
+        yhat_test = self.predict(None, X=Xtest)
+        self.autoval(ytest, yhat_test)
+        # Return
         return self
 
     def train_stratified_kfold(self, pcloud):
@@ -262,20 +288,40 @@ class Model:
         :return: The trained model.
         :rtype: :class:`.Model`
         """
+        start = time.perf_counter()
+        # Prepare stratified kfold
         X = pcloud.get_features_matrix(self.fnames)
         y = pcloud.get_classes_vector()
         if self.imputer is not None:
             X, y = self.imputer.impute(X, y)
-        self.training(X, y)
         skf = StratifiedKFold(
             n_splits=self.num_folds,
             shuffle=self.shuffle_points,
             random_state=self.random_seed
         )
+        # Compute stratified kfold
+        evals = np.full(
+            (self.num_folds, len(self.autoval_metrics_names)),
+            np.nan
+        )
         for i, (Itrain, Ival) in enumerate(skf.split(X, y)):
-            Xi, yi = X[Itrain], y[Ival]
-            self.training(Xi, yi)
-            # TODO Rethink : Auto validation (append to list for variability)
+            Xi, yi = X[Itrain], y[Itrain]
+            self.training(Xi, yi, info=False)
+            yhat_val = self.predict(None, X=X[Ival])
+            evals[i] = self.autoval(y[Ival], yhat_val, info=False)
+        end = time.perf_counter()
+        LOGGING.LOGGER.info(
+            f'Stratified kfold training computed in {end-start:.3f} seconds'
+        )
+        # Report and plot k-fold validation
+        kfold_eval = KFoldEvaluator(
+            problem_name='Stratified KFold training',
+            metric_names=self.autoval_metrics_names
+        ).eval(evals)
+        LOGGING.LOGGER.info(kfold_eval.report())
+        if self.stratkfold_plot_path is not None:
+            kfold_eval.plot(path=self.stratkfold_plot_path).plot()
+        # Return trained model
         return self
 
     # ---  PREDICTION METHODS  --- #

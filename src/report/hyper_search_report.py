@@ -13,6 +13,8 @@ class HyperSearchReport(Report):
     Class to handle reports related to search-based hyperparameter tuning.
     See :class:`.Report`.
     See also :class:`.HyperGridSearch` and :class:`.HyperRandomSearch`.
+
+    :ivar results: The results from a hyperparameter tuning optimization.
     """
     # ---   INIT   --- #
     # ---------------- #

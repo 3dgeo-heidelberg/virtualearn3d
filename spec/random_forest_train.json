@@ -7,7 +7,7 @@
 		"linearity_r0.1", "planarity_r0.1", "surface_variation_r0.1", "eigenentropy_r0.1", "omnivariance_r0.1",
 		"linearity_r0.15", "planarity_r0.15", "surface_variation_r0.15", "verticality_r0.15", "anisotropy_r0.15"	
 	],
-	"training_type": "base",
+	"training_type": "stratified_kfold",
 	"random_seed": null,
 	"shuffle_points": true,
 	"autoval_size": 0.2,
@@ -31,6 +31,7 @@
 		"max_samples": 0.8
 	},
 	"autoval_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
+	"stratkfold_plot_path": "/tmp/stratkfold_plot.svg",
 	"imputer": {
 		"imputer": "RemovalImputer",
 		"target_val": "NaN"
@@ -41,7 +42,7 @@
 		"strategy": "mean",
 		"constant_val": 0
 	},
-	"hyperparameter_tuning": {
+	"_hyperparameter_tuning": {
 		"tuner": "GridSearch",
 		"hyperparameters": ["n_estimators", "max_depth", "max_samples"],
 		"nthreads": -1,
@@ -54,7 +55,7 @@
 		},
 		"report_path": "/tmp/hyper_grid_search.log"
 	},
-	"_hyperparameter_tuning": {
+	"hyperparameter_tuning": {
 		"tuner": "RandomSearch",
 		"hyperparameters": ["n_estimators", "max_depth", "ccp_alpha", "min_impurity_decrease", "criterion"],
 		"nthreads": -1,

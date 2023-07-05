@@ -77,14 +77,12 @@ class RandomForestClassificationModel(ClassificationModel):
 
     # ---   TRAINING METHODS   --- #
     # ---------------------------- #
-    def training(self, X, y):
+    def training(self, X, y, info=True):
         """
         The fundamental training logic to train a random forest classifier.
 
-        :param X: The input matrix representing the point cloud, e.g., the
-            geometric features matrix.
-        :param y: The class for each point.
-        :return: Nothing, but the model itself is updated.
+        See :class:`.ClassificationModel` and :class:`.Model`.
+        Also see :meth:`model.Model.training`.
         """
         # Initialize model instance
         self.prepare_model()
@@ -92,10 +90,11 @@ class RandomForestClassificationModel(ClassificationModel):
         start = time.perf_counter()
         self.model = self.model.fit(X, y)
         end = time.perf_counter()
-        LOGGING.LOGGER.info(
-            'RandomForestClassificationModel trained in '
-            f'{end-start:.3f} seconds'
-        )
+        if info:
+            LOGGING.LOGGER.info(
+                'RandomForestClassificationModel trained in '
+                f'{end-start:.3f} seconds'
+            )
 
     # ---  PREDICTION METHODS  --- #
     # ---------------------------- #

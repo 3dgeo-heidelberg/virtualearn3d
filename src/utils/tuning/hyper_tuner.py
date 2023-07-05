@@ -3,6 +3,7 @@
 from abc import ABC
 from src.utils.tuning.tuner import Tuner, TunerException
 from src.utils.dict_utils import DictUtils
+from sklearn.utils import shuffle
 import src.main.main_logger as LOGGING
 
 
@@ -81,13 +82,15 @@ class HyperTuner(Tuner, ABC):
             on a features matrix and a vector of classes, i.e., F and y).
         :param pcloud: The point cloud representing the input data for the
             search.
+        :return: Completed search.
         """
         F = pcloud.get_features_matrix(model.fnames)
         y = pcloud.get_classes_vector()
         if model.imputer is not None:
             F, y = model.imputer.impute(F, y)
+        if model.shuffle_points:
+            F, y = shuffle(F, y)
         return search.fit(F, y)
-
 
     @staticmethod
     def update_model(model, search, pcloud=None):
