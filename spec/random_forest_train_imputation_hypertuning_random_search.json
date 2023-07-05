@@ -36,25 +36,6 @@
 		"imputer": "RemovalImputer",
 		"target_val": "NaN"
 	},
-	"_imputer": {
-		"imputer": "UnivariateImputer",
-		"target_val": "NaN",
-		"strategy": "mean",
-		"constant_val": 0
-	},
-	"_hyperparameter_tuning": {
-		"tuner": "GridSearch",
-		"hyperparameters": ["n_estimators", "max_depth", "max_samples"],
-		"nthreads": -1,
-		"num_folds": 5,
-		"pre_dispatch": 8,
-		"grid": {
-			"n_estimators": [2, 4, 8],
-			"max_depth": [15, 20, 27],
-			"max_samples": [0.6, 0.8, 0.9]
-		},
-		"report_path": "/tmp/hyper_grid_search.log"
-	},
 	"hyperparameter_tuning": {
 		"tuner": "RandomSearch",
 		"hyperparameters": ["n_estimators", "max_depth", "ccp_alpha", "min_impurity_decrease", "criterion"],
@@ -87,5 +68,4 @@
 		},
 		"report_path": "/tmp/hyper_random_search.log"
 	}
-
 }

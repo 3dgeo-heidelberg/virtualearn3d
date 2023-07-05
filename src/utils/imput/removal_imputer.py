@@ -46,7 +46,7 @@ class RemovalImputer(Imputer):
             nan_mask = np.bitwise_or.reduce(F == self.target_val, axis=1)
         # Log imputation
         end = time.perf_counter()
-        LOGGING.LOGGER.info(
+        LOGGING.LOGGER.debug(
             f'RemovalImputer removed {np.count_nonzero(nan_mask)} points with '
             f'missing values "{self.target_val}" in {end-start:.3f} seconds.'
         )

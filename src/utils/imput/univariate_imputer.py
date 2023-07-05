@@ -1,8 +1,10 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.utils.imput.imputer import Imputer
+import src.main.main_logger as LOGGING
 from sklearn.impute import SimpleImputer
 import numpy as np
+import time
 
 
 # ---   CLASS   --- #
@@ -46,6 +48,15 @@ class UnivariateImputer(Imputer):
         None, the return will be (imputed F, y) for compatibility and fluent
         programming. If y is None, only imputed F will be return.
         """
+        # Fit imputer
+        start = time.perf_counter()
+        self.imputer.fit(F)
+        end = time.perf_counter()
+        LOGGING.LOGGER.debug(
+            f'UnivariateImputer fit to {F.shape[0]} points with {F.shape[1]} '
+            f'features in {end-start:.3f} seconds.'
+        )
+        # Return imputed data
         if y is not None:
             return self.imputer.fit_transform(F), y
         return self.imputer.fit_transform(F)

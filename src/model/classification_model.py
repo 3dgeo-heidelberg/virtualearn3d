@@ -67,14 +67,14 @@ class ClassificationModel(Model, ABC):
         :return: The results of the auto validation.
         :rtype: :class:`np.ndarray`
         """
-        # TODO Rethink : Implement through Evaluator
+        # TODO Rethink : Implement through Evaluator ?
         evals = np.array([
             metric(y, yhat) for metric in self.autoval_metrics
         ])
         if info:
             evals_str = "Classification auto validation:"
             for i, evali in enumerate(evals):
-                evals_str += "\n{namei} = {evali:.3f}%".format(
+                evals_str += "\n{namei:8.8} = {evali:.3f}%".format(
                     namei=self.autoval_metrics_names[i],
                     evali=100*evali
                 )

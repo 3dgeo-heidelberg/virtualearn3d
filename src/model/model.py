@@ -259,7 +259,7 @@ class Model:
             stratify=y,
             random_state=self.random_seed
         )
-        self.snames(Xtrain, ytrain)
+        self.training(Xtrain, ytrain)
         # Auto validation
         yhat_test = self.predict(None, X=Xtest)
         self.autoval(ytest, yhat_test)
