@@ -3,7 +3,6 @@
 from src.utils.tuning.hyper_tuner import HyperTuner
 from src.utils.tuning.tuner import TunerException
 from sklearn.model_selection import GridSearchCV
-from sklearn.model_selection import StratifiedKFold  # TODO Remove
 import src.main.main_logger as LOGGING
 from src.utils.dict_utils import DictUtils
 from src.report.hyper_search_report import HyperSearchReport

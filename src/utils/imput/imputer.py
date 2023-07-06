@@ -3,6 +3,7 @@
 from abc import abstractmethod
 from src.main.vl3d_exception import VL3DException
 from src.utils.dict_utils import DictUtils
+from src.pcloud.point_cloud_factory_facade import PointCloudFactoryFacade
 import numpy as np
 
 
@@ -46,7 +47,8 @@ class Imputer:
         """
         # Initialize
         kwargs = {
-            'target_val': spec.get('target_val', None)
+            'target_val': spec.get('target_val', None),
+            'fnames': spec.get('fnames', None)
         }
         # Delete keys with None value
         kwargs = DictUtils.delete_by_val(kwargs, None)
@@ -63,6 +65,7 @@ class Imputer:
         """
         # Fundamental initialization of any imputer
         self.target_val = kwargs.get("target_val", np.NaN)
+        self.fnames = kwargs.get('fnames', None)
 
     # ---   IMPUTER METHODS   --- #
     # --------------------------- #
@@ -85,3 +88,48 @@ class Imputer:
         :rtype: :class:`np.ndarray` or tuple
         """
         pass
+
+    def impute_pcloud(self, pcloud, fnames=None):
+        """
+        Apply the impute method to a point cloud.
+
+        See :meth:`imputer.Imputer.impute`.
+
+        :param pcloud: The point cloud to be imputed.
+        :type pcloud: :class:`.PointCloud`
+        :param fnames: The list of features to be imputed. If None, it will be
+            taken from the internal fnames of the imputer. If those are None
+            too, then an exception will raise.
+        :type fnames: list
+        :return: A new point cloud that is the imputed version of the input
+            point cloud.
+        :rtype: :class:`.PointCloud`
+        """
+        # Check feature names
+        if fnames is None:
+            if self.fnames is None:
+                raise ImputerException(
+                    'The features of a point cloud cannot be imputed if '
+                    'they are not specified.'
+                )
+            else:
+                fnames = self.fnames
+        # Obtain points and classes
+        P = np.hstack([
+            pcloud.get_coordinates_matrix(),
+            pcloud.get_features_matrix(fnames)
+        ])
+        y = pcloud.get_classes_vector()
+        # Impute
+        if y is None:
+            P = self.impute(P)
+        else:
+            P, y = self.impute(P, y=y)
+        # Return new point cloud
+        return PointCloudFactoryFacade.make_from_arrays(
+            P[:, :P.shape[1]-len(fnames)],
+            P[:, P.shape[1]-len(fnames):],
+            y=y,
+            header=pcloud.las.header,
+            fnames=self.fnames
+        )

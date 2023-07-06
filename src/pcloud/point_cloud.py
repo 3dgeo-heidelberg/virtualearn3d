@@ -13,6 +13,7 @@ class PointCloudException(VL3DException):
 
     Class for exceptions related to the PointCloud data structure and
     associated methods.
+
     See :class:`.VL3DException`
     """
     def __init__(self, message):

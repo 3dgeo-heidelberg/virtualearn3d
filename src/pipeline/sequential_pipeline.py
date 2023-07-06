@@ -5,6 +5,8 @@ import src.main.main_logger as LOGGING
 from src.main.main_mine import MainMine
 from src.main.main_train import MainTrain
 from src.mining.miner import Miner
+from src.utils.imput.imputer import Imputer
+from src.utils.imputer_utils import ImputerUtils
 from src.model.model_op import ModelOp
 from src.pcloud.point_cloud_factory_facade import PointCloudFactoryFacade
 from src.inout.writer import Writer
@@ -53,6 +55,12 @@ class SequentialPipeline(Pipeline):
                 miner_class = MainMine.extract_miner_class(comp)
                 miner = miner_class(**miner_class.extract_miner_args(comp))
                 self.sequence.append(miner)
+            if comp.get("imputer", None) is not None:  # Handle imputer
+                imputer_class = ImputerUtils.extract_imputer_class(comp)
+                imputer = imputer_class(
+                    **imputer_class.extract_imputer_args(comp)
+                )
+                self.sequence.append(imputer)
             if comp.get("train", None) is not None:  # Handle train
                 model_class = MainTrain.extract_model_class(comp)
                 model = model_class(**model_class.extract_model_args(comp))
@@ -107,6 +115,8 @@ class SequentialPipeline(Pipeline):
         for comp in self.sequence:
             if isinstance(comp, Miner):  # Handle miner
                 pcloud = comp.mine(pcloud)
+            elif isinstance(comp, Imputer):  # Handle imputer
+                pcloud = comp.impute_pcloud(pcloud)
             elif isinstance(comp, ModelOp) and comp.op == ModelOp.OP.TRAIN:
                 # Handle train
                 model = comp(pcloud, out_prefix=out_pcloud)

@@ -11,7 +11,7 @@ class PointCloudFileFactory(PointCloudFactory):
     :author: Alberto M. Esmoris Pena
 
     Class to instantiate PointCloud objects from files.
-    See :class:`.PointCloud` and also :class:`PointCloudFactory`
+    See :class:`.PointCloud` and also :class:`.PointCloudFactory`.
 
     :ivar path: The path where the input point cloud file is located.
     :vartype path: str
@@ -36,6 +36,6 @@ class PointCloudFileFactory(PointCloudFactory):
     def make(self):
         """
         Make a point cloud from a file.
-        See :meth:`point_cloud_factory.PointCloudFactory.make()`
+        See :meth:`point_cloud_factory.PointCloudFactory.make`
         """
         return PointCloudIO.read(self.path)

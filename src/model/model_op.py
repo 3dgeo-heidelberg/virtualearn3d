@@ -105,7 +105,19 @@ class ModelOp:
     # ---  PATH HANDLING  --- #
     # ----------------------- #
     def update_model_paths(self, out_prefix):
-        # TODO Rethink : Doc
+        """
+        Update the output paths in the model object.
+
+        For each path that starts with "*" it will be updated to replace the
+        "*" by the prefix.
+
+        :param out_prefix: The prefix for the output paths. It is expected to
+            end with "*".
+        :type out_prefix: str
+        :return: A dictionary with the paths before the update. Note the model
+            is updated in place.
+        :rtype: dict
+        """
         # Nothing to do if there is no output prefix
         if out_prefix is None:
             return None
@@ -130,7 +142,12 @@ class ModelOp:
         return old_paths
 
     def restore_model_paths(self, old_paths):
-        # TODO Rethink : Doc
+        """
+        Restore previously updated model paths to their original values.
+
+        :param old_paths: The dictionary with the paths before the update.
+        :return: Nothing, the model is restored in place.
+        """
         # Nothing to do if there is nothing to restore
         if old_paths is None:
             return

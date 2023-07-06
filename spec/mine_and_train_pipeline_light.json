@@ -7,10 +7,6 @@
 	"/tmp/QuePet_BR01_*",
     "/tmp/test_tree_*"
   ],
-  "out_model": [
-	"/tmp/QuePet_BR01_*",
-    "/tmp/test_tree_*"
-  ],
   "sequential_pipeline": [
 	{
 	  "miner": "GeometricFeatures",
@@ -27,6 +23,14 @@
 	{
 	  "writer": "Writer",
  	  "out_pcloud": "*geomfeats.laz"
+	},
+	{
+	  "imputer": "RemovalImputer",
+	  "target_val": "NaN",
+	  "fnames": [
+	  	"linearity_r0_05", "planarity_r0_05", "surface_variation_r0_05", "eigenentropy_r0_05", "omnivariance_r0_05", "verticality_r0_05", "anisotropy_r0_05",
+	  	"linearity_r0_1", "planarity_r0_1", "surface_variation_r0_1", "eigenentropy_r0_1", "omnivariance_r0_1", "verticality_r0_1", "anisotropy_r0_1"
+	  ]
 	},
 	{
 	  "train": "RandomForestClassifier",
@@ -58,10 +62,6 @@
 	  },
 	  "autoval_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
 	  "stratkfold_plot_path": "*RF_stratkfold_plot.svg",
-	  "imputer": {
-		"imputer": "RemovalImputer",
-		"target_val": "NaN"
-	  },
 	  "hyperparameter_tuning": {
 		"tuner": "GridSearch",
 		"hyperparameters": ["n_estimators", "max_depth", "max_samples"],

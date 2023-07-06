@@ -98,7 +98,6 @@ class Pipeline:
                     "Pipeline received an output point cloud path with an "
                     "invalid parent directory:"
                 )
-        # TODO Rethink : Output models
         pass
 
     # ---  RUN PIPELINE  --- #
