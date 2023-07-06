@@ -9,7 +9,7 @@ class IOUtils:
     """
     :author: Alberto M. Esmoris Pena
 
-    Class with util static methods for general input/ouput operations.
+    Class with util static methods for general input/output operations.
     """
     # ---   VALIDATION   --- #
     # ---------------------- #

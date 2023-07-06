@@ -49,14 +49,26 @@ class Writer:
 
         :param pcloud: The point cloud to be written.
         :param prefix: If None, the writing applies to path. If not None,
-            the writing applies to prefix+path
+            the writing applies to prefix+path.
+            See :meth:`writer.Writer.prepare_path`.
         """
-        # Prepare path
+        # Prepare path and write
+        path = self.prepare_path(prefix)
+        PointCloudIO.write(pcloud, path)
+
+    def prepare_path(self, prefix):
+        """
+        Merge the path with the prefix to obtain the actual path for the
+        writing.
+
+        :return: Prepared path.
+        :rtype: str
+        """
         path = self.path
         if prefix is not None:
             path = prefix[:-1] + path[1:]
-        # Write
-        PointCloudIO.write(pcloud, path)
+        return path
+
 
     # ---   CHECKS   --- #
     # ------------------ #
@@ -67,26 +79,3 @@ class Writer:
         :return: True if the Writer needs a prefix, False otherwise.
         """
         return self.path[0] == "*"
-
-    # ---  EXTRACT FROM SPEC  --- #
-    # --------------------------- #
-    @staticmethod
-    def extract_writer_class(spec):
-        """
-        Extract the miner's class from the key-word specification.
-
-        :param spec: The key-word specification.
-        :return: Class representing/realizing a miner.
-        :rtype: :class:`.Miner`
-        """
-        writer = spec.get('writer', None)
-        if writer is None:
-            raise ValueError(
-                "Writing a point cloud requires a writer. None was specified."
-            )
-        # Check writer class
-        writer_low = writer.lower()
-        if writer_low == 'writer':
-            return Writer
-        # An unknown writer was specified
-        raise ValueError(f'There is no known writer "{writer}"')

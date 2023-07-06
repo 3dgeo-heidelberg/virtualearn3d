@@ -47,4 +47,3 @@ class MainPipeline:
             return SequentialPipeline
         # No pipeline detected
         raise ValueError('No pipeline was detected in the given specification')
-

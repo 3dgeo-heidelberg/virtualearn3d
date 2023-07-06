@@ -10,7 +10,6 @@
 	"training_type": "stratified_kfold",
 	"random_seed": null,
 	"shuffle_points": true,
-	"autoval_size": 0.2,
 	"num_folds": 5,
 	"model_args": {
 		"n_estimators": 4,

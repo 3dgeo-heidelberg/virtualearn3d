@@ -3,9 +3,13 @@
 from src.pipeline.pipeline import Pipeline, PipelineException
 import src.main.main_logger as LOGGING
 from src.main.main_mine import MainMine
+from src.main.main_train import MainTrain
 from src.mining.miner import Miner
+from src.model.model_op import ModelOp
 from src.pcloud.point_cloud_factory_facade import PointCloudFactoryFacade
 from src.inout.writer import Writer
+from src.inout.model_writer import ModelWriter
+from src.inout.writer_utils import WriterUtils
 import time
 
 
@@ -49,10 +53,14 @@ class SequentialPipeline(Pipeline):
                 miner_class = MainMine.extract_miner_class(comp)
                 miner = miner_class(**miner_class.extract_miner_args(comp))
                 self.sequence.append(miner)
+            if comp.get("train", None) is not None:  # Handle train
+                model_class = MainTrain.extract_model_class(comp)
+                model = model_class(**model_class.extract_model_args(comp))
+                self.sequence.append(ModelOp(model, ModelOp.OP.TRAIN))
             # TODO Rethink : Add elif for train, predict, and eval too
             # Handle writer as component
             if comp.get("writer", None) is not None:  # Handle writer
-                writer_class = Writer.extract_writer_class(comp)
+                writer_class = WriterUtils.extract_writer_class(comp)
                 writer = writer_class(comp.get("out_pcloud"))
                 self.sequence.append(writer)
             # Handle potential writer for current non-writer component
@@ -94,20 +102,27 @@ class SequentialPipeline(Pipeline):
         start = time.perf_counter()
         # Load input
         pcloud = PointCloudFactoryFacade.make_from_file(in_pcloud)
+        model = None  # TODO Rethink : Handle model loading (if any)
         # Run pipeline
         for comp in self.sequence:
             if isinstance(comp, Miner):  # Handle miner
                 pcloud = comp.mine(pcloud)
+            elif isinstance(comp, ModelOp) and comp.op == ModelOp.OP.TRAIN:
+                # Handle train
+                model = comp(pcloud, out_prefix=out_pcloud)
             # TODO Rethink : Add elif for train, predict, and eval too
             elif isinstance(comp, Writer):  # Handle writer
                 if comp.needs_prefix():
                     if out_pcloud is None:
                         raise PipelineException(
                             "SequentialPipeline is running a case with no "
-                            "path prefix for the output point cloud.\n"
+                            "path prefix for the output.\n"
                             "This requirement is a MUST."
                         )
-                    comp.write(pcloud, prefix=out_pcloud)
+                    if isinstance(comp, ModelWriter):
+                        comp.write(model, prefix=out_pcloud)
+                    else:
+                        comp.write(pcloud, prefix=out_pcloud)
                 else:
                     comp.write(pcloud)
         # If the pipeline's out_pcloud is a full path, use it automatically

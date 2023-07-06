@@ -175,7 +175,7 @@ class Model:
     def prepare_model(self):
         """
         Prepare the model so its model attribute (i.e., model.model) can be
-        used, for instance by an hyperparameter tuner.
+        used, for instance by a hyperparameter tuner.
 
         :return: The prepared model itself. However, the prepared model must be
             automatically assigned as an attribute of the object/instance too.
