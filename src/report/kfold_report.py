@@ -63,15 +63,15 @@ class KFoldReport(Report):
         # ---  Body  --- #
         s += '\nmean      '
         for mu in self.mu:
-            s += f' {str(100*mu):10.10}  '
+            s += f' {100*mu:10.3f}  '
         s += '\nstdev     '
         for sigma in self.sigma:
-            s += f' {str(100*sigma):10.10}  '
+            s += f' {100*sigma:10.3f}  '
         s += '\nQ1        '
         for q1 in self.Q[0]:
-            s += f' {str(100*q1):10.10}  '
+            s += f' {100*q1:10.3f}  '
         s += f'\nQ{self.Q.shape[0]}        '
         for qn in self.Q[-1]:
-            s += f' {str(100*qn):10.10}  '
+            s += f' {100*qn:10.3f}  '
         # Return
         return s

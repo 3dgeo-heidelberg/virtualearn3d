@@ -7,6 +7,7 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   utils.ftransf
    utils.imput
    utils.tuning
 

@@ -30,8 +30,9 @@ class RemovalImputer(Imputer):
     # --------------------------- #
     def impute(self, F, y=None):
         """
-        The fundamental imputation logic defining the removal imputer
-        See :class:`.Imputer`
+        The fundamental imputation logic defining the removal imputer.
+
+        See :class:`.Imputer` and :meth:`imputer.Imputer.impute`.
         """
         start = time.perf_counter()
         # Check
@@ -46,7 +47,7 @@ class RemovalImputer(Imputer):
             nan_mask = np.bitwise_or.reduce(F == self.target_val, axis=1)
         # Log imputation
         end = time.perf_counter()
-        LOGGING.LOGGER.debug(
+        LOGGING.LOGGER.info(
             f'RemovalImputer removed {np.count_nonzero(nan_mask)} points with '
             f'missing values "{self.target_val}" in {end-start:.3f} seconds.'
         )
@@ -54,5 +55,3 @@ class RemovalImputer(Imputer):
         if y is not None:
             return F[~nan_mask], y[~nan_mask]
         return F[~nan_mask]
-
-

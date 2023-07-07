@@ -7,6 +7,8 @@ from src.main.main_train import MainTrain
 from src.mining.miner import Miner
 from src.utils.imput.imputer import Imputer
 from src.utils.imputer_utils import ImputerUtils
+from src.utils.ftransf.feature_transformer import FeatureTransformer
+from src.utils.ftransf_utils import FtransfUtils
 from src.model.model_op import ModelOp
 from src.pcloud.point_cloud_factory_facade import PointCloudFactoryFacade
 from src.inout.writer import Writer
@@ -61,6 +63,12 @@ class SequentialPipeline(Pipeline):
                     **imputer_class.extract_imputer_args(comp)
                 )
                 self.sequence.append(imputer)
+            if comp.get("feature_transformer", None) is not None:  # Hdl. ftr.
+                ftransf_class = FtransfUtils.extract_ftransf_class(comp)
+                ftransf = ftransf_class(
+                    **ftransf_class.extract_ftransf_args(comp)
+                )
+                self.sequence.append(ftransf)
             if comp.get("train", None) is not None:  # Handle train
                 model_class = MainTrain.extract_model_class(comp)
                 model = model_class(**model_class.extract_model_args(comp))
@@ -117,6 +125,8 @@ class SequentialPipeline(Pipeline):
                 pcloud = comp.mine(pcloud)
             elif isinstance(comp, Imputer):  # Handle imputer
                 pcloud = comp.impute_pcloud(pcloud)
+            elif isinstance(comp, FeatureTransformer):  # Handle feat. transf.
+                pcloud = comp.transform_pcloud(pcloud, out_prefix=out_pcloud)
             elif isinstance(comp, ModelOp) and comp.op == ModelOp.OP.TRAIN:
                 # Handle train
                 model = comp(pcloud, out_prefix=out_pcloud)

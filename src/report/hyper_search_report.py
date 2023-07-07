@@ -62,11 +62,11 @@ class HyperSearchReport(Report):
                 else:
                     s += f'{str(paramsi[param_key]):8.8}        ,'
             if has_train_scores:
-                s += f'  {str(100*self.results["mean_train_score"][i]):8.8},'
-                s += f'  {str(100*self.results["std_train_score"][i]):8.8},'
-            s += f'  {str(100*self.results["mean_test_score"][i]):8.8},'
-            s += f'  {str(100*self.results["std_test_score"][i]):8.8},'
-            s += f'  {str(self.results["mean_fit_time"][i]):8.8},'
-            s += f'  {str(self.results["std_fit_time"][i]):8.8}'
+                s += f'  {100*self.results["mean_train_score"][i]:8.3f},'
+                s += f'  {100*self.results["std_train_score"][i]:8.3f},'
+            s += f'  {100*self.results["mean_test_score"][i]:8.3f},'
+            s += f'  {100*self.results["std_test_score"][i]:8.3f},'
+            s += f'  {self.results["mean_fit_time"][i]:8.3f},'
+            s += f'  {self.results["std_fit_time"][i]:8.3f}'
         # Return
         return s

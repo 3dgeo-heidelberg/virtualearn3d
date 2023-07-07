@@ -60,13 +60,17 @@ class Report:
 
     # ---   TO FILE   --- #
     # ------------------- #
-    def to_file(self, path):
+    def to_file(self, path, out_prefix=None):
         """
         Write the report to a file.
 
         :param str path: Path to the file where the report must be written.
+        :param out_prefix: The output prefix to expand the path (OPTIONAL).
         :return: Nothing, the output is written to a file.
         """
+        # Expand path if necessary
+        if out_prefix is not None and path[0] == "*":
+            path = out_prefix[:-1] + path[1:]
         # Check
         IOUtils.validate_path_to_directory(
             os.path.dirname(path),

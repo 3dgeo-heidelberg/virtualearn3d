@@ -23,4 +23,4 @@ def main_logger_init():
         yml = yaml.safe_load(file)
         logging.config.dictConfig(yml)
         LOGGER = logging.getLogger("logger_vl3d")
-        LOGGER.info("LOGGER was successfully initialized!")
+        LOGGER.debug("LOGGER was successfully initialized!")

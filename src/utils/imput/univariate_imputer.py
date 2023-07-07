@@ -2,6 +2,7 @@
 # ------------------- #
 from src.utils.imput.imputer import Imputer
 import src.main.main_logger as LOGGING
+from src.utils.dict_utils import DictUtils
 from sklearn.impute import SimpleImputer
 import numpy as np
 import time
@@ -15,6 +16,27 @@ class UnivariateImputer(Imputer):
 
     Class to compute univariate imputations.
     """
+
+    # ---  SPECIFICATION ARGUMENTS  --- #
+    # --------------------------------- #
+    @staticmethod
+    def extract_imputer_args(spec):
+        """
+        Extract the arguments to initialize/instantiate an UnivariateImputer
+        from a key-word specification.
+
+        :param spec: The key-word specification containing the arguments.
+        :return: The arguments to initialize/instantiate an UnivariateImputer.
+        """
+        # Initialize from parent
+        kwargs = Imputer.extract_imputer_args(spec)
+        # Extract particular arguments of UnivariateImputer
+        kwargs['strategy'] = spec.get('strategy', None)
+        kwargs['constant_val'] = spec.get('constant_val', None)
+        # Delete keys with None value
+        kwargs = DictUtils.delete_by_val(kwargs, None)
+        # Return
+        return kwargs
 
     # ---   INIT   --- #
     # ---------------- #
@@ -52,7 +74,7 @@ class UnivariateImputer(Imputer):
         start = time.perf_counter()
         self.imputer.fit(F)
         end = time.perf_counter()
-        LOGGING.LOGGER.debug(
+        LOGGING.LOGGER.info(
             f'UnivariateImputer fit to {F.shape[0]} points with {F.shape[1]} '
             f'features in {end-start:.3f} seconds.'
         )

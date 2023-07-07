@@ -32,6 +32,8 @@ class Imputer:
     :ivar target_val: The target value, i.e., features that match this value
         will be imputed.
     :vartype target_val: str or int or float
+    :ivar fnames: The names of the features to be imputed (by default).
+    :vartype fnames: list or tuple
     """
 
     # ---  SPECIFICATION ARGUMENTS  --- #
@@ -59,7 +61,7 @@ class Imputer:
     # ---------------- #
     def __init__(self, **kwargs):
         """
-        Initialize/instantiate an Imputer
+        Initialize/instantiate an Imputer.
 
         :param kwargs: The attributes for the Imputer.
         """
@@ -100,7 +102,7 @@ class Imputer:
         :param fnames: The list of features to be imputed. If None, it will be
             taken from the internal fnames of the imputer. If those are None
             too, then an exception will raise.
-        :type fnames: list
+        :type fnames: list or tuple
         :return: A new point cloud that is the imputed version of the input
             point cloud.
         :rtype: :class:`.PointCloud`
@@ -131,5 +133,5 @@ class Imputer:
             P[:, P.shape[1]-len(fnames):],
             y=y,
             header=pcloud.las.header,
-            fnames=self.fnames
+            fnames=fnames
         )

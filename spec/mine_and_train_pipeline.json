@@ -21,24 +21,6 @@
 	  "frenames": ["linearity_r0_1", "planarity_r0_1", "surface_variation_r0_1", "eigenentropy_r0_1", "omnivariance_r0_1", "verticality_r0_1", "anisotropy_r0_1"]
 	},
 	{
-	  "miner": "GeometricFeatures",
-	  "radius": 0.15,
-	  "fnames": ["linearity", "planarity", "surface_variation", "eigenentropy", "omnivariance", "verticality", "anisotropy"],
-	  "frenames": ["linearity_r0_15", "planarity_r0_15", "surface_variation_r0_15", "eigenentropy_r0_15", "omnivariance_r0_15", "verticality_r0_15", "anisotropy_r0_15"]
-	},
-	{
-	  "miner": "GeometricFeatures",
-	  "radius": 0.3,
-	  "fnames": ["linearity", "planarity", "surface_variation", "eigenentropy", "omnivariance", "verticality", "anisotropy"],
-	  "frenames": ["linearity_r0_3", "planarity_r0_3", "surface_variation_r0_3", "eigenentropy_r0_3", "omnivariance_r0_3", "verticality_r0_3", "anisotropy_r0_3"]
-	},
-	{
-	  "miner": "GeometricFeatures",
-	  "radius": 0.5,
-	  "fnames": ["linearity", "planarity", "surface_variation", "eigenentropy", "omnivariance", "verticality", "anisotropy"],
-	  "frenames": ["linearity_r0_5", "planarity_r0_5", "surface_variation_r0_5", "eigenentropy_r0_5", "omnivariance_r0_5", "verticality_r0_5", "anisotropy_r0_5"]
-	},
-	{
 	  "writer": "Writer",
  	  "out_pcloud": "*geomfeats.laz"
 	},
@@ -46,21 +28,15 @@
 	  "imputer": "RemovalImputer",
 	  "target_val": "NaN",
 	  "fnames": [
-		"linearity_r0_05", "planarity_r0_05", "surface_variation_r0_05", "eigenentropy_r0_05", "omnivariance_r0_05", "verticality_r0_05", "anisotropy_r0_05",
-		"linearity_r0_1", "planarity_r0_1", "surface_variation_r0_1", "eigenentropy_r0_1", "omnivariance_r0_1", "verticality_r0_1", "anisotropy_r0_1",
-		"linearity_r0_15", "planarity_r0_15", "surface_variation_r0_15", "eigenentropy_r0_15", "omnivariance_r0_15", "verticality_r0_15", "anisotropy_r0_15",
-		"linearity_r0_3", "planarity_r0_3", "surface_variation_r0_3", "eigenentropy_r0_3", "omnivariance_r0_3", "verticality_r0_3", "anisotropy_r0_3",
-		"linearity_r0_5", "planarity_r0_5", "surface_variation_r0_5", "eigenentropy_r0_5", "omnivariance_r0_5", "verticality_r0_5", "anisotropy_r0_5"
-	  ],
+	  	"linearity_r0_05", "planarity_r0_05", "surface_variation_r0_05", "eigenentropy_r0_05", "omnivariance_r0_05", "verticality_r0_05", "anisotropy_r0_05",
+	  	"linearity_r0_1", "planarity_r0_1", "surface_variation_r0_1", "eigenentropy_r0_1", "omnivariance_r0_1", "verticality_r0_1", "anisotropy_r0_1"
+	  ]
 	},
 	{
 	  "train": "RandomForestClassifier",
       "fnames": [
 		"linearity_r0_05", "planarity_r0_05", "surface_variation_r0_05", "eigenentropy_r0_05", "omnivariance_r0_05", "verticality_r0_05", "anisotropy_r0_05",
-		"linearity_r0_1", "planarity_r0_1", "surface_variation_r0_1", "eigenentropy_r0_1", "omnivariance_r0_1", "verticality_r0_1", "anisotropy_r0_1",
-		"linearity_r0_15", "planarity_r0_15", "surface_variation_r0_15", "eigenentropy_r0_15", "omnivariance_r0_15", "verticality_r0_15", "anisotropy_r0_15",
-		"linearity_r0_3", "planarity_r0_3", "surface_variation_r0_3", "eigenentropy_r0_3", "omnivariance_r0_3", "verticality_r0_3", "anisotropy_r0_3",
-		"linearity_r0_5", "planarity_r0_5", "surface_variation_r0_5", "eigenentropy_r0_5", "omnivariance_r0_5", "verticality_r0_5", "anisotropy_r0_5"
+		"linearity_r0_1", "planarity_r0_1", "surface_variation_r0_1", "eigenentropy_r0_1", "omnivariance_r0_1", "verticality_r0_1", "anisotropy_r0_1"
 	  ],
 	  "training_type": "stratified_kfold",
 	  "random_seed": null,
@@ -93,12 +69,16 @@
 		"num_folds": 5,
 		"pre_dispatch": 8,
 		"grid": {
-			"n_estimators": [2, 4, 8, 16, 32, 56, 100],
-			"max_depth": [10, 15, 20, 27, 36],
-			"max_samples": [0.1, 0.3, 0.6, 0.8, 0.9]
+			"n_estimators": [2, 4, 8, 16],
+			"max_depth": [15, 20, 27],
+			"max_samples": [0.6, 0.8, 0.9]
 		},
 		"report_path": "*RF_hyper_grid_search.log"
 	  }
+	},
+	{
+	  "writer": "ModelWriter",
+ 	  "out_pcloud": "*RF.model"
 	}
   ]
 }

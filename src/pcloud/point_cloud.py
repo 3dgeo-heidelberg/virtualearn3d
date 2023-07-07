@@ -44,6 +44,7 @@ class PointCloud:
 
         :param las: The LASPY datastructure representing the point cloud.
         """
+        # Assign attributes
         self.las = las
 
     # ---  ACCESS-ONLY METHODS  --- #
