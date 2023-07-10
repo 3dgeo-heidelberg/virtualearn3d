@@ -35,6 +35,10 @@ class FeatureTransformer:
     :ivar report_path: The path to write the report file reporting the behavior
         of the transformer.
     :vartype report_path: str
+    :ivar plot_path: The path to write the plot file. From some feature
+        transformers it might be the path to the directory where many plots
+        will be stored.
+    :vartype plot_path: str
     :ivar selected_features: Either boolean mask or list of indices
         corresponding to the selected features (columns of the feature matrix).
     :vartype selected_features: list
@@ -54,7 +58,8 @@ class FeatureTransformer:
         # Initialize
         kwargs = {
             'fnames': spec.get('fnames', None),
-            'report_path': spec.get('report_path', None)
+            'report_path': spec.get('report_path', None),
+            'plot_path': spec.get('plot_path', None)
         }
         # Delete keys with None value
         kwargs = DictUtils.delete_by_val(kwargs, None)
@@ -72,6 +77,7 @@ class FeatureTransformer:
         # Fundamental initialization of any feature transformer
         self.fnames = kwargs.get('fnames', None)
         self.report_path = kwargs.get('report_path', None)
+        self.plot_path = kwargs.get('plot_path', None)
         self.selected_features = None
 
     # ---  FEATURE TRANSFORM METHODS  --- #
@@ -132,13 +138,13 @@ class FeatureTransformer:
             fnames=fnames,
             out_prefix=out_prefix
         )
-        fnames = np.array(fnames)[self.selected_features].tolist()
+        fnames = self.get_names_of_transformed_features(fnames=fnames)
         # Return new point cloud
         return PointCloudFactoryFacade.make_from_arrays(
             pcloud.get_coordinates_matrix(),
             F,
             y=pcloud.get_classes_vector(),
-            header=pcloud.las.header,
+            header=self.build_new_las_header(pcloud),
             fnames=fnames
         )
 
@@ -156,3 +162,36 @@ class FeatureTransformer:
         LOGGING.LOGGER.info(report)
         if self.report_path is not None:
             report.to_file(self.report_path, out_prefix=out_prefix)
+
+    def build_new_las_header(self, pcloud):
+        """
+        Build the LAS header for the output point cloud.
+
+        See :class:`.PointCloud` and
+        :meth:`feature_transformer.FeatureTransformer.transform_pcloud`.
+
+        :param pcloud: The input point cloud as reference to build the header
+            for the new point cloud.
+        :type pcloud: :class:`.PointCloud`
+        :return: The LAS header for the output point cloud.
+        """
+        return pcloud.las.header
+
+    def get_names_of_transformed_features(self, **kwargs):
+        """
+        Obtain the names that correspond to the transformed features.
+
+        :return: The list of strings representing the names of the transformed
+            features.
+        :rtype: list
+        """
+        # Get feature names
+        fnames = kwargs.get('fnames', None)
+        # Validate feature names
+        if fnames is None:
+            raise FeatureTransformerException(
+                'By default, a feature transformer requires base feature '
+                'names to get the names of the transformed features.'
+            )
+        # Build names of transformed features from feature names
+        return np.array(fnames)[self.selected_features].tolist()

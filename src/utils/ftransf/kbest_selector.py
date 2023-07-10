@@ -41,7 +41,7 @@ class KBestSelector(FeatureTransformer):
         # Initialize from parent
         kwargs = FeatureTransformer.extract_ftransf_args(spec)
         # Extract particular arguments of KBestSelector
-        kwargs['k'] = spec.get('k')
+        kwargs['k'] = spec.get('k', None)
         # Extract score function from type
         valid_score = KBestSelector.handle_score_from_type(spec, kwargs)
         if not valid_score:

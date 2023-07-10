@@ -67,7 +67,7 @@ class PointCloudArraysFactory(PointCloudFactory):
         See :meth:`point_cloud_factory.PointCloudFactory.make`
         """
         # Initialize LAS
-        if self.header is None:
+        if self.header is None:  # Initialize from scratch
             las = laspy.create(
                 point_format=1,
                 file_version="1.2"
@@ -79,7 +79,7 @@ class PointCloudArraysFactory(PointCloudFactory):
                 for fname in self.fnames
             ]
             las.add_extra_dims(extra_bytes)
-        else:
+        else:  # Initialize from previous header
             header = copy.deepcopy(self.header)
             header.point_count = self.X.shape[0]
             las = laspy.LasData(header)

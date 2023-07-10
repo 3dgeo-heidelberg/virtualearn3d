@@ -3,6 +3,7 @@
 from src.utils.ftransf.variance_selector import VarianceSelector
 from src.utils.ftransf.kbest_selector import KBestSelector
 from src.utils.ftransf.percentile_selector import PercentileSelector
+from src.utils.ftransf.pca_transformer import PCATransformer
 
 
 # ---   CLASS   --- #
@@ -40,5 +41,7 @@ class FtransfUtils:
             return KBestSelector
         if ftransf_low == 'percentileselector':
             return PercentileSelector
+        if ftransf_low == 'pcatransformer':
+            return PCATransformer
         # An unknown feature transformer was specified
         raise ValueError(f'There is no known feature transformer "{ftransf}"')

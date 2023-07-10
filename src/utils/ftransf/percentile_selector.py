@@ -20,7 +20,14 @@ class PercentileSelector(FeatureTransformer):
     Class for transforming features by preserving only a given percentile of
     the highest scores for a particular task.
 
-    # TODO Rethink : Doc ivars
+    :ivar percentile: The percentage of features that must be selected given
+        as an integer in [0, 100].
+    :vartype percentile: int
+    :ivar scoref: The score function f(F, y) to evaluate the features F to
+        predict the values of y.
+    :vartype scoref: callable
+    :ivar score_name: The name of the score used for the evaluations.
+    :vartype score_name: path
     """
 
     # ---  SPECIFICATION ARGUMENTS  --- #
