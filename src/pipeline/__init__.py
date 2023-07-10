@@ -1,6 +1,6 @@
 """
-:aythor: Alberto M. Esmoris PEna
+:author: Alberto M. Esmoris Pena
 
-The mining package contains the logic handle pipelines made of many
+The mining package contains the logic to handle pipelines made of many
 processing stages.
 """

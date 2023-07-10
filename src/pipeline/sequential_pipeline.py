@@ -1,18 +1,15 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.pipeline.pipeline import Pipeline, PipelineException
+from src.pipeline.state.simple_pipeline_state import SimplePipelineState
+from src.pipeline.pipeline_executor import PipelineExecutor
 import src.main.main_logger as LOGGING
 from src.main.main_mine import MainMine
 from src.main.main_train import MainTrain
-from src.mining.miner import Miner
-from src.utils.imput.imputer import Imputer
 from src.utils.imputer_utils import ImputerUtils
-from src.utils.ftransf.feature_transformer import FeatureTransformer
 from src.utils.ftransf_utils import FtransfUtils
 from src.model.model_op import ModelOp
-from src.pcloud.point_cloud_factory_facade import PointCloudFactoryFacade
 from src.inout.writer import Writer
-from src.inout.model_writer import ModelWriter
 from src.inout.writer_utils import WriterUtils
 import time
 
@@ -42,6 +39,8 @@ class SequentialPipeline(Pipeline):
         """
         # Call parent init
         super().__init__(**kwargs)
+        # Initialize state
+        self.state = SimplePipelineState()
         # Pipeline as sequential list of components
         self.sequence = []
         seq_pipeline = kwargs.get('sequential_pipeline', None)
@@ -116,40 +115,17 @@ class SequentialPipeline(Pipeline):
             f'SequentialPipeline running for "{in_pcloud}" ...'
         )
         start = time.perf_counter()
-        # Load input
-        pcloud = PointCloudFactoryFacade.make_from_file(in_pcloud)
-        model = None  # TODO Rethink : Handle model loading (if any)
+        # Prepare executor
+        executor = PipelineExecutor(self, out_prefix=out_pcloud)
+        executor.load_input(self.state, in_pcloud=in_pcloud)
         # Run pipeline
-        for comp in self.sequence:
-            if isinstance(comp, Miner):  # Handle miner
-                pcloud = comp.mine(pcloud)
-            elif isinstance(comp, Imputer):  # Handle imputer
-                pcloud = comp.impute_pcloud(pcloud)
-            elif isinstance(comp, FeatureTransformer):  # Handle feat. transf.
-                pcloud = comp.transform_pcloud(pcloud, out_prefix=out_pcloud)
-            elif isinstance(comp, ModelOp) and comp.op == ModelOp.OP.TRAIN:
-                # Handle train
-                model = comp(pcloud, out_prefix=out_pcloud)
-            # TODO Rethink : Add elif for train, predict, and eval too
-            elif isinstance(comp, Writer):  # Handle writer
-                if comp.needs_prefix():
-                    if out_pcloud is None:
-                        raise PipelineException(
-                            "SequentialPipeline is running a case with no "
-                            "path prefix for the output.\n"
-                            "This requirement is a MUST."
-                        )
-                    if isinstance(comp, ModelWriter):
-                        comp.write(model, prefix=out_pcloud)
-                    else:
-                        comp.write(pcloud, prefix=out_pcloud)
-                else:
-                    comp.write(pcloud)
+        for i, comp in enumerate(self.sequence):
+            executor(self.state, comp, i, self.sequence)
         # If the pipeline's out_pcloud is a full path, use it automatically
         if out_pcloud is not None and out_pcloud[-1] != "*":
             writer = Writer(out_pcloud)
             if not writer.needs_prefix():
-                writer.write(pcloud)
+                writer.write(self.state.pcloud)
         # Report execution time
         end = time.perf_counter()
         LOGGING.LOGGER.info(

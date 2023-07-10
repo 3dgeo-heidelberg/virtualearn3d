@@ -62,7 +62,7 @@
 	  "report_path": "*percentile_selection.log"
 	},
 	{
-		"feature_transformer": "PCATransformer",
+	"feature_transformer": "PCATransformer",
 		"out_dim": 6,
 		"whiten": false,
 		"random_seed": null,

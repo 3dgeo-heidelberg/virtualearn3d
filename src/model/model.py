@@ -116,7 +116,9 @@ class Model:
             self.hypertuner = hypertuner_class(
                 **hypertuner_class.extract_tuner_args(self.hypertuner)
             )
+        # Get feature names straight forward
         self.fnames = kwargs.get("fnames", None)
+        # Validate feature names
         if self.fnames is None:
             raise ModelException(
                 "No feature names were specified for the model."
