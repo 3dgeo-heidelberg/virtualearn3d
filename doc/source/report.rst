@@ -4,6 +4,14 @@ report package
 Submodules
 ----------
 
+report.best\_score\_selection\_report module
+--------------------------------------------
+
+.. automodule:: report.best_score_selection_report
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 report.hyper\_search\_report module
 -----------------------------------
 
@@ -20,10 +28,26 @@ report.kfold\_report module
    :undoc-members:
    :show-inheritance:
 
+report.pca\_projection\_report module
+-------------------------------------
+
+.. automodule:: report.pca_projection_report
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 report.report module
 --------------------
 
 .. automodule:: report.report
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+report.variance\_selection\_report module
+-----------------------------------------
+
+.. automodule:: report.variance_selection_report
    :members:
    :undoc-members:
    :show-inheritance:

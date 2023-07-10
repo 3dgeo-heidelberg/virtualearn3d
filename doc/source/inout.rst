@@ -28,6 +28,14 @@ inout.model\_io module
    :undoc-members:
    :show-inheritance:
 
+inout.model\_writer module
+--------------------------
+
+.. automodule:: inout.model_writer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 inout.point\_cloud\_io module
 -----------------------------
 
@@ -40,6 +48,14 @@ inout.writer module
 -------------------
 
 .. automodule:: inout.writer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+inout.writer\_utils module
+--------------------------
+
+.. automodule:: inout.writer_utils
    :members:
    :undoc-members:
    :show-inheritance:

@@ -22,6 +22,14 @@ utils.dict\_utils module
    :undoc-members:
    :show-inheritance:
 
+utils.ftransf\_utils module
+---------------------------
+
+.. automodule:: utils.ftransf_utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 utils.imputer\_utils module
 ---------------------------
 

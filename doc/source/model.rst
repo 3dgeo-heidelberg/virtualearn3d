@@ -20,6 +20,14 @@ model.model module
    :undoc-members:
    :show-inheritance:
 
+model.model\_op module
+----------------------
+
+.. automodule:: model.model_op
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 model.random\_forest\_classification\_model module
 --------------------------------------------------
 

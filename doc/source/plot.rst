@@ -20,6 +20,14 @@ plot.mpl\_plot module
    :undoc-members:
    :show-inheritance:
 
+plot.pca\_variance\_plot module
+-------------------------------
+
+.. automodule:: plot.pca_variance_plot
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 plot.plot module
 ----------------
 
