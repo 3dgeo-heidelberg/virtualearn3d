@@ -26,7 +26,7 @@ the loop.
 ```bash
 python vl3d.py --train model_spec.json
 ```
-**IMPLEMENTING**
+**IMPLEMENTING ...**
 
 
 

@@ -79,11 +79,6 @@ class FeatureTransformer:
         self.report_path = kwargs.get('report_path', None)
         self.plot_path = kwargs.get('plot_path', None)
         self.selected_features = None
-        # Get feature names from pipeline state if necessary
-        if self.fnames is not None and \
-                self.fnames[0] == "AUTO" and \
-                kwargs.get('pipeline_state', None):
-            self.fnames = kwargs['pipeline_state'].fnames
 
     # ---  FEATURE TRANSFORM METHODS  --- #
     # ----------------------------------- #
