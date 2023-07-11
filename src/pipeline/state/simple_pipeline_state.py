@@ -90,7 +90,7 @@ class SimplePipelineState(PipelineState):
         if frenames is not None:
             self.fnames = frenames
         else:
-            LOGGING.LOGGER.warning(
+            LOGGING.LOGGER.debug(
                 'SimplePipelineState updated the point cloud without '
                 'updating the feature names.'
             )
