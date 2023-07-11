@@ -27,14 +27,6 @@
 	{
 	  "imputer": "RemovalImputer",
 	  "target_val": "NaN",
-	  "fnames": [
-	  	"linearity_r0_05", "planarity_r0_05", "surface_variation_r0_05", "eigenentropy_r0_05", "omnivariance_r0_05", "verticality_r0_05", "anisotropy_r0_05",
-	  	"linearity_r0_1", "planarity_r0_1", "surface_variation_r0_1", "eigenentropy_r0_1", "omnivariance_r0_1", "verticality_r0_1", "anisotropy_r0_1"
-	  ]
-	},
-	{
-	  "imputer": "RemovalImputer",
-	  "target_val": "NaN",
 	  "fnames": ["AUTO"]
 	},
 	{

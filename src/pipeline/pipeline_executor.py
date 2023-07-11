@@ -41,6 +41,9 @@ class PipelineExecutor:
         output prefix for any component that needs to append it to its output
         paths.
     :vartype out_prefix: str
+    :ivar pre_fnames: Cached feature names before preprocessing. Can be used
+        to merge consecutive miners.
+    :vartype pre_fnames: list
     """
 
     # ---   INIT   --- #
@@ -57,6 +60,7 @@ class PipelineExecutor:
         # Fundamental attributes for any pipeline executor
         self.maker = maker
         self.out_prefix = kwargs.get('out_prefix', None)
+        self.pre_fnames = None
         # Validate
         if self.maker is None:
             raise PipelineExecutorException(
@@ -123,6 +127,7 @@ class PipelineExecutor:
             if fnames[0] == "AUTO":  # If AUTO is requested
                 fnames_comp.fnames = state.fnames  # Take from state
             else:  # Otherwise
+                self.pre_fnames = state.fnames  # Cache fnames before update
                 state.fnames = fnames_comp.fnames  # Set the state
 
     def process(self, state, comp, comp_id, comps):
@@ -138,18 +143,14 @@ class PipelineExecutor:
                 f'Running {comp.__class__.__name__} data miner...'
             )
             start = time.perf_counter()
-            state.update(
-                comp, new_pcloud=comp.mine(state.pcloud)
-            )
+            state.update(comp, new_pcloud=comp.mine(state.pcloud))
             end = time.perf_counter()
             LOGGING.LOGGER.info(
                 f'{comp.__class__.__name__} data miner executed in '
                 f'{end-start:.3f} seconds.'
             )
         elif isinstance(comp, Imputer):  # Handle imputer
-            state.update(
-                comp, new_pcloud=comp.impute_pcloud(state.pcloud)
-            )
+            state.update(comp, new_pcloud=comp.impute_pcloud(state.pcloud))
         elif isinstance(comp, FeatureTransformer):  # Handle feat. transf.
             # Compute component logic and update pipeline state
             state.update(
@@ -195,3 +196,7 @@ class PipelineExecutor:
                 state.fnames = comp.get_names_of_transformed_features(
                     fnames=comp.fnames
                 )
+        # Merge feature names from different miners
+        if isinstance(comp, Miner):
+            if self.pre_fnames is not None:  # If previous fnames, merge them
+                state.fnames = self.pre_fnames + state.fnames

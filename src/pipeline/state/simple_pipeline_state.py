@@ -51,11 +51,12 @@ class SimplePipelineState(PipelineState):
         new_model = kwargs.get('new_model', None)
         # Handle the many component types
         if isinstance(comp, Miner):
-            self.update_pcloud(comp, new_pcloud)  # A miner generates features
+            self.update_pcloud(comp, new_pcloud)  # Miner generated features
+            self.feautres_mined = True
         elif isinstance(comp, Imputer):
-            self.update_pcloud(comp, new_pcloud)  # A miner generates features
+            self.update_pcloud(comp, new_pcloud)  # Imputer generated features
         elif isinstance(comp, FeatureTransformer):
-            self.update_pcloud(comp, new_pcloud)  # A miner generates features
+            self.update_pcloud(comp, new_pcloud)  # Transformer gen. feats.
         elif isinstance(comp, ModelOp):
             if comp.op == ModelOp.OP.TRAIN:
                 self.update_model(comp, new_model)
@@ -88,7 +89,7 @@ class SimplePipelineState(PipelineState):
         # Update fnames
         frenames = getattr(comp, 'frenames', None)
         if frenames is not None:
-            self.fnames = frenames
+                self.fnames = frenames
         else:
             LOGGING.LOGGER.debug(
                 'SimplePipelineState updated the point cloud without '

@@ -22,13 +22,16 @@ class MainPipeline:
 
         :param spec: Key-word specification.
         """
-        LOGGING.LOGGER.info('Starting pipeline ...')
+        LOGGING.LOGGER.info(f'Starting pipeline ...')
         start = time.perf_counter()
         pipeline_class = MainPipeline.extract_pipeline_class(spec)
         pipeline = pipeline_class(**spec)
         pipeline.run()
         end = time.perf_counter()
-        LOGGING.LOGGER.info(f'Pipeline computed in {end-start:.3f} seconds')
+        LOGGING.LOGGER.info(
+            f'{pipeline_class.__name__} computed {pipeline.state.step} steps '
+            f'in {end-start:.3f} seconds.'
+        )
 
     # ---  EXTRACT FORM SPEC  --- #
     # --------------------------- #
