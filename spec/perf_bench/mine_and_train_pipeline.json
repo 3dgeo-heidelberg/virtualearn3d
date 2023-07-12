@@ -99,6 +99,10 @@
 		},
 		"report_path": "*RF_hyper_grid_search.log"
 	  }
+	},
+	{
+	  "writer": "ModelWriter",
+ 	  "out_model": "*RF.model"
 	}
   ]
 }

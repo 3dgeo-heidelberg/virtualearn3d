@@ -30,7 +30,7 @@ class ModelWriter(Writer):
         # Initialize from parent
         kwargs = Writer.extract_writer_args(spec)
         # Extract particular arguments of ModelWriter
-        path = spec.get('out_path', None)
+        path = spec.get('out_model', None)
         if path is not None:  # Dont overload a not None path from ancestors
             kwargs['path'] = path
         # Delete keys with None value
@@ -40,14 +40,14 @@ class ModelWriter(Writer):
 
     # ---   INIT   --- #
     # ---------------- #
-    def __init__(self, path):
+    def __init__(self, path=None):
         """
         Initialize/instantiate a ModelWriter
 
         See :class:`.Writer` and :meth:`writer.Writer.__init__`
         """
         # Call parent's init
-        super().__init__(path)
+        super().__init__(path=path)
 
     # ---   WRITE   --- #
     # ----------------- #

@@ -25,35 +25,11 @@
  	  "out_pcloud": "*geomfeats.laz"
 	},
 	{
-	  "imputer": "RemovalImputer",
-	  "target_val": "NaN",
-	  "fnames": ["AUTO"]
-	},
-	{
-	  "feature_transformer": "VarianceSelector",
-	  "variance_threshold": 0.001,
+	  "imputer": "UnivariateImputer",
 	  "fnames": ["AUTO"],
-	  "report_path": "*variance_selection.log"
-	},
-	{
-	  "_feature_transformer": "KBestSelector",
-	  "type": "classification",
-	  "k": 5,
-	  "fnames": [
-		"linearity_r0_05", "planarity_r0_05", "surface_variation_r0_05", "eigenentropy_r0_05", "omnivariance_r0_05", "verticality_r0_05", "anisotropy_r0_05",
-	  	"linearity_r0_1", "planarity_r0_1", "surface_variation_r0_1", "eigenentropy_r0_1", "omnivariance_r0_1", "verticality_r0_1", "anisotropy_r0_1"
-	  ],
-	  "report_path": "*kbest_selection.log"
-	},
-	{
-	  "_feature_transformer": "PercentileSelector",
-	  "type": "classification",
-	  "percentile": 25,
-	  "fnames": [
-		"linearity_r0_05", "planarity_r0_05", "surface_variation_r0_05", "eigenentropy_r0_05", "omnivariance_r0_05", "verticality_r0_05", "anisotropy_r0_05",
-	  	"linearity_r0_1", "planarity_r0_1", "surface_variation_r0_1", "eigenentropy_r0_1", "omnivariance_r0_1", "verticality_r0_1", "anisotropy_r0_1"
-	  ],
-	  "report_path": "*percentile_selection.log"
+	  "target_val": "NaN",
+	  "strategy": "mean",
+	  "constant_val": 0
 	},
 	{
 		"feature_transformer": "PCATransformer",
