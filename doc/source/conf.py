@@ -6,7 +6,13 @@
 # -- Path setup --------------------------------------------------------------
 import os
 import sys
+# TODO Remove section ---
+print(
+    f'os.path.abspath: "{os.path.abspath(os.path.join("..", "..", "src"))}"'
+)
+# --- TODO Remove section
 sys.path.insert(0, os.path.abspath(os.path.join('..', '..', 'src')))
+sys.path.insert(0, os.path.abspath(os.path.join('..', '..')))
 
 
 # -- Project information -----------------------------------------------------

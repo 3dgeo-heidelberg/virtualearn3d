@@ -44,6 +44,14 @@ plot.plot\_utils module
    :undoc-members:
    :show-inheritance:
 
+plot.rand\_forest\_plot module
+------------------------------
+
+.. automodule:: plot.rand_forest_plot
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 

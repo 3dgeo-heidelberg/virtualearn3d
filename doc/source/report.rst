@@ -36,6 +36,14 @@ report.pca\_projection\_report module
    :undoc-members:
    :show-inheritance:
 
+report.rand\_forest\_report module
+----------------------------------
+
+.. automodule:: report.rand_forest_report
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 report.report module
 --------------------
 

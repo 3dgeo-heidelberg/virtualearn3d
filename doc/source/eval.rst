@@ -36,6 +36,22 @@ eval.kfold\_evaluator module
    :undoc-members:
    :show-inheritance:
 
+eval.rand\_forest\_evaluation module
+------------------------------------
+
+.. automodule:: eval.rand_forest_evaluation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+eval.rand\_forest\_evaluator module
+-----------------------------------
+
+.. automodule:: eval.rand_forest_evaluator
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 
