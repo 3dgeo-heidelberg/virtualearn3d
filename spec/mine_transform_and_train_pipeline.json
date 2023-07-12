@@ -36,26 +36,6 @@
 	  "report_path": "*variance_selection.log"
 	},
 	{
-	  "_feature_transformer": "KBestSelector",
-	  "type": "classification",
-	  "k": 5,
-	  "fnames": [
-		"linearity_r0_05", "planarity_r0_05", "surface_variation_r0_05", "eigenentropy_r0_05", "omnivariance_r0_05", "verticality_r0_05", "anisotropy_r0_05",
-	  	"linearity_r0_1", "planarity_r0_1", "surface_variation_r0_1", "eigenentropy_r0_1", "omnivariance_r0_1", "verticality_r0_1", "anisotropy_r0_1"
-	  ],
-	  "report_path": "*kbest_selection.log"
-	},
-	{
-	  "_feature_transformer": "PercentileSelector",
-	  "type": "classification",
-	  "percentile": 25,
-	  "fnames": [
-		"linearity_r0_05", "planarity_r0_05", "surface_variation_r0_05", "eigenentropy_r0_05", "omnivariance_r0_05", "verticality_r0_05", "anisotropy_r0_05",
-	  	"linearity_r0_1", "planarity_r0_1", "surface_variation_r0_1", "eigenentropy_r0_1", "omnivariance_r0_1", "verticality_r0_1", "anisotropy_r0_1"
-	  ],
-	  "report_path": "*percentile_selection.log"
-	},
-	{
 		"feature_transformer": "PCATransformer",
 		"out_dim": 0.99,
 		"whiten": false,
@@ -94,7 +74,8 @@
 		"max_samples": 0.8
 	  },
 	  "autoval_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
-	  "stratkfold_plot_path": "*RF_stratkfold_plot.svg",
+	  "stratkfold_plot_path": "*RF_stratkfold.svg",
+	  "stratkfold_report_path": "*RF_stratkfold.log",
 	  "hyperparameter_tuning": {
 		"tuner": "GridSearch",
 		"hyperparameters": ["n_estimators", "max_depth", "max_samples"],
@@ -107,7 +88,12 @@
 			"max_samples": [0.6, 0.8, 0.9]
 		},
 		"report_path": "*RF_hyper_grid_search.log"
-	  }
+	  },
+	  "importance_report_path": "*RF_importance.log",
+	  "importance_report_permutation": true,
+	  "decision_plot_path": "*RF_decission.svg",
+	  "decision_plot_trees": 2,
+	  "decision_plot_max_depth": 3
 	},
 	{
 	  "writer": "ModelWriter",

@@ -14,7 +14,7 @@ class KFoldPlot(MplPlot):
     :author: Alberto M. Esmoris Pena
 
     Class to plot the evaluation of kfold procedures.
-    See :class:`.KFoldEvaluation`
+    See :class:`.KFoldEvaluation`.
 
     :ivar X: See :meth:`kfold_evaluator.KFoldEvaluator.eval`
     :ivar sigma: See :class:`.KFoldEvaluation`

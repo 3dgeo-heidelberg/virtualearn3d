@@ -1,6 +1,8 @@
 # ---   IMPORTS  --- #
 # ------------------ #
 from src.model.model import Model
+from src.model.random_forest_classification_model import \
+    RandomForestClassificationModel
 from src.main.vl3d_exception import VL3DException
 from enum import Enum
 
@@ -130,6 +132,12 @@ class ModelOp:
             self.model.stratkfold_plot_path = ModelOp.merge_path(
                 out_prefix, stratkfold_plot_path
             )
+        stratkfold_report_path = self.model.stratkfold_report_path
+        old_paths['stratkfold_report_path'] = stratkfold_report_path
+        if ModelOp.path_needs_update(stratkfold_report_path):
+            self.model.stratkfold_report_path = ModelOp.merge_path(
+                out_prefix, stratkfold_report_path
+            )
         # Handle model's hypertuner paths
         if self.model.hypertuner is not None:
             hypertuner_report_path = self.model.hypertuner.report_path
@@ -137,6 +145,20 @@ class ModelOp:
             if ModelOp.path_needs_update(hypertuner_report_path):
                 self.model.hypertuner.report_path = ModelOp.merge_path(
                     out_prefix, hypertuner_report_path
+                )
+        # Handle RandomForest paths
+        if isinstance(self.model, RandomForestClassificationModel):
+            importance_report_path = self.model.importance_report_path
+            old_paths['importance_report_path'] = importance_report_path
+            if ModelOp.path_needs_update(importance_report_path):
+                self.model.importance_report_path = ModelOp.merge_path(
+                    out_prefix, importance_report_path
+                )
+            decision_plot_path = self.model.decision_plot_path
+            old_paths['decision_plot_path'] = decision_plot_path
+            if ModelOp.path_needs_update(decision_plot_path):
+                self.model.decision_plot_path = ModelOp.merge_path(
+                    out_prefix, decision_plot_path
                 )
         # Return dictionary to reverse updates
         return old_paths
@@ -155,10 +177,21 @@ class ModelOp:
         self.model.stratkfold_plot_path = old_paths.get(
             'stratkfold_plot_path'
         )
+        self.model.stratkfold_report_path = old_paths.get(
+            'stratkfold_report_path'
+        )
         # Restore model's hypertuner paths
         if self.model.hypertuner is not None:
             self.model.hypertuner.report_path = old_paths.get(
                 'hypertuner_report_path'
+            )
+        # Restore random forest paths
+        if isinstance(self.model, RandomForestClassificationModel):
+            self.model.importance_report_path = old_paths.get(
+                'importance_report_path'
+            )
+            self.model.decision_plot_path = old_paths.get(
+                'decision_plot_path'
             )
 
     @staticmethod

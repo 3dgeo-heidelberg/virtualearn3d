@@ -11,8 +11,8 @@ class KFoldReport(Report):
 
     Class to handle reports related to k-folding.
     See :class:`.Report`.
-    See also :class:`Model`, :meth:`model.Model.train_stratified_kfold,
-    :class:`KFoldEvaluator`, and :class:`KFoldEvaluation`.
+    See also :class:`.Model`, :meth:`model.Model.train_stratified_kfold,
+    :class:`.KFoldEvaluator`, and :class:`.KFoldEvaluation`.
 
     :ivar problem_name: See :class:`.Evaluator`
     :ivar metric_names: See :class:`.KFoldEvaluation`
@@ -49,7 +49,7 @@ class KFoldReport(Report):
     def __str__(self):
         """
         The string representation of the k-fold procedure report.
-        See :class:`.Report` and also :meth:`report.Report.__str__`
+        See :class:`.Report` and also :meth:`report.Report.__str__`.
         """
         # --- Introduction --- #
         s = 'k-fold report on {pn} over {m} metrics:\n'.format(

@@ -57,6 +57,9 @@ class Model:
     :ivar random_seed: Optional attribute to specify a fixed random seed for
         the random computations of the model.
     :vartype random_seed: int
+    :ivar stratkfold_report_path: The path where the report representing the
+        evaluation of the k-folding procedure must be written.
+    :vartype stratkfold_report_path: str
     :ivar stratkfold_plot_path: The path where the plot representing the
         evaluation of the k-folding procedure must be written.
     :vartype stratkfold_plot_path: str
@@ -83,6 +86,7 @@ class Model:
             'imputer': spec.get('imputer', None),
             'hyperparameter_tuning': spec.get('hyperparameter_tuning', None),
             'fnames': spec.get('fnames', None),
+            'stratkfold_report_path': spec.get('stratkfold_report_path', None),
             'stratkfold_plot_path': spec.get('stratkfold_plot_path', None)
         }
         # Delete keys with None value
@@ -123,6 +127,9 @@ class Model:
             raise ModelException(
                 "No feature names were specified for the model."
             )
+        self.stratkfold_report_path = kwargs.get(
+            'stratkfold_report_path', None
+        )
         self.stratkfold_plot_path = kwargs.get('stratkfold_plot_path', None)
 
     # ---   MODEL METHODS   --- #
@@ -232,6 +239,7 @@ class Model:
         if self.imputer is not None:
             X, y = self.imputer.impute(X, y)
         self.training(X, y)
+        self.on_training_finished(X, y)
         return self
 
     def train_autoval(self, pcloud):
@@ -266,6 +274,7 @@ class Model:
         yhat_test = self.predict(None, X=Xtest)
         self.autoval(ytest, yhat_test)
         # Return
+        self.on_training_finished(X, y)
         return self
 
     def train_stratified_kfold(self, pcloud):
@@ -320,11 +329,37 @@ class Model:
             problem_name='Stratified KFold training',
             metric_names=self.autoval_metrics_names
         ).eval(evals)
-        LOGGING.LOGGER.info(kfold_eval.report())
+        if kfold_eval.can_report():
+            report = kfold_eval.report()
+            LOGGING.LOGGER.info(report)
+            if self.stratkfold_report_path is not None:
+                report.to_file(path=self.stratkfold_report_path)
+        else:
+            LOGGING.LOGGER.warning(
+                'Model could not report stratified k-folding-based training.'
+            )
         if self.stratkfold_plot_path is not None:
-            kfold_eval.plot(path=self.stratkfold_plot_path).plot()
+            if kfold_eval.can_plot():
+                kfold_eval.plot(path=self.stratkfold_plot_path).plot()
+            else:
+                LOGGING.LOGGER.warning(
+                    'Model could not plot stratified k-folding based training.'
+                )
         # Return trained model
+        self.on_training_finished(X, y)
         return self
+
+    def on_training_finished(self, X, y):
+        """
+        Callback method that must be invoked by any training strategy after
+        finishing the training but before returning the trained model.
+
+        :param X: The point-wise features matrix with points as rows and
+            features as columns.
+        :param y: The point-wise expected classes.
+        :return: Nothing.
+        """
+        pass
 
     # ---  PREDICTION METHODS  --- #
     # ---------------------------- #

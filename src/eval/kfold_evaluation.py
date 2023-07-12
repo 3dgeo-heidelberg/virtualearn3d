@@ -45,6 +45,7 @@ class KFoldEvaluation(Evaluation):
         self.metric_names = kwargs.get('metric_names', None)
         self.X = kwargs.get('X', None)
         self.mu = kwargs.get('mu', None)
+        # Validate attributes
         if self.mu is None:
             raise EvaluationException(
                 'KFoldEvaluation without mu (mean) is not supported.'
@@ -117,13 +118,10 @@ class KFoldEvaluation(Evaluation):
             *   *show* (``bool``) --
                 Boolean flag to handle whether to show the plot (True) or not
                 (False).
+
         :return: The KFoldPlot representing the KFoldEvaluation.
         :rtype: :class:`.KFoldPlot`
         """
-        if len(self.mu) < 2:
-            raise EvaluationException(
-                'KFoldEvaluation does not support plot for less than 2 folds.'
-            )
         return KFoldPlot(
             self.X,
             self.sigma,
