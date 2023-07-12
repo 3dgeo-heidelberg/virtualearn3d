@@ -78,7 +78,7 @@
 	},
 	{
 	  "writer": "ModelWriter",
- 	  "out_pcloud": "*RF.model"
+ 	  "out_model": "*RF.model"
 	}
   ]
 }

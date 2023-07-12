@@ -76,7 +76,7 @@ class SequentialPipeline(Pipeline):
             # Handle writer as component
             if comp.get("writer", None) is not None:  # Handle writer
                 writer_class = WriterUtils.extract_writer_class(comp)
-                writer = writer_class(comp.get("out_pcloud"))
+                writer = writer_class(**writer_class.extract_writer_args(comp))
                 self.sequence.append(writer)
             # Handle potential writer for current non-writer component
             elif comp.get('out_pcloud', None) is not None:

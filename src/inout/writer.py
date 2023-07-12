@@ -2,6 +2,7 @@
 # ------------------- #
 from src.inout.point_cloud_io import PointCloudIO
 from src.main.vl3d_exception import VL3DException
+from src.utils.dict_utils import DictUtils
 
 
 # ---   EXCEPTIONS   --- #
@@ -29,9 +30,30 @@ class Writer:
     :ivar path: The path to the output file for writing operations.
     :vartype path: str
     """
+    # ---  SPECIFICATION ARGUMENTS  --- #
+    # --------------------------------- #
+    @staticmethod
+    def extract_writer_args(spec):
+        """
+        Extract the arguments to initialize/instantiate a Writer
+        from a key-word specification.
+
+        :param spec: The key-word specification containing the arguments.
+        :return: The arguments to initialize/instantiate a Writer.
+        """
+        # Extract particular arguments of Writer
+        # Initialize
+        kwargs = {
+            'path': spec.get('out_pcloud', None)
+        }
+        # Delete keys with None value
+        kwargs = DictUtils.delete_by_val(kwargs, None)
+        # Return
+        return kwargs
+
     # ---   INIT   --- #
     # ---------------- #
-    def __init__(self, path):
+    def __init__(self, path=None):
         """
         Initialize/instantiate a Writer
 
@@ -39,6 +61,10 @@ class Writer:
             path that starts with "*" in the context of a Writer will need
             a prefix.
         """
+        if path is None:
+            raise WriterException(
+                'Instantiating a Writer without a path is not supported.'
+            )
         self.path = path
 
     # ---   WRITE   --- #
@@ -68,7 +94,6 @@ class Writer:
         if prefix is not None:
             path = prefix[:-1] + path[1:]
         return path
-
 
     # ---   CHECKS   --- #
     # ------------------ #
