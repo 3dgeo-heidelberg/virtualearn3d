@@ -4,7 +4,6 @@ import src.main.main_logger as LOGGING
 from src.pcloud.point_cloud_factory_facade import PointCloudFactoryFacade
 from src.inout.model_io import ModelIO
 from src.inout.io_utils import IOUtils
-from src.main.main_mine import MainMine
 from src.model.random_forest_classification_model import \
     RandomForestClassificationModel
 import os
@@ -24,7 +23,7 @@ class MainTrain:
     @staticmethod
     def main(spec):
         """
-        Entry point logic for training tasks
+        Entry point logic for training tasks.
 
         :param spec: Key-word specification
         """
