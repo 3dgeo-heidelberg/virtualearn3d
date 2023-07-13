@@ -35,7 +35,7 @@ class PredictivePipelineWriter(Writer):
         if path is not None:  # Dont overload with not None path
             kwargs['path'] = path
         kwargs['include_writer'] = spec.get('include_writer', None)
-        kwargs['include_imputer'] = spec.get('include_writer', None)
+        kwargs['include_imputer'] = spec.get('include_imputer', None)
         kwargs['include_feature_transformer'] = spec.get(
             'include_feature_transformer', None
         )

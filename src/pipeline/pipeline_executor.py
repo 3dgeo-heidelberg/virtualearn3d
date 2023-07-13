@@ -9,7 +9,9 @@ from src.utils.ftransf.feature_transformer import FeatureTransformer, \
 from src.model.model_op import ModelOp
 from src.inout.writer import Writer
 from src.inout.model_writer import ModelWriter
+from src.pipeline.predictive_pipeline import PredictivePipeline
 from src.inout.predictive_pipeline_writer import PredictivePipelineWriter
+from src.inout.predictions_writer import PredictionsWriter
 import src.main.main_logger as LOGGING
 import time
 
@@ -160,11 +162,32 @@ class PipelineExecutor:
                     state.pcloud, out_prefix=self.out_prefix
                 )
             )
-        elif isinstance(comp, ModelOp) and comp.op == ModelOp.OP.TRAIN:
-            # Handle train
+        elif isinstance(comp, ModelOp):
+            if comp.op == ModelOp.OP.TRAIN:
+                # Handle train
+                state.update(
+                    comp,
+                    new_model=comp(state.pcloud, out_prefix=self.out_prefix)
+                )
+            elif comp.op == ModelOp.OP.PREDICT:
+                # Handle predict
+                state.update(
+                    comp,
+                    new_preds=comp(state.pcloud, out_prefix=self.out_prefix)
+                )
+            else:
+                raise PipelineExecutorException(
+                    'PipelineExecutor received an unexpected model operation: '
+                    f'{comp.op}'
+                )
+        elif isinstance(comp, PredictivePipeline):
+            # Handle predict
+            comp.pps.external_state = state
             state.update(
                 comp,
-                new_model=comp(state.pcloud, out_prefix=self.out_prefix)
+                new_preds=comp.predict(
+                    state.pcloud, out_prefix=self.out_prefix
+                )
             )
         # TODO Rethink : Add elif for train, predict, and eval too
         elif isinstance(comp, Writer):  # Handle writer
@@ -175,15 +198,18 @@ class PipelineExecutor:
                         "with no path prefix for the output.\n"
                         "This requirement is a MUST."
                     )
-                if isinstance(comp, ModelWriter):
-                    comp.write(state.model, prefix=self.out_prefix)
+            if isinstance(comp, ModelWriter):
+                comp.write(state.model, prefix=self.out_prefix)
 
-                elif isinstance(comp, PredictivePipelineWriter):
-                    comp.write(self.maker, prefix=self.out_prefix)
-                else:
-                    comp.write(state.pcloud, prefix=self.out_prefix)
+            elif isinstance(comp, PredictivePipelineWriter):
+                comp.write(self.maker, prefix=self.out_prefix)
+            elif isinstance(comp, PredictionsWriter):
+                comp.write(
+                    state.pcloud.get_features_matrix(['prediction']),
+                    prefix=self.out_prefix
+                )
             else:
-                comp.write(state.pcloud)
+                comp.write(state.pcloud, prefix=self.out_prefix)
 
     def post_process(self, state, comp, comp_id, comps):
         """

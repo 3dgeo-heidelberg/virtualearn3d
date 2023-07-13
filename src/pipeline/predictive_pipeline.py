@@ -65,14 +65,20 @@ class PredictivePipeline(Pipeline):
 
     # ---  PREDICTIVE PIPELINE METHODS  --- #
     # ------------------------------------- #
-    def predict(self, pcloud):
+    def predict(self, pcloud, out_prefix=None):
         """
         The predict method computes the predictions from the wrapped pipeline.
 
         :param pcloud: The point cloud to be predicted.
         :type pcloud: :class:`.PointCloud`
+        :param out_prefix: Optional argument to update the output path of the
+            predictive pipeline strategy that is used as the output prefix
+            for its components.
         :return: The predictions.
         :rtype: :class:`np.ndarray`
         """
+        # Update strategy output path if requested
+        if out_prefix is not None:
+            self.pps.out_path = out_prefix
         # Return the predictions
         return self.pps.predict(self.pipeline, pcloud)

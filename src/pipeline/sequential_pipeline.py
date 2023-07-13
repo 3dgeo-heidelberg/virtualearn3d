@@ -16,6 +16,8 @@ from src.utils.ftransf_utils import FtransfUtils
 from src.model.model_op import ModelOp
 from src.inout.writer import Writer
 from src.inout.writer_utils import WriterUtils
+from src.inout.pipeline_io import PipelineIO
+from src.inout.model_io import ModelIO
 import time
 import copy
 
@@ -78,6 +80,19 @@ class SequentialPipeline(Pipeline):
                 model_class = MainTrain.extract_model_class(comp)
                 model = model_class(**model_class.extract_model_args(comp))
                 self.sequence.append(ModelOp(model, ModelOp.OP.TRAIN))
+            if comp.get("predict", None) is not None:  # Handle predict
+                if comp['predict'].lower() == 'predictivepipeline':
+                    self.sequence.append(PipelineIO.read_predictive_pipeline(
+                        comp['model_path']
+                    ))
+                elif comp['predict'].ower() == 'modelloader':
+                    model = ModelIO.read(comp['model_path'])
+                    self.sequence.append(ModelOp(model, ModelOp.OP.PREDICT))
+                else:
+                    raise PipelineException(
+                        'SequentialPipeline does not support requested '
+                        f'predict specification: "{comp["predict"]}"'
+                    )
             # TODO Rethink : Add elif for train, predict, and eval too
             # Handle writer as component
             if comp.get("writer", None) is not None:  # Handle writer
@@ -148,11 +163,26 @@ class SequentialPipeline(Pipeline):
         """
         # Copy itself
         sp = copy.copy(self)
+        # Reinitialize state
+        LOGGING.LOGGER.debug(
+            'Sequential pipeline state at the moment when predictive pipeline '
+            'generated:\n'
+            f'Point cloud: {sp.state.pcloud}\n'
+            f'Model: {sp.state.model}\n'
+            f'Feature names: {sp.state.fnames}'
+        )
+        sp.state = SimplePipelineState()
+        LOGGING.LOGGER.debug(
+            'State of the generated predictive pipeline:\n'
+            f'Point cloud: {sp.state.pcloud}\n'
+            f'Model: {sp.state.model}\n'
+            f'Feature names: {sp.state.fnames}'
+        )
         # But copy only the desired components
         sp.sequence = []
         for comp in self.sequence:
             if isinstance(comp, ModelOp):
-                sp.sequence.append(comp)
+                sp.sequence.append(ModelOp(comp.model, ModelOp.OP.PREDICT))
             if isinstance(comp, Writer) and \
                     kwargs.get('include_writer', False):
                 sp.sequence.append(comp)
@@ -165,5 +195,18 @@ class SequentialPipeline(Pipeline):
             if isinstance(comp, Miner) and \
                     kwargs.get('include_miner', True):
                 sp.sequence.append(comp)
+        LOGGING.LOGGER.debug(
+            'Sequence of original sequential pipeline has {m} components.\n'
+            'Sequence of predictive sequential pipeline has {n} components.'
+            .format(
+                m=len(self.sequence),
+                n=len(sp.sequence)
+            )
+        )
+        # Build the predictive pipeline
+        pp = PredictivePipeline(sp, PpsSequential())
+        # Clear paths of predictive pipeline
+        pp.in_pcloud = None
+        pp.out_pcloud = None
         # Return the predictive pipeline
-        return PredictivePipeline(self, PpsSequential())
+        return pp

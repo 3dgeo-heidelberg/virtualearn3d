@@ -5,10 +5,8 @@ from src.main.main_train import MainTrain
 from src.pcloud.point_cloud_factory_facade import PointCloudFactoryFacade
 from src.inout.model_io import ModelIO
 from src.inout.point_cloud_io import PointCloudIO
-from src.inout.io_utils import IOUtils
 import numpy as np
 import time
-import os
 
 
 # ---   CLASS   --- #

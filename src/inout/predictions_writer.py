@@ -1,19 +1,17 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.inout.writer import Writer
-from src.inout.model_io import ModelIO
 from src.utils.dict_utils import DictUtils
-import src.main.main_logger as LOGGING
+import numpy as np
 
 
 # ---   CLASS   --- #
 # ----------------- #
-class ModelWriter(Writer):
+class PredictionsWriter(Writer):
     """
     :author: Alberto M. Esmoris Pena
 
-    Class for writing tasks/operations (mostly to be used in pipelines) related
-    to models.
+    Class for writing predictions (mostly to be used in pipelines).
 
     See :class:`.Writer`.
     """
@@ -22,16 +20,16 @@ class ModelWriter(Writer):
     @staticmethod
     def extract_writer_args(spec):
         """
-        Extract the arguments to initialize/instantiate a ModelWriter
+        Extract the arguments to initialize/instantiate a PredictionsWriter
         from a key-word specification.
 
         :param spec: The key-word specification containing the arguments.
-        :return: The arguments to initialize/instantiate a ModelWriter.
+        :return: The arguments to initialize/instantiate a PredictionsWriter.
         """
         # Initialize from parent
         kwargs = Writer.extract_writer_args(spec)
-        # Extract particular arguments of ModelWriter
-        path = spec.get('out_model', None)
+        # Extract particular arguments of PredictionsWriter
+        path = spec.get('out_preds', None)
         if path is not None:  # Dont overload with None path
             kwargs['path'] = path
         # Delete keys with None value
@@ -43,7 +41,7 @@ class ModelWriter(Writer):
     # ---------------- #
     def __init__(self, path=None):
         """
-        Initialize/instantiate a ModelWriter.
+        Initialize/instantiate a PredictionsWriter.
 
         See :class:`.Writer` and :meth:`writer.Writer.__init__`.
         """
@@ -52,12 +50,12 @@ class ModelWriter(Writer):
 
     # ---   WRITE   --- #
     # ----------------- #
-    def write(self, model, prefix=None, info=True):
+    def write(self, preds, prefix=None, info=True):
         """
-        Write the given model.
+        Write the given predictions.
 
-        :param model: The model to be written.
-        :type model: :class:`.Model`
+        :param preds: The predictions to be written.
+        :type preds: :class:`np.ndarray`
         :param prefix: If None, the writing applies to path. If not None,
             the writing applies to prefix+path.
         :type prefix: str
@@ -66,7 +64,5 @@ class ModelWriter(Writer):
         """
         # Prepare path and write
         path = self.prepare_path(prefix)
-        ModelIO.write(model, path)
-        # Log info if requested
-        if info:
-            LOGGING.LOGGER.info(f'Model written to "{path}"')
+        fmt = '%d' if np.issubdtype(preds.dtype, np.integer) else '%.8f'
+        np.savetxt(path, preds, fmt=fmt)

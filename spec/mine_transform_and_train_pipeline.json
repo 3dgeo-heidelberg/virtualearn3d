@@ -36,13 +36,13 @@
 	  "report_path": "*variance_selection.log"
 	},
 	{
-		"feature_transformer": "PCATransformer",
-		"out_dim": 0.99,
-		"whiten": false,
-		"random_seed": null,
-		"fnames": ["AUTO"],
-		"report_path": "*pca_projection.log",
-		"plot_path": "*pca_projection.svg"
+	  "feature_transformer": "PCATransformer",
+	  "out_dim": 0.99,
+	  "whiten": false,
+	  "random_seed": null,
+	  "fnames": ["AUTO"],
+	  "report_path": "*pca_projection.log",
+	  "plot_path": "*pca_projection.svg"
 	},
 	{
 	  "writer": "Writer",

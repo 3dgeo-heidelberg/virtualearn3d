@@ -10,16 +10,26 @@
   "sequential_pipeline": [
     {
       "predict": "PredictivePipeline",
-	  "model_path": "/home/uadmin/tmp/tmp_data/vl3d_ml/QuePet_BR01_RF.pipe",
-	  "out_pcloud": "*predicted.laz",
-	  "out_labels": "*predictions.lbl" 
+	  "model_path": "/home/uadmin/tmp/tmp_data/vl3d_ml/QuePet_BR01_RF.pipe" 
     },
+	{
+	  "_predict": "ModelLoader",
+	  "model_path": "/home/uadmin/tmp/tmp_data/vl3d_ml/QuePet_BR01_RF.model"
+	},
+	{
+	  "writer": "Writer",
+	  "out_pcloud": "*predicted.laz"
+	},
+	{
+	  "writer": "PredictionsWriter",
+	  "out_preds": "*predictions.lbl"
+	},
 	{
 	  "eval": "ClassificationEvaluator",
 	  "metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
       "class_metrics": ["OA", "P", "R", "F1", "IoU", "MCC", "Kappa"],
 	  "report_path": "*global_eval.log",
-	  "class_report_path" "*class_eval.log"
+	  "class_report_path": "*class_eval.log"
 	}
   ]
 }

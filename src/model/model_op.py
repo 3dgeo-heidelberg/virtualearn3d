@@ -104,7 +104,7 @@ class ModelOp:
                     'Predict as model operation requires an input point '
                     'cloud. None was given.'
                 )
-            old_paths = self.update_model_paths()
+            old_paths = self.update_model_paths(out_prefix)
             predictions = self.model.predict(pcloud)
             self.restore_model_paths(old_paths)
             return predictions

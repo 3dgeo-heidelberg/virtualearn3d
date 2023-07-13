@@ -61,7 +61,7 @@ class PpsSequential(PipelinePredictiveStrategy):
         # Initialize
         preds = None
         # Run the wrapped pipeline
-        for i, comp in enumerate(self.sequence):
+        for i, comp in enumerate(pipeline.sequence):
             if isinstance(comp, Miner):  # Handle miner
                 LOGGING.LOGGER.info(
                     f'Running {comp.__class__.__name__} data miner...'
@@ -91,7 +91,7 @@ class PpsSequential(PipelinePredictiveStrategy):
                         'support model training.'
                     )
                 # Handle model prediction
-                preds = comp.op(pcloud=pcloud, out_prefix=self.out_path)
+                preds = comp(pcloud=pcloud, out_prefix=self.out_path)
             elif isinstance(comp, Imputer):  # Handle imputer
                 pcloud = comp.impute_pcloud(pcloud)
             elif isinstance(comp, FeatureTransformer):  # Handle feat. transf.
@@ -109,5 +109,12 @@ class PpsSequential(PipelinePredictiveStrategy):
                 'The sequential pipeline predictive strategy failed to '
                 'compute predictions.'
             )
+        # Add predictions to point cloud
+        pcloud.add_features(
+            ['prediction'], preds.reshape((-1, 1)), ftypes=preds.dtype
+        )
+        # Update given state point cloud, if any
+        if self.external_state is not None:
+            self.external_state.pcloud = pcloud
         # Return
         return preds
