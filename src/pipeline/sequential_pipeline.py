@@ -1,17 +1,23 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.pipeline.pipeline import Pipeline, PipelineException
+from src.pipeline.predictive_pipeline import PredictivePipeline
+from src.pipeline.pps.pps_sequential import PpsSequential
 from src.pipeline.state.simple_pipeline_state import SimplePipelineState
 from src.pipeline.pipeline_executor import PipelineExecutor
 import src.main.main_logger as LOGGING
 from src.main.main_mine import MainMine
 from src.main.main_train import MainTrain
+from src.mining.miner import Miner
+from src.utils.imput.imputer import Imputer
+from src.utils.ftransf.feature_transformer import FeatureTransformer
 from src.utils.imputer_utils import ImputerUtils
 from src.utils.ftransf_utils import FtransfUtils
 from src.model.model_op import ModelOp
 from src.inout.writer import Writer
 from src.inout.writer_utils import WriterUtils
 import time
+import copy
 
 
 # ---   CLASS   --- #
@@ -133,4 +139,31 @@ class SequentialPipeline(Pipeline):
             f'computed in {end-start:.3f} seconds.'
         )
 
-
+    # ---  PIPELINE METHODS  --- #
+    # -------------------------- #
+    def to_predictive_pipeline(self, **kwargs):
+        """
+        See :class:`.Pipeline` and
+        :meth:`.pipeline.Pipeline.to_predictive_pipeline`.
+        """
+        # Copy itself
+        sp = copy.copy(self)
+        # But copy only the desired components
+        sp.sequence = []
+        for comp in self.sequence:
+            if isinstance(comp, ModelOp):
+                sp.sequence.append(comp)
+            if isinstance(comp, Writer) and \
+                    kwargs.get('include_writer', False):
+                sp.sequence.append(comp)
+            if isinstance(comp, Imputer) and \
+                    kwargs.get('include_imputer', True):
+                sp.sequence.append(comp)
+            if isinstance(comp, FeatureTransformer) and \
+                    kwargs.get('include_feature_transformer', True):
+                sp.sequence.append(comp)
+            if isinstance(comp, Miner) and \
+                    kwargs.get('include_miner', True):
+                sp.sequence.append(comp)
+        # Return the predictive pipeline
+        return PredictivePipeline(self, PpsSequential())

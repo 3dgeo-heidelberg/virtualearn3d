@@ -2,6 +2,7 @@
 # ------------------- #
 from src.inout.writer import Writer
 from src.inout.model_writer import ModelWriter
+from src.inout.predictive_pipeline_writer import PredictivePipelineWriter
 
 
 # ---   CLASS   --- #
@@ -34,7 +35,9 @@ class WriterUtils:
         writer_low = writer.lower()
         if writer_low == 'writer':
             return Writer
-        if writer_low =='modelwriter':
+        if writer_low == 'modelwriter':
             return ModelWriter
+        if writer_low == 'predictivepipelinewriter':
+            return PredictivePipelineWriter
         # An unknown writer was specified
         raise ValueError(f'There is no known writer "{writer}"')

@@ -35,7 +35,12 @@ class ModelOp:
     """
 
     # The enumeration
-    OP = Enum('OP', ['TRAIN', 'PREDICT'])
+    OP = Enum(
+        'OP',
+        ['TRAIN', 'PREDICT'],
+        module=__name__,
+        qualname='ModelOp.OP'
+    )
 
     # ---   INIT   --- #
     # ---------------- #

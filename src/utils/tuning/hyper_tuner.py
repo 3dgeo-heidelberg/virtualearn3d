@@ -110,7 +110,7 @@ class HyperTuner(Tuner, ABC):
         results = search.cv_results_
         num_points = pcloud.get_num_points() if pcloud is not None else '?'
         # Update model (and build log message)
-        best_info = 'Consequences of random search on hyperparameters:'
+        best_info = 'Consequences of search on hyperparameters space:'
         for model_arg_key in best_args.keys():
             best_info += '\nModel argument "{arg_name}" ' \
                          'from {arg_old} to {arg_new}'.format(

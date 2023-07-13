@@ -28,6 +28,14 @@ pipeline.pipeline\_executor module
    :undoc-members:
    :show-inheritance:
 
+pipeline.predictive\_pipeline module
+------------------------------------
+
+.. automodule:: pipeline.predictive_pipeline
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 pipeline.sequential\_pipeline module
 ------------------------------------
 

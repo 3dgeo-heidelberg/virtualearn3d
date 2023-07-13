@@ -96,6 +96,10 @@
 	  "decision_plot_max_depth": 3
 	},
 	{
+	  "writer": "PredictivePipelineWriter",
+	  "out_pipeline": "*RF.pipe"
+	},
+	{
 	  "writer": "ModelWriter",
  	  "out_model": "*RF.model"
 	}

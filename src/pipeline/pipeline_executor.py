@@ -9,6 +9,7 @@ from src.utils.ftransf.feature_transformer import FeatureTransformer, \
 from src.model.model_op import ModelOp
 from src.inout.writer import Writer
 from src.inout.model_writer import ModelWriter
+from src.inout.predictive_pipeline_writer import PredictivePipelineWriter
 import src.main.main_logger as LOGGING
 import time
 
@@ -176,6 +177,8 @@ class PipelineExecutor:
                     )
                 if isinstance(comp, ModelWriter):
                     comp.write(state.model, prefix=self.out_prefix)
+                elif isinstance(comp, PredictivePipelineWriter):
+                    comp.write(self.maker, prefix=self.out_prefix)
                 else:
                     comp.write(state.pcloud, prefix=self.out_prefix)
             else:

@@ -31,7 +31,7 @@ class ModelWriter(Writer):
         kwargs = Writer.extract_writer_args(spec)
         # Extract particular arguments of ModelWriter
         path = spec.get('out_model', None)
-        if path is not None:  # Dont overload a not None path from ancestors
+        if path is not None:  # Dont overload with not None path
             kwargs['path'] = path
         # Delete keys with None value
         DictUtils.delete_by_val(kwargs, None)
@@ -42,7 +42,7 @@ class ModelWriter(Writer):
     # ---------------- #
     def __init__(self, path=None):
         """
-        Initialize/instantiate a ModelWriter
+        Initialize/instantiate a ModelWriter.
 
         See :class:`.Writer` and :meth:`writer.Writer.__init__`
         """
@@ -56,8 +56,10 @@ class ModelWriter(Writer):
         Write the given model.
 
         :param model: The model to be written.
+        :type model: :class:`.Model`
         :param prefix: If None, the writing applies to path. If not None,
             the writing applies to prefix+path.
+        :type prefix: str
         """
         # Prepare path and write
         path = self.prepare_path(prefix)
