@@ -3,6 +3,7 @@
 from src.inout.writer import Writer
 from src.inout.model_io import ModelIO
 from src.utils.dict_utils import DictUtils
+import src.main.main_logger as LOGGING
 
 
 # ---   CLASS   --- #
@@ -51,7 +52,7 @@ class ModelWriter(Writer):
 
     # ---   WRITE   --- #
     # ----------------- #
-    def write(self, model, prefix=None):
+    def write(self, model, prefix=None, info=True):
         """
         Write the given model.
 
@@ -60,7 +61,12 @@ class ModelWriter(Writer):
         :param prefix: If None, the writing applies to path. If not None,
             the writing applies to prefix+path.
         :type prefix: str
+        :param info: Whether to log an info message (True) or not (False).
+        :type info: bool
         """
         # Prepare path and write
         path = self.prepare_path(prefix)
         ModelIO.write(model, path)
+        # Log info if requested
+        if info:
+            LOGGING.LOGGER.info(f'Model written to "{path}"')

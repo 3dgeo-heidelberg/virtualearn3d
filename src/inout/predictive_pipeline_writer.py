@@ -3,6 +3,7 @@
 from src.inout.writer import Writer
 from src.inout.pipeline_io import PipelineIO
 from src.utils.dict_utils import DictUtils
+import src.main.main_logger as LOGGING
 
 
 # ---   CLASS   --- #
@@ -33,6 +34,12 @@ class PredictivePipelineWriter(Writer):
         path = spec.get('out_pipeline', None)
         if path is not None:  # Dont overload with not None path
             kwargs['path'] = path
+        kwargs['include_writer'] = spec.get('include_writer', None)
+        kwargs['include_imputer'] = spec.get('include_writer', None)
+        kwargs['include_feature_transformer'] = spec.get(
+            'include_feature_transformer', None
+        )
+        kwargs['include_miner'] = spec.get('include_miner', None)
         # Delete keys with None value
         DictUtils.delete_by_val(kwargs, None)
         # Return
@@ -49,14 +56,14 @@ class PredictivePipelineWriter(Writer):
         # Call parent's init
         super().__init__(path=path)
         # Assign attributes of PredictivePipelineWriter
-        self.include_writer = kwargs.get('include_writer', True)
+        self.include_writer = kwargs.get('include_writer', False)
         self.include_imputer = kwargs.get('include_imputer', True)
         self.include_ftransf = kwargs.get('include_feature_transformer', True)
         self.include_miner = kwargs.get('include_miner', True)
 
     # ---   WRITE   --- #
     # ----------------- #
-    def write(self, pipeline, prefix=None):
+    def write(self, pipeline, prefix=None, info=True):
         """
         Write the predictive version of the given pipeline.
 
@@ -65,7 +72,9 @@ class PredictivePipelineWriter(Writer):
         :type pipeline: :class:`.Pipeline`
         :param prefix: If None, the writing applies to path. If not None,
             the writing applies to prefix+path.
-       :type prefix: str
+        :type prefix: str
+        :param info: Whether to log an info message (True) or not (False).
+        :type info: bool
         """
         # Prepare path and write
         path = self.prepare_path(prefix)
@@ -78,3 +87,6 @@ class PredictivePipelineWriter(Writer):
             ),
             path
         )
+        # Log info if requested
+        if info:
+            LOGGING.LOGGER.info(f'Predictive pipeline written to "{path}"')

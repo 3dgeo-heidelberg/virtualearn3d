@@ -97,7 +97,11 @@
 	},
 	{
 	  "writer": "PredictivePipelineWriter",
-	  "out_pipeline": "*RF.pipe"
+	  "out_pipeline": "*RF.pipe",
+	  "include_writer": false,
+	  "include_imputer": true,
+	  "include_feature_transformer": true,
+	  "include_miner": true
 	},
 	{
 	  "writer": "ModelWriter",

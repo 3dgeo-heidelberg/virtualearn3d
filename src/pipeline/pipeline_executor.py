@@ -177,6 +177,7 @@ class PipelineExecutor:
                     )
                 if isinstance(comp, ModelWriter):
                     comp.write(state.model, prefix=self.out_prefix)
+
                 elif isinstance(comp, PredictivePipelineWriter):
                     comp.write(self.maker, prefix=self.out_prefix)
                 else:

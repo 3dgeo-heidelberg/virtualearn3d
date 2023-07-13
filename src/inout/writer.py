@@ -3,6 +3,7 @@
 from src.inout.point_cloud_io import PointCloudIO
 from src.main.vl3d_exception import VL3DException
 from src.utils.dict_utils import DictUtils
+import src.main.main_logger as LOGGING
 
 
 # ---   EXCEPTIONS   --- #
@@ -69,18 +70,25 @@ class Writer:
 
     # ---   WRITE   --- #
     # ----------------- #
-    def write(self, pcloud, prefix=None):
+    def write(self, pcloud, prefix=None, info=True):
         """
         Write the given point cloud.
 
         :param pcloud: The point cloud to be written.
+        :type pcloud: :class:`.PointCloud`
         :param prefix: If None, the writing applies to path. If not None,
             the writing applies to prefix+path.
             See :meth:`writer.Writer.prepare_path`.
+        :type prefix: str
+        :param info: Whether to log an info message (True) or not (False).
+        :type info: bool
         """
         # Prepare path and write
         path = self.prepare_path(prefix)
         PointCloudIO.write(pcloud, path)
+        # Log info if requested
+        if info:
+            LOGGING.LOGGER.info(f'Point cloud written to "{path}"')
 
     def prepare_path(self, prefix):
         """
