@@ -28,6 +28,7 @@ class PercentileSelector(FeatureTransformer):
     :vartype scoref: callable
     :ivar score_name: The name of the score used for the evaluations.
     :vartype score_name: path
+    :ivar sp: The internal percentile selection model.
     """
 
     # ---  SPECIFICATION ARGUMENTS  --- #
@@ -80,6 +81,7 @@ class PercentileSelector(FeatureTransformer):
                 'given.'
             )
         self.score_name = kwargs.get('score_name', 'SCORE')
+        self.sp = None
 
     # ---  FEATURE TRANSFORM METHODS  --- #
     # ----------------------------------- #
@@ -100,22 +102,23 @@ class PercentileSelector(FeatureTransformer):
         # Transform
         old_num_features = F.shape[1]
         start = time.perf_counter()
-        sp = SelectPercentile(
-            score_func=self.scoref,
-            percentile=self.percentile
-        )
-        F = sp.fit_transform(F, y)
+        if self.sp is None:
+            self.sp = SelectPercentile(
+                score_func=self.scoref,
+                percentile=self.percentile
+            ).fit(F, y)
+        F = self.sp.transform(F)
         end = time.perf_counter()
         new_num_features = F.shape[1]
         # Register selected features
-        self.selected_features = sp.get_support()
+        self.selected_features = self.sp.get_support()
         # Report scores
         self.report(
             BestScoreSelectionReport(
                 self.fnames if fnames is None else fnames,
-                sp.scores_,
+                self.sp.scores_,
                 self.score_name,
-                pvalues=sp.pvalues_,
+                pvalues=self.sp.pvalues_,
                 selected_features=self.selected_features
             ),
             out_prefix=out_prefix

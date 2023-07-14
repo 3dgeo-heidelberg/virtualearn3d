@@ -57,6 +57,7 @@ class UnivariateImputer(Imputer):
             strategy=kwargs.get('strategy', 'mean'),
             fill_value=kwargs.get('constant_val', 0)
         )
+        self.fit = False
 
     # ---   IMPUTER METHODS   --- #
     # --------------------------- #
@@ -71,14 +72,24 @@ class UnivariateImputer(Imputer):
         programming. If y is None, only imputed F will be return.
         """
         # Fit imputer
+        if not self.fit:
+            start = time.perf_counter()
+            self.imputer.fit(F)
+            end = time.perf_counter()
+            self.fit = True
+            LOGGING.LOGGER.info(
+                f'UnivariateImputer fit to {F.shape[0]} points with '
+                f'{F.shape[1]} features in {end-start:.3f} seconds.'
+            )
+        # Impute data
         start = time.perf_counter()
-        self.imputer.fit(F)
+        F = self.imputer.transform(F)
         end = time.perf_counter()
         LOGGING.LOGGER.info(
-            f'UnivariateImputer fit to {F.shape[0]} points with {F.shape[1]} '
+            f'UnivariateImputer imputed {F.shape[0]} points with {F.shape[1]} '
             f'features in {end-start:.3f} seconds.'
         )
-        # Return imputed data
+        # Return
         if y is not None:
-            return self.imputer.fit_transform(F), y
-        return self.imputer.fit_transform(F)
+            return F, y
+        return F

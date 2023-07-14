@@ -1,5 +1,6 @@
 from src.pipeline.state.pipeline_state import PipelineState, \
     PipelineStateException
+from src.pipeline.predictive_pipeline import PredictivePipeline
 from src.mining.miner import Miner
 from src.utils.imput.imputer import Imputer
 from src.utils.ftransf.feature_transformer import FeatureTransformer
@@ -22,6 +23,8 @@ class SimplePipelineState(PipelineState):
     :vartype model: :class:`.Model`
     :ivar fnames: The list of strings representing the feature names.
     :vartype fnames: list
+    :ivar preds: The predictions corresponding to the current pipeline state.
+    :vartype preds: :class:`np.ndarray`
     """
 
     # ---   INIT   --- #
@@ -39,6 +42,7 @@ class SimplePipelineState(PipelineState):
         self.pcloud = kwargs.get('pcloud', None)
         self.model = kwargs.get('model', None)
         self.fnames = kwargs.get('fnames', None)
+        self.preds = kwargs.get('preds', None)
 
     # ---  PIPELINE STATE METHODS  --- #
     # -------------------------------- #
@@ -49,17 +53,26 @@ class SimplePipelineState(PipelineState):
         # Extract key-word arguments of interest
         new_pcloud = kwargs.get('new_pcloud', None)
         new_model = kwargs.get('new_model', None)
+        new_preds = kwargs.get('new_preds', None)
         # Handle the many component types
         if isinstance(comp, Miner):
-            self.update_pcloud(comp, new_pcloud)  # Miner generated features
-            self.feautres_mined = True
+            self.update_pcloud(comp, new_pcloud)  # Mine generated features
         elif isinstance(comp, Imputer):
-            self.update_pcloud(comp, new_pcloud)  # Imputer generated features
+            self.update_pcloud(comp, new_pcloud)  # Impute generated features
         elif isinstance(comp, FeatureTransformer):
-            self.update_pcloud(comp, new_pcloud)  # Transformer gen. feats.
+            self.update_pcloud(comp, new_pcloud)  # Transform gen. feats.
         elif isinstance(comp, ModelOp):
             if comp.op == ModelOp.OP.TRAIN:
                 self.update_model(comp, new_model)
+            elif comp.op == ModelOp.OP.PREDICT:
+                self.update_preds(comp, new_preds)
+            else:
+                raise PipelineStateException(
+                    'SimplePipelineState received an unexpected model '
+                    f'operation: {comp.op}'
+                )
+        elif isinstance(comp, PredictivePipeline):
+            self.update_preds(comp, new_preds)
         else:
             raise PipelineStateException(
                 'SimplePipelineState failed to update because an unexpected '
@@ -112,3 +125,20 @@ class SimplePipelineState(PipelineState):
             )
         # Update model
         self.model = new_model
+
+    def update_preds(self, comp, new_preds):
+        """
+        Handle the update of the predictions.
+
+        :param comp: The component that updated the predictions.
+        :param new_preds: The new predictions.
+        :return: Nothing but the pipeline state itself is updated.
+        """
+        # Check
+        if new_preds is None:
+            raise PipelineStateException(
+                'SimplePipelineState cannot update predictions without '
+                'new predictions. None were given.'
+            )
+        # Update predictions
+        self.preds = new_preds

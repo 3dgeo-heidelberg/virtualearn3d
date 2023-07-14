@@ -7,6 +7,7 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   pipeline.pps
    pipeline.state
 
 Submodules
@@ -24,6 +25,14 @@ pipeline.pipeline\_executor module
 ----------------------------------
 
 .. automodule:: pipeline.pipeline_executor
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+pipeline.predictive\_pipeline module
+------------------------------------
+
+.. automodule:: pipeline.predictive_pipeline
    :members:
    :undoc-members:
    :show-inheritance:

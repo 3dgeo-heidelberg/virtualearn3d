@@ -36,7 +36,7 @@ class RandForestEvaluation(Evaluation):
         """
         Initialize/instantiate a RandForestEvaluation.
 
-        :param kwargs: The attributes for the RandForestEvaluation
+        :param kwargs: The attributes for the RandForestEvaluation.
         """
         # Call parent's init
         super().__init__(**kwargs)

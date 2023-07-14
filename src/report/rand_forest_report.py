@@ -11,8 +11,8 @@ class RandForestReport(Report):
     :author: Alberto M. Esmoris Pena
 
     Class to handle reports related to trained random forest models.
-    See :class:`.Report`
-    Se also :class:`.RandomForestClassificationModel`.
+    See :class:`.Report`.
+    See also :class:`.RandomForestClassificationModel`.
 
     :ivar importance: The vector of feature-wise importance.
     :vartype importance: :class:`np.ndarray`

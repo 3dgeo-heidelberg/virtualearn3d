@@ -4,7 +4,6 @@ from src.plot.plot import PlotException
 from src.plot.mpl_plot import MplPlot
 from matplotlib import pyplot as plt
 from sklearn.tree import plot_tree
-import numpy as np
 
 
 # ---   CLASS   --- #

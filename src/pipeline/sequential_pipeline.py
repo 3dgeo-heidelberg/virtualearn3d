@@ -1,17 +1,26 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.pipeline.pipeline import Pipeline, PipelineException
+from src.pipeline.predictive_pipeline import PredictivePipeline
+from src.pipeline.pps.pps_sequential import PpsSequential
 from src.pipeline.state.simple_pipeline_state import SimplePipelineState
 from src.pipeline.pipeline_executor import PipelineExecutor
 import src.main.main_logger as LOGGING
 from src.main.main_mine import MainMine
 from src.main.main_train import MainTrain
+from src.main.main_eval import MainEval
+from src.mining.miner import Miner
+from src.utils.imput.imputer import Imputer
+from src.utils.ftransf.feature_transformer import FeatureTransformer
 from src.utils.imputer_utils import ImputerUtils
 from src.utils.ftransf_utils import FtransfUtils
 from src.model.model_op import ModelOp
 from src.inout.writer import Writer
 from src.inout.writer_utils import WriterUtils
+from src.inout.pipeline_io import PipelineIO
+from src.inout.model_io import ModelIO
 import time
+import copy
 
 
 # ---   CLASS   --- #
@@ -72,7 +81,23 @@ class SequentialPipeline(Pipeline):
                 model_class = MainTrain.extract_model_class(comp)
                 model = model_class(**model_class.extract_model_args(comp))
                 self.sequence.append(ModelOp(model, ModelOp.OP.TRAIN))
-            # TODO Rethink : Add elif for train, predict, and eval too
+            if comp.get("predict", None) is not None:  # Handle predict
+                if comp['predict'].lower() == 'predictivepipeline':
+                    self.sequence.append(PipelineIO.read_predictive_pipeline(
+                        comp['model_path']
+                    ))
+                elif comp['predict'].ower() == 'modelloader':
+                    model = ModelIO.read(comp['model_path'])
+                    self.sequence.append(ModelOp(model, ModelOp.OP.PREDICT))
+                else:
+                    raise PipelineException(
+                        'SequentialPipeline does not support requested '
+                        f'predict specification: "{comp["predict"]}"'
+                    )
+            if comp.get("eval", None) is not None:  # Handle eval
+                eval_class = MainEval.extract_eval_class(comp)
+                eval = eval_class(**eval_class.extract_eval_args(comp))
+                self.sequence.append(eval)
             # Handle writer as component
             if comp.get("writer", None) is not None:  # Handle writer
                 writer_class = WriterUtils.extract_writer_class(comp)
@@ -133,4 +158,59 @@ class SequentialPipeline(Pipeline):
             f'computed in {end-start:.3f} seconds.'
         )
 
-
+    # ---  PIPELINE METHODS  --- #
+    # -------------------------- #
+    def to_predictive_pipeline(self, **kwargs):
+        """
+        See :class:`.Pipeline` and
+        :meth:`.pipeline.Pipeline.to_predictive_pipeline`.
+        """
+        # Copy itself
+        sp = copy.copy(self)
+        # Reinitialize state
+        LOGGING.LOGGER.debug(
+            'Sequential pipeline state at the moment when predictive pipeline '
+            'generated:\n'
+            f'Point cloud: {sp.state.pcloud}\n'
+            f'Model: {sp.state.model}\n'
+            f'Feature names: {sp.state.fnames}'
+        )
+        sp.state = SimplePipelineState()
+        LOGGING.LOGGER.debug(
+            'State of the generated predictive pipeline:\n'
+            f'Point cloud: {sp.state.pcloud}\n'
+            f'Model: {sp.state.model}\n'
+            f'Feature names: {sp.state.fnames}'
+        )
+        # But copy only the desired components
+        sp.sequence = []
+        for comp in self.sequence:
+            if isinstance(comp, ModelOp):
+                sp.sequence.append(ModelOp(comp.model, ModelOp.OP.PREDICT))
+            if isinstance(comp, Writer) and \
+                    kwargs.get('include_writer', False):
+                sp.sequence.append(comp)
+            if isinstance(comp, Imputer) and \
+                    kwargs.get('include_imputer', True):
+                sp.sequence.append(comp)
+            if isinstance(comp, FeatureTransformer) and \
+                    kwargs.get('include_feature_transformer', True):
+                sp.sequence.append(comp)
+            if isinstance(comp, Miner) and \
+                    kwargs.get('include_miner', True):
+                sp.sequence.append(comp)
+        LOGGING.LOGGER.debug(
+            'Sequence of original sequential pipeline has {m} components.\n'
+            'Sequence of predictive sequential pipeline has {n} components.'
+            .format(
+                m=len(self.sequence),
+                n=len(sp.sequence)
+            )
+        )
+        # Build the predictive pipeline
+        pp = PredictivePipeline(sp, PpsSequential())
+        # Clear paths of predictive pipeline
+        pp.in_pcloud = None
+        pp.out_pcloud = None
+        # Return the predictive pipeline
+        return pp

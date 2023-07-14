@@ -38,6 +38,7 @@ class PCATransformer(FeatureTransformer):
         dimensionality. If None, they will be determined automatically as
         PCA_{1}, ..., PCA_{out_dim}.
     :vartype frenames: list
+    :ivar pca: The internal PCA model.
     """
 
     # ---  SPECIFICATION ARGUMENTS  --- #
@@ -78,6 +79,7 @@ class PCATransformer(FeatureTransformer):
         self.whiten = kwargs.get('whiten', False)
         self.random_seed = kwargs.get('random_seed', None)
         self.frenames = kwargs.get('frenames', None)
+        self.pca = None  # By default, no PCA model has been fit
 
     # ---  FEATURE TRANSFORM METHODS  --- #
     # ----------------------------------- #
@@ -91,13 +93,14 @@ class PCATransformer(FeatureTransformer):
         # Transform
         in_dim = F.shape[1]
         start = time.perf_counter()
-        pca = PCA(
-            n_components=self.out_dim,
-            whiten=self.whiten,
-            random_state=self.random_seed,
-            copy=True
-        )
-        F = pca.fit_transform(F)
+        if self.pca is None:
+            self.pca = PCA(
+                n_components=self.out_dim,
+                whiten=self.whiten,
+                random_state=self.random_seed,
+                copy=True
+            ).fit(F)
+        F = self.pca.transform(F)
         end = time.perf_counter()
         self.cached_out_dim = F.shape[1]
         # Validate output dimensionality
@@ -110,7 +113,7 @@ class PCATransformer(FeatureTransformer):
         self.report(
             PCAProjectionReport(
                 self.get_names_of_transformed_features(),
-                pca.explained_variance_ratio_,
+                self.pca.explained_variance_ratio_,
                 in_dim
             ),
             out_prefix=out_prefix
@@ -118,7 +121,7 @@ class PCATransformer(FeatureTransformer):
         # Plot explained variance
         if self.plot_path is not None:
             PCAVariancePlot(
-                pca.explained_variance_ratio_,
+                self.pca.explained_variance_ratio_,
                 path=self.plot_path
             ).plot(out_prefix=out_prefix)
         # Log transformation

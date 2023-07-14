@@ -1,3 +1,6 @@
+from src.eval.classification_evaluator import ClassificationEvaluator
+
+
 # ---   CLASS   --- #
 # ----------------- #
 class MainEval:
@@ -18,3 +21,26 @@ class MainEval:
         # TODO Rethink : Implement
         print('main_vl3d_eval')  # TODO Remove
         pass
+
+    # ---  EXTRACT FROM SPEC  --- #
+    # --------------------------- #
+    @staticmethod
+    def extract_eval_class(spec):
+        """
+        Extract the evaluator's class from the key-word specification.
+
+        :param spec: The key-word specification.
+        :return: Class representing/realizing an evaluator.
+        :rtype: :class:`.Evaluator`
+        """
+        eval = spec.get('eval', None)
+        if eval is None:
+            raise ValueError(
+                'Evaluation requires an evaluator. None was specified.'
+            )
+        # Check evaluator class
+        eval_low = eval.lower()
+        if eval_low == 'classificationevaluator':
+            return ClassificationEvaluator
+        # An unknown evaluator was specified
+        return ValueError(f'There is no known evaluator "{eval}"')

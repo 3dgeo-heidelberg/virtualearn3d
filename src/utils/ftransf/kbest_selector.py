@@ -26,6 +26,7 @@ class KBestSelector(FeatureTransformer):
     :vartype scoref: callable
     :ivar score_name: The name of the score used for the evaluations.
     :vartype score_name: str
+    :ivar kb: The internal KBest selection model.
     """
 
     # ---  SPECIFICATION ARGUMENTS  --- #
@@ -104,6 +105,7 @@ class KBestSelector(FeatureTransformer):
                 'given.'
             )
         self.score_name = kwargs.get('score_name', 'SCORE')
+        self.kb = None  # By default, no KBest Selection model has been fit
 
     # ---  FEATURE TRANSFORM METHODS  --- #
     # ----------------------------------- #
@@ -123,19 +125,20 @@ class KBestSelector(FeatureTransformer):
         # Transform
         old_num_features = F.shape[1]
         start = time.perf_counter()
-        kb = SelectKBest(score_func=self.scoref, k=self.k)
-        F = kb.fit_transform(F, y)
+        if self.kb is None:
+            self.kb = SelectKBest(score_func=self.scoref, k=self.k).fit(F, y)
+        F = self.kb.transform(F)
         end = time.perf_counter()
         new_num_features = F.shape[1]
         # Register selected features
-        self.selected_features = kb.get_support()
+        self.selected_features = self.kb.get_support()
         # Report scores
         self.report(
             BestScoreSelectionReport(
                 self.fnames if fnames is None else fnames,
-                kb.scores_,
+                self.kb.scores_,
                 self.score_name,
-                pvalues=kb.pvalues_,
+                pvalues=self.kb.pvalues_,
                 selected_features=self.selected_features
             ),
             out_prefix=out_prefix

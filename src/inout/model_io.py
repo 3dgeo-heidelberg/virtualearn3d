@@ -10,7 +10,7 @@ class ModelIO:
     """
     :author: Alberto M. Esmoris Pena
 
-    Class with utils static methods for input/output operations related to
+    Class with util static methods for input/output operations related to
     models.
     """
     # ---  READ / LOAD  --- #
@@ -21,6 +21,7 @@ class ModelIO:
         Read a model file.
 
         :param path: Path to the model file.
+        :type path: str
         :return: Instance of Model (or corresponding derived class)
         :rtype: :class:`.Model`
         """
@@ -46,8 +47,10 @@ class ModelIO:
         Write a model to a file.
 
         :param model: The model to be written.
+        :type model: :class:`.Model`
         :param path: Path where the model file must be written.
-        :return: Nothing
+        :type path: str
+        :return: Nothing.
         """
         # Validate output directory
         IOUtils.validate_path_to_directory(
@@ -60,4 +63,4 @@ class ModelIO:
                 'Given object will not be written because it is not a model.'
             )
         # Write output model
-        joblib.dump(model, path)
+        joblib.dump(model, path, compress=True)

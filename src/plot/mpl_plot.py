@@ -29,7 +29,7 @@ class MplPlot(Plot, ABC):
     def save_show_and_clear(self, out_prefix=None):
         """
         Method to handle the save, show, and clear figure logic. It is expected
-        to be called at the end of a plot method invokation. See
+        to be called at the end of a plot method invocation. See
         :meth:`plot.Plot.plot`.
 
         :return: Nothing.
@@ -37,7 +37,7 @@ class MplPlot(Plot, ABC):
         # Save
         if self.path:
             path = self.path
-            if out_prefix:
+            if out_prefix is not None:
                 path = out_prefix[:-1] + path[1:]
             plt.savefig(path)
         # Show

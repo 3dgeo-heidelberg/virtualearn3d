@@ -14,7 +14,7 @@ class PipelineException(VL3DException):
     :author: Alberto M. Esmoris Pena
 
     Class for exceptions related to pipeline components.
-    See :class:`VL3DException`
+    See :class:`VL3DException`.
     """
     def __init__(self, message=''):
         # Call parent VL3DException
@@ -28,7 +28,7 @@ class Pipeline:
     :author: Alberto M. Esmoris Pena
 
     Abstract class providing the interface for any pipeline and a common
-        baseline implementation.
+    baseline implementation.
 
     :ivar in_pcloud: Either a string or a list of strings representing paths to
         input point clouds.
@@ -110,3 +110,19 @@ class Pipeline:
         :return: Nothing.
         """
         pass
+
+    # ---  PIPELINE METHODS  --- #
+    # -------------------------- #
+    def to_predictive_pipeline(self, **kwargs):
+        """
+        Transforms the current pipeline to a predictive pipeline, if possible.
+        See :class:`.PredictivePipeline`.
+
+        :return: A predictive pipeline wrapping this pipeline and providing a
+            predictive strategy.
+        :rtype: :class:`.PredictivePipeline`.
+        """
+        raise PipelineException(
+            f'{self.__class__.__name__} cannot be transformed to a predictive '
+            'pipeline.'
+        )
