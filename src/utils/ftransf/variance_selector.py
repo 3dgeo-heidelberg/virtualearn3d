@@ -16,6 +16,10 @@ class VarianceSelector(FeatureTransformer):
 
     Class for transforming features by discarding those which variance lies
     below a given threshold.
+
+    :ivar var_th: The specified variance threshold.
+    :vartype var_th: float
+    :ivar vt: The internal variance threshold model.
     """
 
     # ---  SPECIFICATION ARGUMENTS  --- #
@@ -50,6 +54,7 @@ class VarianceSelector(FeatureTransformer):
         super().__init__(**kwargs)
         # Assign attributes
         self.var_th = kwargs.get('variance_threshold', 0.0)
+        self.vt = None  # By default, no variance threshold model has been fit
 
     # ---  FEATURE TRANSFORM METHODS  --- #
     # ----------------------------------- #
@@ -64,17 +69,18 @@ class VarianceSelector(FeatureTransformer):
         # Transform
         old_num_features = F.shape[1]
         start = time.perf_counter()
-        vt = VarianceThreshold(threshold=self.var_th)
-        F = vt.fit_transform(F, y)
+        if self.vt is None:
+            self.vt = VarianceThreshold(threshold=self.var_th).fit(F)
+        F = self.vt.transform(F)
         end = time.perf_counter()
         new_num_features = F.shape[1]
         # Register selected features (either as mask or indices)
-        self.selected_features = vt.get_support()
+        self.selected_features = self.vt.get_support()
         # Report variances
         self.report(
             VarianceSelectionReport(
                 self.fnames if fnames is None else fnames,
-                vt.variances_,
+                self.vt.variances_,
                 selected_features=self.selected_features
             ),
             out_prefix=out_prefix

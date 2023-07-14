@@ -49,7 +49,7 @@ class PpsSequential(PipelinePredictiveStrategy):
         end = time.perf_counter()
         LOGGING.LOGGER.info(
             f'Sequential predictive pipeline on {pcloud.get_num_points()} '
-            f'computed in {end-start:.3f} seconds.'
+            f'points computed in {end-start:.3f} seconds.'
         )
         return preds
 
