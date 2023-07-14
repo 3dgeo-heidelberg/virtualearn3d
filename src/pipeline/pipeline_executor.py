@@ -7,6 +7,7 @@ from src.utils.imput.imputer import Imputer
 from src.utils.ftransf.feature_transformer import FeatureTransformer, \
     FeatureTransformerException
 from src.model.model_op import ModelOp
+from src.eval.evaluator import Evaluator
 from src.inout.writer import Writer
 from src.inout.model_writer import ModelWriter
 from src.pipeline.predictive_pipeline import PredictivePipeline
@@ -189,7 +190,13 @@ class PipelineExecutor:
                     state.pcloud, out_prefix=self.out_prefix
                 )
             )
-        # TODO Rethink : Add elif for train, predict, and eval too
+        elif isinstance(comp, Evaluator):
+            # Handle evaluation
+            comp(
+                state.preds,
+                y=state.pcloud.get_classes_vector(),
+                out_prefix=self.out_prefix
+            )
         elif isinstance(comp, Writer):  # Handle writer
             if comp.needs_prefix():
                 if self.out_prefix is None:

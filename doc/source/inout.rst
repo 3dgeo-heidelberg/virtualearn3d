@@ -36,10 +36,34 @@ inout.model\_writer module
    :undoc-members:
    :show-inheritance:
 
+inout.pipeline\_io module
+-------------------------
+
+.. automodule:: inout.pipeline_io
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 inout.point\_cloud\_io module
 -----------------------------
 
 .. automodule:: inout.point_cloud_io
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+inout.predictions\_writer module
+--------------------------------
+
+.. automodule:: inout.predictions_writer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+inout.predictive\_pipeline\_writer module
+-----------------------------------------
+
+.. automodule:: inout.predictive_pipeline_writer
    :members:
    :undoc-members:
    :show-inheritance:

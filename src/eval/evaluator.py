@@ -1,6 +1,7 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from abc import abstractmethod
+import src.main.main_logger as LOGGING
 
 
 # ---   EXCEPTIONS   --- #
@@ -52,3 +53,25 @@ class Evaluator:
         :rtype: :class:`.Evaluation`
         """
         pass
+
+    def __call__(self, x, **kwargs):
+        """
+        Evaluate with extra logic that is convenient for pipeline-based
+        execution.
+
+        See :meth:`evaluator.Evaluator.eval`.
+        """
+
+        # Obtain evaluation
+        ev = self.eval(x, **kwargs)
+        out_prefix = kwargs.get('out_prefix', None)
+        if ev.can_report():
+            report = ev.report()
+            LOGGING.LOGGER.info(report.to_string())
+            report_path = kwargs.get('report_path', None)
+            if report_path is not None:
+                report.to_file(report_path, out_prefix=out_prefix)
+        if ev.can_plot():
+            plot_path = kwargs.get('plot_path', None)
+            if plot_path is not None:
+                ev.plot(path=plot_path).plot(out_prefix=out_prefix)

@@ -64,8 +64,10 @@ class Report:
         """
         Write the report to a file.
 
-        :param str path: Path to the file where the report must be written.
+        :param path: Path to the file where the report must be written.
+        :type path: str
         :param out_prefix: The output prefix to expand the path (OPTIONAL).
+        :type out_prefix: str
         :return: Nothing, the output is written to a file.
         """
         # Expand path if necessary

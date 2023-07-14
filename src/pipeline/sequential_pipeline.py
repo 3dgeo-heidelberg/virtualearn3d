@@ -8,6 +8,7 @@ from src.pipeline.pipeline_executor import PipelineExecutor
 import src.main.main_logger as LOGGING
 from src.main.main_mine import MainMine
 from src.main.main_train import MainTrain
+from src.main.main_eval import MainEval
 from src.mining.miner import Miner
 from src.utils.imput.imputer import Imputer
 from src.utils.ftransf.feature_transformer import FeatureTransformer
@@ -93,7 +94,10 @@ class SequentialPipeline(Pipeline):
                         'SequentialPipeline does not support requested '
                         f'predict specification: "{comp["predict"]}"'
                     )
-            # TODO Rethink : Add elif for train, predict, and eval too
+            if comp.get("eval", None) is not None:  # Handle eval
+                eval_class = MainEval.extract_eval_class(comp)
+                eval = eval_class(**eval_class.extract_eval_args(comp))
+                self.sequence.append(eval)
             # Handle writer as component
             if comp.get("writer", None) is not None:  # Handle writer
                 writer_class = WriterUtils.extract_writer_class(comp)

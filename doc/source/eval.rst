@@ -4,6 +4,14 @@ eval package
 Submodules
 ----------
 
+eval.classification\_evaluator module
+-------------------------------------
+
+.. automodule:: eval.classification_evaluator
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 eval.evaluation module
 ----------------------
 

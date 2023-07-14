@@ -87,7 +87,7 @@ class ClassificationModel(Model, ABC):
     def autoval_metrics_from_names(names):
         """
         Obtain a list of metrics that can be evaluated for vectors of classes
-            y (expected), and yhat (predicted).
+        y (expected), and yhat (predicted).
 
         :param names: The names of the metrics. Currently supported metrics are
             Overall Accuracy "OA", Precision "P", Recall "R", F1 score "F1",
@@ -96,6 +96,7 @@ class ClassificationModel(Model, ABC):
             Union "wIoU", Matthews Correlation Coefficient "MCC", and Kohen's
             Kappa score "Kappa".
         :return: List of metrics such that metric_i(y, yhat) can be invoked.
+        :rtype: list
         """
         metrics = []
         if "OA" in names:

@@ -26,10 +26,15 @@
 	},
 	{
 	  "eval": "ClassificationEvaluator",
+	  "class_names": ["wood", "leaf"],
 	  "metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
-      "class_metrics": ["OA", "P", "R", "F1", "IoU", "MCC", "Kappa"],
+      "class_metrics": ["P", "R", "F1", "IoU"],
 	  "report_path": "*global_eval.log",
-	  "class_report_path": "*class_eval.log"
+	  "class_report_path": "*class_eval.log",
+	  "confusion_matrix_report_path" : "*confusion_matrix.log",
+	  "confusion_matrix_plot_path" : "*confusion_matrix.svg",
+	  "class_distribution_report_path": "*class_distribution.log",
+	  "class_distribution_plot_path": "*class_distribution.svg"
 	}
   ]
 }
