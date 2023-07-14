@@ -2,7 +2,7 @@
 # ------------------- #
 from src.eval.evaluation import Evaluation
 from src.report.classification_report import ClassificationReport
-#from src.plot.classification_plot import ClassificationPlot  # TODO Restore
+from src.plot.classification_plot import ClassificationPlot
 
 
 # ---   CLASS   --- #
