@@ -138,12 +138,18 @@ class RandomForestClassificationModel(ClassificationModel):
         See :meth:`model.Model.on_training_finished`.
         """
         # Report feature importances and plot decision trees
+        start = time.perf_counter()
         ev = RandForestEvaluator(
             problem_name='Trained Random Forest Classification Model',
             num_decision_trees=self.decision_plot_trees,
             compute_permutation_importance=self.importance_report_permutation,
             max_tree_depth=self.decision_plot_max_depth
         ).eval(self, X=X, y=y)
+        end = time.perf_counter()
+        LOGGING.LOGGER.info(
+            'RandomForestClassificationModel computed "on training finished" '
+            f'evaluation in {end-start:.3f} seconds.'
+        )
         if ev.can_report():
             report = ev.report()
             LOGGING.LOGGER.info(report.to_string())

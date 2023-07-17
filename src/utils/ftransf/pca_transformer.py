@@ -67,9 +67,9 @@ class PCATransformer(FeatureTransformer):
     # ---------------- #
     def __init__(self, **kwargs):
         """
-        Initialize/instantiate a PCATransformer
+        Initialize/instantiate a PCATransformer.
 
-        :param kwargs: The attributes for the PCATransformer
+        :param kwargs: The attributes for the PCATransformer.
         """
         # Call parent init
         super().__init__(**kwargs)
@@ -138,11 +138,8 @@ class PCATransformer(FeatureTransformer):
 
     def get_names_of_transformed_features(self, **kwargs):
         """
-        Obtain the names that correspond to the transformed features.
-
-        :return: The list of strings representing the names of the transformed
-            features.
-        :rtype: list
+        See :class:`.FeatureTransformer` and
+        :meth:`feature_transformer.FeatureTransformer.get_names_of_transformed_features`
         """
         new_fnames = self.frenames
         if new_fnames is None:  # Default PCA_{i} for i = 1, ..., out_dim

@@ -152,12 +152,12 @@ class ClassificationEvaluator(Evaluator):
                 'or reference labels.'
             )
         # Automatically determine class_names
+        class_nums = np.unique(np.concatenate([yhat, y]))
         if self.class_names is None:
-            class_nums = np.unique(np.concatenate([yhat, y]))
             self.class_names = [f'C{i}' for i in class_nums]
         # Evaluate : class distribution
-        yhat_count, yhat_bin = np.histogram(yhat, bins=len(np.unique(yhat)))
-        y_count, y_bin = np.histogram(y, bins=len(np.unique(y)))
+        yhat_count, yhat_bin = np.histogram(yhat, bins=len(class_nums))
+        y_count, y_bin = np.histogram(y, bins=len(class_nums))
         # Evaluate : confusion matrix
         conf_mat = confusion_matrix(y, yhat)
         # Evaluate : metrics

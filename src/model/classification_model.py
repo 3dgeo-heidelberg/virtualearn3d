@@ -166,7 +166,8 @@ class ClassificationModel(Model, ABC):
         """
         state = self.__dict__.copy()
         # Remove metrics (because they use lambda functions)
-        del state['autoval_metrics']
+        if state.get('autoval_metrics', None) is not None:
+            del state['autoval_metrics']
         # Return state dictionary
         return state
 
