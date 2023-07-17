@@ -35,13 +35,12 @@ class MainMine:
         miner_class = MainMine.extract_miner_class(spec)
         miner = miner_class(**miner_class.extract_miner_args(spec))
         pcloud = miner.mine(pcloud)
-        PointCloudIO.write(
-            pcloud,
-            MainMine.extract_output_path(spec)
-        )
+        outpath = MainMine.extract_output_path(spec)
+        PointCloudIO.write(pcloud, outpath)
         end = time.perf_counter()
         LOGGING.LOGGER.info(
-            f'Data mining computed in {end-start:.3f} seconds.'
+            f'Data mining computed in {end-start:.3f} seconds. '
+            f'Output point cloud written to "{os.path.abspath(outpath)}".'
         )
 
     # ---  EXTRACT FROM SPEC  --- #

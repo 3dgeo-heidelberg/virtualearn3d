@@ -124,25 +124,28 @@ class KBestSelector(FeatureTransformer):
             )
         # Transform
         old_num_features = F.shape[1]
+        plot_and_report = False
         start = time.perf_counter()
         if self.kb is None:
             self.kb = SelectKBest(score_func=self.scoref, k=self.k).fit(F, y)
+            plot_and_report = True  # Plot and report only when fit
         F = self.kb.transform(F)
         end = time.perf_counter()
         new_num_features = F.shape[1]
         # Register selected features
         self.selected_features = self.kb.get_support()
-        # Report scores
-        self.report(
-            BestScoreSelectionReport(
-                self.fnames if fnames is None else fnames,
-                self.kb.scores_,
-                self.score_name,
-                pvalues=self.kb.pvalues_,
-                selected_features=self.selected_features
-            ),
-            out_prefix=out_prefix
-        )
+        if plot_and_report:
+            # Report scores
+            self.report(
+                BestScoreSelectionReport(
+                    self.fnames if fnames is None else fnames,
+                    self.kb.scores_,
+                    self.score_name,
+                    pvalues=self.kb.pvalues_,
+                    selected_features=self.selected_features
+                ),
+                out_prefix=out_prefix
+            )
         # Log transformation
         LOGGING.LOGGER.info(
             'KBestSelector transformed {n1} features into {n2} features in '

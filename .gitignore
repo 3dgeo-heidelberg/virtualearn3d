@@ -164,5 +164,8 @@ cython_debug/
 # Tags
 tags
 
+# Output files
+out/
+
 # Custom and temporary scripts
 myvl3d.sh

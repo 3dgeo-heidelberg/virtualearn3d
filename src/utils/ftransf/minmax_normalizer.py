@@ -80,24 +80,27 @@ class MinmaxNormalizer(FeatureTransformer):
         :meth:`feature_transformer.FeatureTransformer.transform`.
         """
         # Transform
+        plot_and_report = False
         start = time.perf_counter()
         if self.minmaxer is None:
             self.minmaxer = MinMaxScaler(
                 feature_range=tuple(self.target_range),
                 clip=self.clip
             ).fit(F)
+            plot_and_report = True  # Plot and report only when fit
         F = self.minmaxer.transform(F)
         end = time.perf_counter()
-        # Report feature-wise min and max
-        self.report(
-            MinmaxNormalizationReport(
-                self.get_names_of_transformed_features(fnames=self.fnames),
-                self.minmaxer.data_min_,
-                self.minmaxer.data_max_,
-                range=self.minmaxer.data_range_
-            ),
-            out_prefix=out_prefix
-        )
+        if plot_and_report:
+            # Report feature-wise min and max
+            self.report(
+                MinmaxNormalizationReport(
+                    self.get_names_of_transformed_features(fnames=self.fnames),
+                    self.minmaxer.data_min_,
+                    self.minmaxer.data_max_,
+                    range=self.minmaxer.data_range_
+                ),
+                out_prefix=out_prefix
+            )
         # Log transformation
         LOGGING.LOGGER.info(
             f'MinmaxNormalizer transformed {F.shape[0]} points with '

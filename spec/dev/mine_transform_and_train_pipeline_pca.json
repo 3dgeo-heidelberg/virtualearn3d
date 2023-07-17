@@ -1,11 +1,11 @@
 {
   "in_pcloud": [
-	"test_data/QuePet_BR01_01_2019-07-03_q2_TLS-on_c.laz",
-	"test_data/test_tree.laz"
+	"/home/uadmin/git/virtualearn3d/test_data/QuePet_BR01_01_2019-07-03_q2_TLS-on_c.laz",
+	"/home/uadmin/git/virtualearn3d/test_data/test_tree.laz"
   ],
   "out_pcloud": [
-	"out/training/QuePet_BR01_kbest_RF/*",
-    "out/training/test_tree_kbest_RF/*"
+	"/tmp/QuePet_BR01_*",
+    "/tmp/test_tree_*"
   ],
   "sequential_pipeline": [
 	{
@@ -21,20 +21,42 @@
 	  "frenames": ["linearity_r0_1", "planarity_r0_1", "surface_variation_r0_1", "eigenentropy_r0_1", "omnivariance_r0_1", "verticality_r0_1", "anisotropy_r0_1"]
 	},
 	{
+	  "miner": "GeometricFeatures",
+	  "radius": 0.2,
+	  "fnames": ["linearity", "planarity", "surface_variation", "eigenentropy", "omnivariance", "verticality", "anisotropy"],
+	  "frenames": ["linearity_r0_2", "planarity_r0_2", "surface_variation_r0_2", "eigenentropy_r0_2", "omnivariance_r0_2", "verticality_r0_2", "anisotropy_r0_2"]
+	},
+	{
 	  "writer": "Writer",
- 	  "out_pcloud": "*pcloud/geomfeats.laz"
+ 	  "out_pcloud": "*geomfeats.laz"
 	},
 	{
-	  "imputer": "RemovalImputer",
-	  "target_val": "NaN",
-	  "fnames": ["AUTO"]
-	},
-	{
-	  "feature_transformer": "KBestSelector",
-	  "type": "classification",
-	  "k": 5,
+	  "imputer": "UnivariateImputer",
 	  "fnames": ["AUTO"],
-	  "report_path": "*report/kbest_selection.log"
+	  "target_val": "NaN",
+	  "strategy": "mean",
+	  "constant_val": 0
+	},
+	{
+	  "feature_transformer": "Standardizer",
+	  "fnames": ["AUTO"],
+	  "center": true,
+	  "scale": true
+	},
+	{
+	  "_feature_transformer": "MinmaxNormalizer",
+	  "fnames": ["AUTO"],
+	  "target_range": [0, 1],
+	  "clip": true
+	},
+	{
+	  "feature_transformer": "PCATransformer",
+	  "out_dim": 0.99,
+	  "whiten": false,
+	  "random_seed": null,
+	  "fnames": ["AUTO"],
+	  "report_path": "*pca_projection.log",
+	  "plot_path": "*pca_projection.svg"
 	},
 	{
 	  "writer": "Writer",
@@ -66,7 +88,7 @@
 		"max_samples": 0.8
 	  },
 	  "autoval_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
-	  "stratkfold_plot_path": "*plot/RF_stratkfold_plot.svg",
+	  "stratkfold_plot_path": "*RF_stratkfold_plot.svg",
 	  "hyperparameter_tuning": {
 		"tuner": "GridSearch",
 		"hyperparameters": ["n_estimators", "max_depth", "max_samples"],
@@ -78,21 +100,12 @@
 			"max_depth": [15, 20, 27],
 			"max_samples": [0.6, 0.8, 0.9]
 		},
-		"report_path": "*report/RF_hyper_grid_search.log"
-	  },
-	  "importance_report_path": "*report/Vaihingen3D_Training_RF_importance.log",
-	  "importance_report_permutation": true,
-	  "decision_plot_path": "*plot/Vaihingen3D_Training_RF_decission.svg",
-	  "decision_plot_trees": 3,
-	  "decision_plot_max_depth": 5
+		"report_path": "*RF_hyper_grid_search.log"
+	  }
 	},
 	{
-	  "writer": "PredictivePipelineWriter",
-	  "out_pipeline": "*pipe/Vaihingen3D_Training_RF.pipe",
-	  "include_writer": false,
-	  "include_imputer": true,
-	  "include_feature_transformer": true,
-	  "include_miner": true
+	  "writer": "ModelWriter",
+ 	  "out_model": "*RF.model"
 	}
   ]
 }

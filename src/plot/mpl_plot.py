@@ -2,7 +2,9 @@
 # ------------------- #
 from abc import ABC
 from src.plot.plot import Plot
+from src.inout.io_utils import IOUtils
 from matplotlib import pyplot as plt
+import os
 
 
 # ---   CLASS   --- #
@@ -39,6 +41,11 @@ class MplPlot(Plot, ABC):
             path = self.path
             if out_prefix is not None:
                 path = out_prefix[:-1] + path[1:]
+            IOUtils.validate_path_to_directory(
+                os.path.dirname(path),
+                'It is not possible to write a plot to the given path: '
+                f'"{path}"'
+            )
             plt.savefig(path)
         # Show
         if self.show:

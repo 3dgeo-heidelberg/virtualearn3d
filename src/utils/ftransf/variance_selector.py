@@ -68,23 +68,26 @@ class VarianceSelector(FeatureTransformer):
         """
         # Transform
         old_num_features = F.shape[1]
+        plot_and_report = False
         start = time.perf_counter()
         if self.vt is None:
             self.vt = VarianceThreshold(threshold=self.var_th).fit(F)
+            plot_and_report = True  # Plot and report only when fit
         F = self.vt.transform(F)
         end = time.perf_counter()
         new_num_features = F.shape[1]
         # Register selected features (either as mask or indices)
         self.selected_features = self.vt.get_support()
-        # Report variances
-        self.report(
-            VarianceSelectionReport(
-                self.fnames if fnames is None else fnames,
-                self.vt.variances_,
-                selected_features=self.selected_features
-            ),
-            out_prefix=out_prefix
-        )
+        if plot_and_report:
+            # Report variances
+            self.report(
+                VarianceSelectionReport(
+                    self.fnames if fnames is None else fnames,
+                    self.vt.variances_,
+                    selected_features=self.selected_features
+                ),
+                out_prefix=out_prefix
+            )
         # Log transformation
         LOGGING.LOGGER.info(
             'VarianceSelector transformed {n1} features into {n2} features in '

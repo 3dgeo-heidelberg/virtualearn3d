@@ -1,21 +1,17 @@
 {
   "in_pcloud": [
-	"/home/uadmin/git/virtualearn3d/test_data/QuePet_BR01_01_2019-07-03_q2_TLS-on_c.laz",
-	"/home/uadmin/git/virtualearn3d/test_data/test_tree.laz"
+	"test_data/QuePet_BR01_01_2019-07-03_q2_TLS-on_c.laz",
+	"test_data/test_tree.laz"
   ],
   "out_pcloud": [
-	"/tmp/QuePet_BR01_*",
-    "/tmp/test_tree_*"
+	"out/prediction/QuePet_BR01_pca_RF/QuePet_BR01/*",
+    "out/prediction/QuePet_BR01_pca_RF/test_tree/*"
   ],
   "sequential_pipeline": [
     {
       "predict": "PredictivePipeline",
-	  "model_path": "/home/uadmin/tmp/tmp_data/vl3d_ml/QuePet_BR01_RF.pipe" 
+	  "model_path": "out/training/QuePet_BR01_pca_RF/pipe/Vaihingen3D_Training_RF.pipe" 
     },
-	{
-	  "_predict": "ModelLoader",
-	  "model_path": "/home/uadmin/tmp/tmp_data/vl3d_ml/QuePet_BR01_RF.model"
-	},
 	{
 	  "writer": "Writer",
 	  "out_pcloud": "*predicted.laz"
@@ -29,12 +25,12 @@
 	  "class_names": ["wood", "leaf"],
 	  "metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
       "class_metrics": ["P", "R", "F1", "IoU"],
-	  "report_path": "*global_eval.log",
-	  "class_report_path": "*class_eval.log",
-	  "confusion_matrix_report_path" : "*confusion_matrix.log",
-	  "confusion_matrix_plot_path" : "*confusion_matrix.svg",
-	  "class_distribution_report_path": "*class_distribution.log",
-	  "class_distribution_plot_path": "*class_distribution.svg"
+	  "report_path": "*report/global_eval.log",
+	  "class_report_path": "*report/class_eval.log",
+	  "confusion_matrix_report_path" : "*report/confusion_matrix.log",
+	  "confusion_matrix_plot_path" : "*plot/confusion_matrix.svg",
+	  "class_distribution_report_path": "*report/class_distribution.log",
+	  "class_distribution_plot_path": "*plot/class_distribution.svg"
 	}
   ]
 }

@@ -19,8 +19,8 @@ sys.path.insert(0, os.path.abspath(os.path.join('..', '..')))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'VirtuaLearn3D'
-copyright = '2023, Alberto Esmoris, Hannah Wieser, Bernhard Hofle'
-author = 'Alberto Esmoris, Hannah Wieser, Bernhard Hofle'
+copyright = '2023, Alberto Esmoris, Hannah Weiser, Bernhard Hoefle'
+author = 'Alberto Esmoris, Hannah Weiser, Bernhard Hoefle'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

@@ -92,6 +92,7 @@ class PCATransformer(FeatureTransformer):
         """
         # Transform
         in_dim = F.shape[1]
+        plot_and_report = False
         start = time.perf_counter()
         if self.pca is None:
             self.pca = PCA(
@@ -100,6 +101,7 @@ class PCATransformer(FeatureTransformer):
                 random_state=self.random_seed,
                 copy=True
             ).fit(F)
+            plot_and_report = True  # Plot and report only when fit
         F = self.pca.transform(F)
         end = time.perf_counter()
         self.cached_out_dim = F.shape[1]
@@ -109,21 +111,22 @@ class PCATransformer(FeatureTransformer):
                 f'The actual output dimensionality is {self.cached_out_dim} '
                 f'but {self.out_dim} was requested.'
             )
-        # Report explained variance
-        self.report(
-            PCAProjectionReport(
-                self.get_names_of_transformed_features(),
-                self.pca.explained_variance_ratio_,
-                in_dim
-            ),
-            out_prefix=out_prefix
-        )
-        # Plot explained variance
-        if self.plot_path is not None:
-            PCAVariancePlot(
-                self.pca.explained_variance_ratio_,
-                path=self.plot_path
-            ).plot(out_prefix=out_prefix)
+        if plot_and_report:
+            # Report explained variance
+            self.report(
+                PCAProjectionReport(
+                    self.get_names_of_transformed_features(),
+                    self.pca.explained_variance_ratio_,
+                    in_dim
+                ),
+                out_prefix=out_prefix
+            )
+            # Plot explained variance
+            if self.plot_path is not None:
+                PCAVariancePlot(
+                    self.pca.explained_variance_ratio_,
+                    path=self.plot_path
+                ).plot(out_prefix=out_prefix)
         # Log transformation
         LOGGING.LOGGER.info(
             'PCATransformer transformed {n1} features into {n2} features in '

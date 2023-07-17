@@ -1,11 +1,11 @@
 {
   "in_pcloud": [
-	"test_data/QuePet_BR01_01_2019-07-03_q2_TLS-on_c.laz",
-	"test_data/test_tree.laz"
+	"/home/uadmin/git/virtualearn3d/test_data/QuePet_BR01_01_2019-07-03_q2_TLS-on_c.laz",
+	"/home/uadmin/git/virtualearn3d/test_data/test_tree.laz"
   ],
   "out_pcloud": [
-	"out/training/QuePet_BR01_kbest_RF/*",
-    "out/training/test_tree_kbest_RF/*"
+	"/tmp/QuePet_BR01_*",
+    "/tmp/test_tree_*"
   ],
   "sequential_pipeline": [
 	{
@@ -22,7 +22,7 @@
 	},
 	{
 	  "writer": "Writer",
- 	  "out_pcloud": "*pcloud/geomfeats.laz"
+ 	  "out_pcloud": "*geomfeats.laz"
 	},
 	{
 	  "imputer": "RemovalImputer",
@@ -33,8 +33,11 @@
 	  "feature_transformer": "KBestSelector",
 	  "type": "classification",
 	  "k": 5,
-	  "fnames": ["AUTO"],
-	  "report_path": "*report/kbest_selection.log"
+	  "fnames": [
+		"linearity_r0_05", "planarity_r0_05", "surface_variation_r0_05", "eigenentropy_r0_05", "omnivariance_r0_05", "verticality_r0_05", "anisotropy_r0_05",
+	  	"linearity_r0_1", "planarity_r0_1", "surface_variation_r0_1", "eigenentropy_r0_1", "omnivariance_r0_1", "verticality_r0_1", "anisotropy_r0_1"
+	  ],
+	  "report_path": "*kbest_selection.log"
 	},
 	{
 	  "writer": "Writer",
@@ -66,7 +69,7 @@
 		"max_samples": 0.8
 	  },
 	  "autoval_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
-	  "stratkfold_plot_path": "*plot/RF_stratkfold_plot.svg",
+	  "stratkfold_plot_path": "*RF_stratkfold_plot.svg",
 	  "hyperparameter_tuning": {
 		"tuner": "GridSearch",
 		"hyperparameters": ["n_estimators", "max_depth", "max_samples"],
@@ -78,21 +81,12 @@
 			"max_depth": [15, 20, 27],
 			"max_samples": [0.6, 0.8, 0.9]
 		},
-		"report_path": "*report/RF_hyper_grid_search.log"
-	  },
-	  "importance_report_path": "*report/Vaihingen3D_Training_RF_importance.log",
-	  "importance_report_permutation": true,
-	  "decision_plot_path": "*plot/Vaihingen3D_Training_RF_decission.svg",
-	  "decision_plot_trees": 3,
-	  "decision_plot_max_depth": 5
+		"report_path": "*RF_hyper_grid_search.log"
+	  }
 	},
 	{
-	  "writer": "PredictivePipelineWriter",
-	  "out_pipeline": "*pipe/Vaihingen3D_Training_RF.pipe",
-	  "include_writer": false,
-	  "include_imputer": true,
-	  "include_feature_transformer": true,
-	  "include_miner": true
+	  "writer": "ModelWriter",
+ 	  "out_model": "*RF.model"
 	}
   ]
 }

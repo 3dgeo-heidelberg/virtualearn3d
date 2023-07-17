@@ -101,28 +101,31 @@ class PercentileSelector(FeatureTransformer):
             )
         # Transform
         old_num_features = F.shape[1]
+        plot_and_report = False
         start = time.perf_counter()
         if self.sp is None:
             self.sp = SelectPercentile(
                 score_func=self.scoref,
                 percentile=self.percentile
             ).fit(F, y)
+            plot_and_report = True  # Plot and reporty only when fit
         F = self.sp.transform(F)
         end = time.perf_counter()
         new_num_features = F.shape[1]
         # Register selected features
         self.selected_features = self.sp.get_support()
-        # Report scores
-        self.report(
-            BestScoreSelectionReport(
-                self.fnames if fnames is None else fnames,
-                self.sp.scores_,
-                self.score_name,
-                pvalues=self.sp.pvalues_,
-                selected_features=self.selected_features
-            ),
-            out_prefix=out_prefix
-        )
+        if plot_and_report:
+            # Report scores
+            self.report(
+                BestScoreSelectionReport(
+                    self.fnames if fnames is None else fnames,
+                    self.sp.scores_,
+                    self.score_name,
+                    pvalues=self.sp.pvalues_,
+                    selected_features=self.selected_features
+                ),
+                out_prefix=out_prefix
+            )
         # Log transformation
         LOGGING.LOGGER.info(
             'PercentileSelector transformed {n1} features into {n2} features '

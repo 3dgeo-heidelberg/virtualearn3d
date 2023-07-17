@@ -76,23 +76,26 @@ class Standardizer(FeatureTransformer):
         :meth:`feature_transformer.FeatureTransformer.transform`.
         """
         # Transform
+        plot_and_report = False
         start = time.perf_counter()
         if self.stder is None:
             self.stder = StandardScaler(
                 with_mean=self.center,
                 with_std=self.scale
             ).fit(F)
+            plot_and_report = True  # Plot and report only when fit
         F = self.stder.transform(F)
         end = time.perf_counter()
-        # Report feature-wise mean and stdev
-        self.report(
-            StandardizationReport(
-                self.get_names_of_transformed_features(fnames=self.fnames),
-                self.stder.scale_,
-                self.stder.mean_
-            ),
-            out_prefix=out_prefix
-        )
+        if plot_and_report:
+            # Report feature-wise mean and stdev
+            self.report(
+                StandardizationReport(
+                    self.get_names_of_transformed_features(fnames=self.fnames),
+                    self.stder.scale_,
+                    self.stder.mean_
+                ),
+                out_prefix=out_prefix
+            )
         # Log transformation
         LOGGING.LOGGER.info(
             f'Standardizer transformed {F.shape[0]} points with {F.shape[1]} '
