@@ -48,11 +48,18 @@ class ClassificationPlot(MplPlot):
 
         See :meth:`plot.Plot.plot`.
         """
+        # Prepare path expansion, if necessary
+        prefix = kwargs.get('out_prefix', None)
+        if prefix is not None:
+            prefix = prefix[:-1]  # Ignore '*' at the end
         # Handle confusion matrix plot
         if self.has_confusion_matrix():
             self.plot_confusion_matrix(**kwargs)
+            path = self.path
+            if prefix is not None:
+                path = prefix + path[1:]
             LOGGING.LOGGER.info(
-                f'ClassificationPlot wrote confusion matrix to "{self.path}"'
+                f'ClassificationPlot wrote confusion matrix to "{path}"'
             )
         else:
             LOGGING.LOGGER.debug(
@@ -61,9 +68,11 @@ class ClassificationPlot(MplPlot):
         # Handle class distribution plot
         if self.has_class_distribution():
             self.plot_class_distribution(**kwargs)
+            path = self.class_distribution_path
+            if prefix is not None:
+                path = prefix + path[1:]
             LOGGING.LOGGER.info(
-                'ClassificationPlot wrote class distribution to '
-                f'{self.class_distribution_path}'
+                f'ClassificationPlot wrote class distribution to "{path}"'
             )
         else:
             LOGGING.LOGGER.debug(

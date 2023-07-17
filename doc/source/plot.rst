@@ -4,6 +4,14 @@ plot package
 Submodules
 ----------
 
+plot.classification\_plot module
+--------------------------------
+
+.. automodule:: plot.classification_plot
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 plot.kfold\_plot module
 -----------------------
 

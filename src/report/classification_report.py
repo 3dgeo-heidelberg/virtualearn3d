@@ -80,7 +80,7 @@ class ClassificationReport(Report):
         to the global evaluation.
 
         :return: String representing the classification report with respect to
-        the global evaluation.
+            the global evaluation.
         """
         # --- Introduction --- #
         s = 'Global classification evaluation:\n'
@@ -101,7 +101,7 @@ class ClassificationReport(Report):
         to the class-wise evaluation.
 
         :return: String representing the classification report with respect to
-        the class-wise evaluation.
+            the class-wise evaluation.
         """
         # --- Introduction --- #
         s = 'Class-wise classification evaluation:\n'
@@ -125,7 +125,7 @@ class ClassificationReport(Report):
         to the confusion matrix.
 
         :return: String representing the classification report with respect to
-        the confusion matrix.
+            the confusion matrix.
         """
         # --- Introduction --- #
         s = 'Confusion matrix (rows are true labels, columns are predictions):'
@@ -145,7 +145,7 @@ class ClassificationReport(Report):
         to the class distribution.
 
         :return: String representing the classification report with respect to
-        the class distribution.
+            the class distribution.
         """
         # --- Introduction --- #
         s = 'Class distribution:\n'

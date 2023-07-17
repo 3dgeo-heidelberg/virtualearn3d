@@ -12,6 +12,14 @@ report.best\_score\_selection\_report module
    :undoc-members:
    :show-inheritance:
 
+report.classification\_report module
+------------------------------------
+
+.. automodule:: report.classification_report
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 report.hyper\_search\_report module
 -----------------------------------
 
@@ -24,6 +32,14 @@ report.kfold\_report module
 ---------------------------
 
 .. automodule:: report.kfold_report
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+report.minmax\_normalization\_report module
+-------------------------------------------
+
+.. automodule:: report.minmax_normalization_report
    :members:
    :undoc-members:
    :show-inheritance:
@@ -48,6 +64,14 @@ report.report module
 --------------------
 
 .. automodule:: report.report
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+report.standardization\_report module
+-------------------------------------
+
+.. automodule:: report.standardization_report
    :members:
    :undoc-members:
    :show-inheritance:

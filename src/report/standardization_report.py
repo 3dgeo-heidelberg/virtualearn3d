@@ -19,7 +19,7 @@ class StandardizationReport(Report):
     :ivar sigma: The vector of feature-wise standard deviations.
     :vartype sigma: :class:`np.ndarray`
     :ivar mu: The vector of feature-wise means.
-    :vartype mu: :class:`np.ndarray
+    :vartype mu: :class:`np.ndarray`
     """
     # ---   INIT   --- #
     # ---------------- #
