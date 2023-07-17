@@ -10,7 +10,7 @@
   "sequential_pipeline": [
     {
       "predict": "PredictivePipeline",
-	  "model_path": "out/training/QuePet_BR01_pca_RF/pipe/Vaihingen3D_Training_RF.pipe" 
+	  "model_path": "out/training/QuePet_BR01_pca_RF/pipe/LeafWood_Training_RF.pipe" 
     },
 	{
 	  "writer": "Writer",

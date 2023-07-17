@@ -79,6 +79,7 @@
 		"max_samples": 0.8
 	  },
 	  "autoval_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
+	  "stratkfold_report_path": "*report/RF_stratkfold_report.log",
 	  "stratkfold_plot_path": "*plot/RF_stratkfold_plot.svg",
 	  "hyperparameter_tuning": {
 		"tuner": "GridSearch",
@@ -93,15 +94,15 @@
 		},
 		"report_path": "*report/RF_hyper_grid_search.log"
 	  },
-	  "importance_report_path": "*report/Vaihingen3D_Training_RF_importance.log",
+	  "importance_report_path": "*report/LeafWood_Training_RF_importance.log",
 	  "importance_report_permutation": true,
-	  "decision_plot_path": "*plot/Vaihingen3D_Training_RF_decission.svg",
+	  "decision_plot_path": "*plot/LeafWood_Training_RF_decission.svg",
 	  "decision_plot_trees": 3,
 	  "decision_plot_max_depth": 5
 	},
 	{
 	  "writer": "PredictivePipelineWriter",
-	  "out_pipeline": "*pipe/Vaihingen3D_Training_RF.pipe",
+	  "out_pipeline": "*pipe/LeafWood_Training_RF.pipe",
 	  "include_writer": false,
 	  "include_imputer": true,
 	  "include_feature_transformer": true,
