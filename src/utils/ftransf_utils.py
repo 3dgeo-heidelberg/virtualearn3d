@@ -5,6 +5,7 @@ from src.utils.ftransf.kbest_selector import KBestSelector
 from src.utils.ftransf.percentile_selector import PercentileSelector
 from src.utils.ftransf.pca_transformer import PCATransformer
 from src.utils.ftransf.standardizer import Standardizer
+from src.utils.ftransf.minmax_normalizer import MinmaxNormalizer
 
 
 # ---   CLASS   --- #
@@ -46,5 +47,7 @@ class FtransfUtils:
             return PCATransformer
         if ftransf_low == 'standardizer':
             return Standardizer
+        if ftransf_low == 'minmaxnormalizer':
+            return MinmaxNormalizer
         # An unknown feature transformer was specified
         raise ValueError(f'There is no known feature transformer "{ftransf}"')

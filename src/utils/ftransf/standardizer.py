@@ -1,7 +1,6 @@
 # ---   IMPORTS   --- #
 # ------------------- #
-from src.utils.ftransf.feature_transformer import FeatureTransformer, \
-    FeatureTransformerException
+from src.utils.ftransf.feature_transformer import FeatureTransformer
 from src.report.standardization_report import StandardizationReport
 from src.utils.dict_utils import DictUtils
 import src.main.main_logger as LOGGING

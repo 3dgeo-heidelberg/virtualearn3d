@@ -46,6 +46,7 @@
 	{
 	  "_feature_transformer": "MinmaxNormalizer",
 	  "fnames": ["AUTO"],
+	  "target_range": [0, 1],
 	  "clip": true
 	},
 	{

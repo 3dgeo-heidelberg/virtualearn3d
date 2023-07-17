@@ -10,7 +10,7 @@ class StandardizationReport(Report):
     """
     :author: Alberto M. Esmoris Pena
 
-    Class to handle reports related to Standardization report.
+    Class to handle reports related to Standardization.
     See :class:`.Report`.
     See also :class:`.Standardizer`.
 
