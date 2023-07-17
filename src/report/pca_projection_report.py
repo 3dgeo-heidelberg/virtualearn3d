@@ -60,7 +60,7 @@ class PCAProjectionReport(Report):
         # Handle pca_names when they are None
         if self.pca_names is None:
             self.pca_names = [
-                f'PCA_{i}' for i in range(1, len(self.expl_var_ratio))
+                f'PCA_{i}' for i in range(1, len(self.expl_var_ratio)+1)
             ]
 
     # ---   TO STRING   --- #
@@ -68,7 +68,7 @@ class PCAProjectionReport(Report):
     def __str__(self):
         """
         The string representation of the PCA projection report.
-        See :class:`.Report` and also :meth:`report.Report.__str__`
+        See :class:`.Report` and also :meth:`report.Report.__str__`.
         """
         # --- Introduction --- #
         s = f'PCA projection from {self.in_dim} to ' \

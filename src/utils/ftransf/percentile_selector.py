@@ -63,7 +63,7 @@ class PercentileSelector(FeatureTransformer):
         """
         Initialize/instantiate a PercentileSelector.
 
-        :param kwargs: The attributes for the PercentileSelector..
+        :param kwargs: The attributes for the PercentileSelector.
         """
         # Call parent init
         super().__init__(**kwargs)

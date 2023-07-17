@@ -21,6 +21,12 @@
 	  "frenames": ["linearity_r0_1", "planarity_r0_1", "surface_variation_r0_1", "eigenentropy_r0_1", "omnivariance_r0_1", "verticality_r0_1", "anisotropy_r0_1"]
 	},
 	{
+	  "miner": "GeometricFeatures",
+	  "radius": 0.2,
+	  "fnames": ["linearity", "planarity", "surface_variation", "eigenentropy", "omnivariance", "verticality", "anisotropy"],
+	  "frenames": ["linearity_r0_2", "planarity_r0_2", "surface_variation_r0_2", "eigenentropy_r0_2", "omnivariance_r0_2", "verticality_r0_2", "anisotropy_r0_2"]
+	},
+	{
 	  "writer": "Writer",
  	  "out_pcloud": "*geomfeats.laz"
 	},
@@ -32,13 +38,25 @@
 	  "constant_val": 0
 	},
 	{
-		"feature_transformer": "PCATransformer",
-		"out_dim": 0.99,
-		"whiten": false,
-		"random_seed": null,
-		"fnames": ["AUTO"],
-		"report_path": "*pca_projection.log",
-		"plot_path": "*pca_projection.svg"
+	  "feature_transformer": "Standardizer",
+	  "fnames": ["AUTO"],
+	  "center": true,
+	  "scale": true
+	},
+	{
+	  "_feature_transformer": "MinmaxNormalizer",
+	  "fnames": ["AUTO"],
+	  "target_range": [0, 1],
+	  "clip": true
+	},
+	{
+	  "feature_transformer": "PCATransformer",
+	  "out_dim": 0.99,
+	  "whiten": false,
+	  "random_seed": null,
+	  "fnames": ["AUTO"],
+	  "report_path": "*pca_projection.log",
+	  "plot_path": "*pca_projection.svg"
 	},
 	{
 	  "writer": "Writer",
