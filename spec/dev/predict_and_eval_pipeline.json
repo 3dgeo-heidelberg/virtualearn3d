@@ -1,0 +1,40 @@
+{
+  "in_pcloud": [
+	"/home/uadmin/git/virtualearn3d/test_data/QuePet_BR01_01_2019-07-03_q2_TLS-on_c.laz",
+	"/home/uadmin/git/virtualearn3d/test_data/test_tree.laz"
+  ],
+  "out_pcloud": [
+	"/tmp/QuePet_BR01_*",
+    "/tmp/test_tree_*"
+  ],
+  "sequential_pipeline": [
+    {
+      "predict": "PredictivePipeline",
+	  "model_path": "/home/uadmin/tmp/tmp_data/vl3d_ml/QuePet_BR01_RF.pipe" 
+    },
+	{
+	  "_predict": "ModelLoader",
+	  "model_path": "/home/uadmin/tmp/tmp_data/vl3d_ml/QuePet_BR01_RF.model"
+	},
+	{
+	  "writer": "Writer",
+	  "out_pcloud": "*predicted.laz"
+	},
+	{
+	  "writer": "PredictionsWriter",
+	  "out_preds": "*predictions.lbl"
+	},
+	{
+	  "eval": "ClassificationEvaluator",
+	  "class_names": ["wood", "leaf"],
+	  "metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
+      "class_metrics": ["P", "R", "F1", "IoU"],
+	  "report_path": "*global_eval.log",
+	  "class_report_path": "*class_eval.log",
+	  "confusion_matrix_report_path" : "*confusion_matrix.log",
+	  "confusion_matrix_plot_path" : "*confusion_matrix.svg",
+	  "class_distribution_report_path": "*class_distribution.log",
+	  "class_distribution_plot_path": "*class_distribution.svg"
+	}
+  ]
+}
