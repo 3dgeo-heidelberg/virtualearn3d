@@ -1,3 +1,5 @@
+# ---   IMPORTS   --- #
+# ------------------- #
 from src.model.classification_model import ClassificationModel
 from sklearn.ensemble import RandomForestClassifier
 from src.eval.rand_forest_evaluator import RandForestEvaluator
@@ -12,8 +14,8 @@ class RandomForestClassificationModel(ClassificationModel):
     """
     :author: Alberto M. Esmoris Pena
 
-    RandomForest model.
-    See :class:`.Model`
+    RandomForest model for classification tasks.
+    See :class:`.Model`.
 
     :ivar model_args: The arguments to initialize a new RandomForest model.
     :vartype model_args: dict
@@ -25,7 +27,7 @@ class RandomForestClassificationModel(ClassificationModel):
         the permutation importance in the report (True, default) or
         not (False).
     :vartype importance_report_permutation_importance: bool
-    :ivar decision_plot_path: Path to the file to store the plots represeting
+    :ivar decision_plot_path: Path to the file to store the plots representing
         the decision trees in the random forest. If only one decision tree
         is going to be exported, the path is used literally. Otherwise,
         incrementally updated paths by appending "_n" before the file extension
@@ -74,7 +76,7 @@ class RandomForestClassificationModel(ClassificationModel):
         """
         Initialize an instance of RandomForestModel.
 
-        :param kwargs:  The attributes for the RandomForestClassificationModel
+        :param kwargs: The attributes for the RandomForestClassificationModel
             that will also be passed to the parent.
         """
         # Call parent init
@@ -130,7 +132,7 @@ class RandomForestClassificationModel(ClassificationModel):
         if info:
             LOGGING.LOGGER.info(
                 'RandomForestClassificationModel trained in '
-                f'{end-start:.3f} seconds'
+                f'{end-start:.3f} seconds.'
             )
 
     def on_training_finished(self, X, y):
@@ -171,6 +173,6 @@ class RandomForestClassificationModel(ClassificationModel):
     # ---------------------------- #
     def _predict(self, X):
         """
-        See :meth:`model.Model._predict`
+        See :meth:`model.Model._predict`.
         """
         return self.model.predict(X)
