@@ -5,7 +5,7 @@
   ],
   "out_pcloud": [
 	"out/prediction/QuePet_BR01_pca_RF/QuePet_BR01/*",
-    "out/prediction/QuePet_BR01_pca_RF/QueRub_KA11_09_2019-09-03_q2_TLS-on_c_t/*"
+    "out/prediction/QuePet_BR01_pca_RF/QueRub_KA11_09/*"
   ],
   "sequential_pipeline": [
     {
