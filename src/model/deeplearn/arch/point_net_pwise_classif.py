@@ -1,0 +1,81 @@
+# ---   IMPORTS   --- #
+# ------------------- #
+from src.model.deeplearn.arch.point_net import PointNet
+from src.model.deeplearn.deep_learning_exception import DeepLearningException
+import tensorflow as tf
+
+
+# ---   CLASS   --- #
+# ----------------- #
+class PointNetPwiseClassif(PointNet):
+    """
+    :author: Alberto M. Esmoris Pena
+
+    A specialization of the PointNet architecture for point-wise
+    classification.
+
+    See :class:`.PointNet`.
+    """
+    # ---   INIT   --- #
+    # ---------------- #
+    def __init__(self, **kwargs):
+        """
+        See :meth:`architecture.PointNet.__init__`.
+        """
+        # Call parent's init
+        kwargs['arch_name'] = 'PointNet_PointWise_Classification'
+        super().__init__(**kwargs)
+        # Assign the attributes of the PointNetPwiseClassif architecture
+        self.num_classes = kwargs.get('num_classes', None)
+        if self.num_classes is None:
+            raise DeepLearningException(
+                'The PointNetPwiseClassif architecture instantiation requires '
+                'the number of classes defining the problem. None was given.'
+            )
+
+    # ---   ARCHITECTURE METHODS   --- #
+    # -------------------------------- #
+    def build_hidden(self, x, **kwargs):
+        """
+        Build the hidden layers of the PointNet neural network for point-wise
+        classification tasks.
+
+        See :meth:`point_net.PointNet.build_hidden`.
+
+        :param x: The input layer for the first hidden layer.
+        :type x: :class:`tf.Tensor`
+        :return: The last hidden layer.
+        :rtype: :class:`tf.Tensor`.
+        """
+        # Call parent's build hidden
+        x = super().build_hidden(x, **kwargs)
+        # Extend parent's hidden layer with point-wise blocks
+        x = tf.keras.layers.MaxPool1D(
+            pool_size=self.num_points,
+            name='max_pool1D'
+        )(x)
+        x = tf.tile(
+            x,
+            [1, self.num_points, 1],
+            name='global_feats'
+        )
+        return x
+
+    def build_output(self, x, **kwargs):
+        """
+        Build the output layer of a PointNet neural network for point-wise
+        classification tasks.
+
+        See :meth:`architecture.Architecture.build_output`.
+
+        :param x: The input for the output layer.
+        :type x: :class:`tf.Tensor`
+        :return: The output layer.
+        :rtype: :class:`tf.Tensor`
+        """
+        return tf.keras.layers.Conv1D(
+            self.num_classes,
+            kernel_size=1,
+            activation='softmax',
+            name='pwise_out'
+        )
