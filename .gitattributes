@@ -1,0 +1,1 @@
+test_data/*.laz filter=lfs diff=lfs merge=lfs -text
