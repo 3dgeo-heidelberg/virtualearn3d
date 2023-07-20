@@ -1,11 +1,11 @@
 {
   "in_pcloud": [
 	"test_data/QuePet_BR01_01_2019-07-03_q2_TLS-on_c.laz",
-	"test_data/test_tree.laz"
+	"test_data/QueRub_KA11_09_2019-09-03_q2_TLS-on_c_t.laz"
   ],
   "out_pcloud": [
 	"out/prediction/QuePet_BR01_pca_RF/QuePet_BR01/*",
-    "out/prediction/QuePet_BR01_pca_RF/test_tree/*"
+    "out/prediction/QuePet_BR01_pca_RF/QueRub_KA11_09/*"
   ],
   "sequential_pipeline": [
     {
