@@ -90,7 +90,7 @@ class PointCloudIO:
         try:
             pcloud = PointCloud(laspy.read(io.BytesIO(pcloud_bytes)))
             LOGGING.LOGGER.info(
-                f'Downloaded {len(pcloud_bytes)/1024**2} MiB from URL: "{url}"'
+                f'Downloaded {len(pcloud_bytes)/1024**2:.3f} MiB from URL: "{url}"'
             )
             return pcloud
         except Exception as ex:
