@@ -18,10 +18,13 @@ class PointCloudFactoryFacade:
     @staticmethod
     def make_from_file(path):
         """
-        Build a PointCloud from a given file path.
+        Build a PointCloud from a given file path (either in the local file
+        system or from a URL pointing to a LAS/LAZ file).
 
         :param path: Path to a file representing a point cloud (must be stored
-            in LAS format).
+            in LAS format). Alternatively, it can be a URL starting with
+            "http://" or "https://".
+        :type path: str
         :return: Built PointCloud
         :rtype: :class:`.PointCloud`
         """

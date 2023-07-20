@@ -1,7 +1,7 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 import src.main.main_logger as LOGGING
-from src.main.main_train import MainTrain
+from src.main.main_mine import MainMine
 from src.pcloud.point_cloud_factory_facade import PointCloudFactoryFacade
 from src.inout.model_io import ModelIO
 from src.inout.point_cloud_io import PointCloudIO
@@ -29,7 +29,7 @@ class MainPredict:
         LOGGING.LOGGER.info('Starting prediction ...')
         start = time.perf_counter()
         pcloud = PointCloudFactoryFacade.make_from_file(
-            MainTrain.extract_input_path(spec)
+            MainPredict.extract_input_path(spec)
         )
         model = MainPredict.load_model(spec)
         preds = model.predict(pcloud)
@@ -37,6 +37,22 @@ class MainPredict:
         end = time.perf_counter()
         LOGGING.LOGGER.info(
             f'Predictions computed in {end-start:.3f} seconds.'
+        )
+
+    # ---  EXTRACT FROM SPEC  --- #
+    # --------------------------- #
+    @staticmethod
+    def extract_input_path(spec):
+        """
+        See :class:`.MainMine` and
+        :func:`main_mine.MainMine.extract_input_path`.
+        """
+        return MainMine.extract_input_path(
+            spec,
+            none_path_msg='Using a model requires an input point cloud to '
+                          'be predicted. None was given.',
+            invalid_path_msg='Cannot find the input file for model training.\n'
+                             'Given path: {path}'
         )
 
     # ---  STATIC UTILS  --- #

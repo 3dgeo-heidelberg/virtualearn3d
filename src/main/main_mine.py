@@ -46,24 +46,35 @@ class MainMine:
     # ---  EXTRACT FROM SPEC  --- #
     # --------------------------- #
     @staticmethod
-    def extract_input_path(spec):
+    def extract_input_path(
+        spec,
+        none_path_msg='Mining a point cloud requires an input point cloud. '\
+            'None was given.',
+        invalid_path_msg='Cannot find the input file for datamining.\n'\
+            'Given path: {path}'
+    ):
         """
         Extract the input path from the key-word specification.
 
         :param spec: The key-word specification.
+        :type spec: dict
+        :param none_path_msg: The string representing the message to be logged
+            when no input point cloud is given.
+        :type none_path_msg: str
+        :param invalid_path_msg: The string representing the message to be
+            logged when the given input path is not valid. It supports a
+            "{path}" format field that will be replaced by the invalid path
+            in the message.
         :return: Input path as string.
         :rtype: str
         """
         path = spec.get('in_pcloud', None)
         if path is None:
-            raise ValueError(
-                "Mining a point cloud requires an input point cloud. "
-                "None was given."
-            )
+            raise ValueError(none_path_msg)
         IOUtils.validate_path_to_file(
             path,
-            'Cannot find the input file for data mining.\n'
-            f'Given path: {path}'
+            invalid_path_msg.format(path=path),
+            accept_url=True
         )
         return path
 
