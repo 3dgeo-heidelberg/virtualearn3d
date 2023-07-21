@@ -5,6 +5,8 @@ from src.model.deeplearn.layer.orthogonal_regularizer import \
     OrthogonalRegularizer
 from src.model.deeplearn.arch.architecture import Architecture
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
+from src.model.deeplearn.dlrun.point_net_pre_processor import \
+    PointNetPreProcessor
 from src.utils.dict_utils import DictUtils
 import tensorflow as tf
 import numpy as np
@@ -38,6 +40,13 @@ class PointNet(Architecture, ABC):
                 'the number of points because it works with a fixed input '
                 'size. None was given.'
             )
+        # Initialize cache-like attributes
+        self.pretransf_feats, self.postransf_feats = [None]*2
+        self.transf_feats = None
+        # Update the preprocessing logic
+        self.pre_runnable = PointNetPreProcessor(
+            self.num_points
+        )
 
     # ---   ARCHITECTURE METHODS   --- #
     # -------------------------------- #
@@ -52,7 +61,7 @@ class PointNet(Architecture, ABC):
         :return: Built layer.
         :rtype: :class:`tf.Tensor`
         """
-        return tf.keras.layers.InputLayer(input_shape=(None, 3))
+        return tf.keras.layers.Input(shape=(None, 3))
 
     def build_hidden(self, x, **kwargs):
         """
@@ -69,9 +78,16 @@ class PointNet(Architecture, ABC):
             'postransf_feats': kwargs.get('postransf_feats', None)
         }
         # Remove None from dictionary to prevent overriding defaults
-        DictUtils.delete_by_val(_kwargs, None)
+        _kwargs = DictUtils.delete_by_val(_kwargs, None)
         # Build the PointNet block
-        return PointNet.build_hidden_pointnet(x, **_kwargs)
+        hidden, pretransf_feats, transf_feats, postransf_feats = \
+            PointNet.build_hidden_pointnet(x, **_kwargs)
+        # Update cached feature layers
+        self.pretransf_feats = pretransf_feats
+        self.transf_feats = transf_feats
+        self.postransf_feats = postransf_feats
+        # Return last hidden layer
+        return hidden
 
     # ---  POINTNET METHODS  --- #
     # -------------------------- #
@@ -116,8 +132,10 @@ class PointNet(Architecture, ABC):
             for each feature extraction layer after the transformation block
             in the middle.
         :type postransf_feats: list
-        :return: Last layer of the built PointNet.
-        :rtype: :class:`tf.Tensor`
+        :return: Last layer of the built PointNet, the list of
+            pre-transformations, the layer of transformed features, and the
+            list of post-transformations.
+        :rtype: :class:`tf.Tensor` and list and :class:`tf.keras.Layer` and list
         """
         # First transformation block
         x = PointNet.build_transformation_block(
@@ -140,14 +158,17 @@ class PointNet(Architecture, ABC):
             num_features=pretransf_feats[-1]['filters'],
             name='hidden_transf'
         )
+        transf_feats = x
         # Features after the second transformation block
+        postransf_feat_layers = []
         for postransf_feat_spec in postransf_feats:
             x = PointNet.build_conv_block(
                 x,
                 filters=postransf_feat_spec['filters'],
                 name=postransf_feat_spec['name']
             )
-        return x
+            postransf_feat_layers.append(x)
+        return x, pretransf_feat_layers, transf_feats, postransf_feat_layers
 
     @staticmethod
     def build_transformation_block(inputs, num_features, name):
@@ -179,7 +200,7 @@ class PointNet(Architecture, ABC):
         x = PointNet.build_conv_block(inputs, filters=64, name=f'{name}_1')
         x = PointNet.build_conv_block(x, filters=128, name=f'{name}_2')
         x = PointNet.build_conv_block(x, filters=1024, name=f'{name}_3')
-        x = tf.keras.layers.GlobalMaxPooling1D()(x)
+        x = tf.keras.layers.GlobalMaxPooling1D(name=f'{name}_GMaxPool')(x)
         x = PointNet.build_mlp_block(x, filters=512, name=f'{name}_1_1')
         x = PointNet.build_mlp_block(x, filters=256, name=f'{name}_2_1')
         return tf.keras.layers.Dense(
@@ -210,7 +231,7 @@ class PointNet(Architecture, ABC):
             filters,
             kernel_size=1,
             padding="valid",
-            name=f''
+            name=f'{name}_conv1D'
         )(x)
         x = tf.keras.layers.BatchNormalization(
             momentum=0.0, name=f'{name}_bn'

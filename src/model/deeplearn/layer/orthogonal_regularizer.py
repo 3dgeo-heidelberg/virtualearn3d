@@ -20,13 +20,16 @@ class OrthogonalRegularizer(Layer):
         Initialize the OrthogonalRegularizer layer.
         See :meth:`layer.Layer.__init__`.
         """
+        # Call parent's init
+        super().__init__()
+        # Assign orthogonal regularizer attributes
         self.num_features = kwargs.get('num_features', None)
         if self.num_features is None:
             raise DeepLearningException(
                 'OrthogonalRegularizer layer cannot be instantiated without '
                 'the number of features. None was specified.'
             )
-        self.l2reg = kwargs.get('l2reg', None)
+        self.l2reg = kwargs.get('l2reg', 0.001)
         self.eye = tf.eye(self.num_features)
 
     # ---   LAYER METHODS   --- #

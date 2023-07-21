@@ -1,7 +1,6 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from abc import ABC
-
 from src.model.model import Model
 import src.main.main_logger as LOGGING
 from src.utils.dict_utils import DictUtils

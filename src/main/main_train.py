@@ -7,6 +7,8 @@ from src.inout.model_io import ModelIO
 from src.inout.io_utils import IOUtils
 from src.model.random_forest_classification_model import \
     RandomForestClassificationModel
+from src.model.deeplearn.point_net_pwise_classif_model import \
+    PointNetPwiseClassifModel
 import os
 import time
 
@@ -94,5 +96,7 @@ class MainTrain:
         model_low = model.lower()
         if model_low == 'randomforestclassifier':
             return RandomForestClassificationModel
+        if model_low == 'pointnetpwiseclassifier':
+            return PointNetPwiseClassifModel
         # An unknown model was specified
         raise ValueError(f'There is no known model "{model}"')

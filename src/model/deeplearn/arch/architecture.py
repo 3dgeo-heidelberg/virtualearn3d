@@ -94,17 +94,26 @@ class Architecture:
         :return: Nothing, but the nn attribute is updated.
         """
         # Input layer
-        inlayer = self.build_input()
+        inlayer = self.build_input(**kwargs)
         # Hidden layers
-        hidlayer = self.build_hidden(inlayer)
+        hidlayer = self.build_hidden(inlayer, **kwargs)
         # Output layer
-        outlayer = self.build_output(hidlayer)
+        outlayer = self.build_output(hidlayer, **kwargs)
         # Model
         self.nn = tf.keras.Model(
             inputs=inlayer,
             outputs=outlayer,
             name='PointNet'
         )
+
+    def is_built(self):
+        """
+        Check whether the architecture has been built (True) or not (False).
+
+        :return: True if the architecture has been built, False otherwise.
+        :rtype: bool
+        """
+        return self.nn is not None
 
     @abstractmethod
     def build_input(self, **kwargs):

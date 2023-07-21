@@ -1,0 +1,13 @@
+{
+	"train": "PointNetPwiseClassifier",
+	"in_pcloud": "https://3dweb.geog.uni-heidelberg.de/trees_leafwood/PinSyl_KA09_T048_2019-08-20_q1_TLS-on_c_t.laz",
+	"out_model": "out/PointnetPwiseClassifier/pnet_pwise_classif.model",
+	"fnames": ["AUTO"],
+	"training_type": "autoval",
+	"random_seed": null,
+	"model_args": {
+		"num_classes": 2,
+		"num_points": 16384
+	},
+	"autoval_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"]
+}

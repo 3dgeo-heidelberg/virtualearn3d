@@ -53,7 +53,6 @@ class RandomForestClassificationModel(ClassificationModel):
         # Initialize from parent
         kwargs = ClassificationModel.extract_model_args(spec)
         # Extract particular arguments for Random Forest
-        kwargs['model_args'] = spec.get('model_args', None)
         kwargs['importance_report_path'] = spec.get(
             'importance_report_path', None
         )
@@ -82,7 +81,6 @@ class RandomForestClassificationModel(ClassificationModel):
         # Call parent init
         super().__init__(**kwargs)
         # Basic attributes of the RandomForestClassificationModel
-        self.model_args = kwargs.get("model_args", None)
         self.model = None
         self.importance_report_path = kwargs.get(
             'importance_report_path', None

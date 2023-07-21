@@ -1,6 +1,14 @@
 model package
 =============
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   model.deeplearn
+
 Submodules
 ----------
 

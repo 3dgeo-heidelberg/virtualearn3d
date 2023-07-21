@@ -20,7 +20,7 @@ class ModelException(VL3DException):
     :author: Alberto M. Esmoris Pena
 
     Class for exceptions related to model components.
-    See :class:`.VL3DException`
+    See :class:`.VL3DException`.
     """
     def __init__(self, message=''):
         # Call parent VL3DException
@@ -87,7 +87,8 @@ class Model:
             'hyperparameter_tuning': spec.get('hyperparameter_tuning', None),
             'fnames': spec.get('fnames', None),
             'stratkfold_report_path': spec.get('stratkfold_report_path', None),
-            'stratkfold_plot_path': spec.get('stratkfold_plot_path', None)
+            'stratkfold_plot_path': spec.get('stratkfold_plot_path', None),
+            'model_args': spec.get('model_args', None)
         }
         # Delete keys with None value
         kwargs = DictUtils.delete_by_val(kwargs, None)
@@ -131,6 +132,7 @@ class Model:
             'stratkfold_report_path', None
         )
         self.stratkfold_plot_path = kwargs.get('stratkfold_plot_path', None)
+        self.model_args = kwargs.get("model_args", None)
 
     # ---   MODEL METHODS   --- #
     # ------------------------- #
@@ -191,6 +193,15 @@ class Model:
         """
         pass
 
+    def get_input_from_pcloud(self, pcloud):
+        """
+        Obtain the model-ready input from the given point cloud.
+
+        :param pcloud: The point cloud containing the data to fit the model.
+        :return: Model-ready input data.
+        """
+        return pcloud.get_features_matrix(self.fnames)
+
     # ---   TRAINING METHODS   --- #
     # ---------------------------- #
     @abstractmethod
@@ -234,7 +245,7 @@ class Model:
         :return: The trained model.
         :rtype: :class:`.Model`
         """
-        X = pcloud.get_features_matrix(self.fnames)
+        X = self.get_input_from_pcloud(pcloud)
         y = pcloud.get_classes_vector()
         if self.imputer is not None:
             X, y = self.imputer.impute(X, y)
@@ -258,7 +269,7 @@ class Model:
         :rtype: :class:`.Model`
         """
         # Training
-        X = pcloud.get_features_matrix(self.fnames)
+        X = self.get_input_from_pcloud(pcloud)
         y = pcloud.get_classes_vector()
         if self.imputer is not None:
             X, y = self.imputer.impute(X, y)
@@ -301,7 +312,7 @@ class Model:
         """
         start = time.perf_counter()
         # Prepare stratified kfold
-        X = pcloud.get_features_matrix(self.fnames)
+        X = self.get_input_from_pcloud(pcloud)
         y = pcloud.get_classes_vector()
         if self.imputer is not None:
             X, y = self.imputer.impute(X, y)

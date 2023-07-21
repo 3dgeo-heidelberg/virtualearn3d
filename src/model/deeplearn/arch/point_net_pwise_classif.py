@@ -32,6 +32,7 @@ class PointNetPwiseClassif(PointNet):
                 'The PointNetPwiseClassif architecture instantiation requires '
                 'the number of classes defining the problem. None was given.'
             )
+        self.num_pwise_feats = kwargs.get('num_pwise_feats', 128)
 
     # ---   ARCHITECTURE METHODS   --- #
     # -------------------------------- #
@@ -59,6 +60,17 @@ class PointNetPwiseClassif(PointNet):
             [1, self.num_points, 1],
             name='global_feats'
         )
+        # Concatenate features for point-wise classification
+        x = tf.keras.layers.Concatenate(name='full_feats')(
+            self.pretransf_feats +
+            [self.transf_feats] +
+            self.postransf_feats[:-1] +
+            [x]
+        )
+        # Convolve point-wise features
+        x = PointNet.build_conv_block(
+            x, filters=self.num_pwise_feats, name='pwise_feats'
+        )
         return x
 
     def build_output(self, x, **kwargs):
@@ -78,4 +90,4 @@ class PointNetPwiseClassif(PointNet):
             kernel_size=1,
             activation='softmax',
             name='pwise_out'
-        )
+        )(x)
