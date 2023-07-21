@@ -125,8 +125,12 @@ class SequentialPipeline(Pipeline):
             out_pcloud = None
             if self.out_pcloud is not None:
                 out_pcloud = self.out_pcloud[i]
+            # Save original sequence
+            sequence = copy.deepcopy(self.sequence)
             # Run the pipeline for the current case
             self.run_case(in_pcloud, out_pcloud=out_pcloud)
+            # Restore original sequence for next cases
+            self.sequence = sequence
 
     def run_case(self, in_pcloud, out_pcloud=None):
         """
@@ -140,6 +144,8 @@ class SequentialPipeline(Pipeline):
             f'SequentialPipeline running for "{in_pcloud}" ...'
         )
         start = time.perf_counter()
+        # Prepare case (iteration)
+        self.state.prepare_iter()
         # Prepare executor
         executor = PipelineExecutor(self, out_prefix=out_pcloud)
         executor.load_input(self.state, in_pcloud=in_pcloud)
