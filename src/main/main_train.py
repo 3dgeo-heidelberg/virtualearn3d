@@ -1,6 +1,7 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 import src.main.main_logger as LOGGING
+from src.main.main_mine import MainMine
 from src.pcloud.point_cloud_factory_facade import PointCloudFactoryFacade
 from src.inout.model_io import ModelIO
 from src.inout.io_utils import IOUtils
@@ -44,24 +45,16 @@ class MainTrain:
     @staticmethod
     def extract_input_path(spec):
         """
-        Extract the input path from the key-word specification.
-
-        :param spec: The key-word specification.
-        :return: Input path as string.
-        :rtype: str
+        See :class:`.MainMine` and
+        :func:`main_mine.MainMine.extract_input_path`.
         """
-        path = spec.get('in_pcloud', None)
-        if path is None:
-            raise ValueError(
-                "Training a model requires an input point cloud. "
-                "None was given."
-            )
-        IOUtils.validate_path_to_file(
-            path,
-            'Cannot find the input file for model training.\n'
-            f'Given path: {path}'
+        return MainMine.extract_input_path(
+            spec,
+            none_path_msg='Training a model requires an input point cloud. '
+                          'None was given.',
+            invalid_path_msg='Cannot find the input file for model training.\n'
+                             'Given path: {path}'
         )
-        return path
 
     @staticmethod
     def extract_output_path(spec):

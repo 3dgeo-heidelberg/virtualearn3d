@@ -1,3 +1,5 @@
+import copy
+
 from src.pipeline.state.pipeline_state import PipelineState, \
     PipelineStateException
 from src.pipeline.predictive_pipeline import PredictivePipeline
@@ -19,12 +21,28 @@ class SimplePipelineState(PipelineState):
 
     :ivar pcloud: The point cloud corresponding to the current pipeline state.
     :vartype pcloud: :class:`.PointCloud`
+    :ivar base_pcloud: The pcloud given during initialization. While pcloud
+        can be updated during iterations, base_pcloud is used as a baseline
+        point cloud defining the initial value of any iteration.
+    :vartype base_pcloud: :class:`.PointCloud`
     :ivar model: The model corresponding to the current pipeline state.
     :vartype model: :class:`.Model`
+    :ivar base_model: The model given during initialization. While model can
+        be updated during iterations, base_model is used as a baseline
+        model defining the initial value of any iteration.
+    :vartype base_model: :class:`.Model`
     :ivar fnames: The list of strings representing the feature names.
     :vartype fnames: list
+    :ivar base_fnames: The fnames given during initialization. While fnames can
+        be updated during iterations, base_fnames is used as a baseline
+        list of feature names defining the initial value of any iteration.
+    :vartype base_fnames: list
     :ivar preds: The predictions corresponding to the current pipeline state.
     :vartype preds: :class:`np.ndarray`
+    :ivar base_preds: The preds given during initialization. While preds can
+        be updated during iterations, base_preds is used as a baseline
+        list of predictions defining the initial value of any iteration.
+    :vartype base_preds: :class:`np.ndarray`
     """
 
     # ---   INIT   --- #
@@ -39,10 +57,11 @@ class SimplePipelineState(PipelineState):
         # Call parent's init
         super().__init__(**kwargs)
         # Assign attributes to simple pipeline state
-        self.pcloud = kwargs.get('pcloud', None)
-        self.model = kwargs.get('model', None)
-        self.fnames = kwargs.get('fnames', None)
-        self.preds = kwargs.get('preds', None)
+        self.base_pcloud = kwargs.get('pcloud', None)
+        self.base_model = kwargs.get('model', None)
+        self.base_fnames = kwargs.get('fnames', None)
+        self.base_preds = kwargs.get('preds', None)
+        self.pcloud, self.model, self.fnames, self.preds = [None]*4
 
     # ---  PIPELINE STATE METHODS  --- #
     # -------------------------------- #
@@ -80,6 +99,23 @@ class SimplePipelineState(PipelineState):
             )
         # Return
         return self
+
+    def prepare_iter(self, **kwargs):
+        """
+        See :meth:`pipeline_state.PipelineState.prepare_iter
+        """
+        self.fnames = kwargs.get('fnames', None)
+        if self.fnames is None:
+            self.fnames = copy.deepcopy(self.base_fnames)
+        self.model = kwargs.get('model', None)
+        if self.model is None:
+            self.model = copy.deepcopy(self.base_model)
+        self.pcloud = kwargs.get('pcloud', None)
+        if self.pcloud is None:
+            self.pcloud = copy.deepcopy(self.base_pcloud)
+        self.preds = kwargs.get('preds', None)
+        if self.preds is None:
+            self.preds = copy.deepcopy(self.base_preds)
 
     # ---  SIMPLE PIPELINE STATE METHODS  --- #
     # --------------------------------------- #
