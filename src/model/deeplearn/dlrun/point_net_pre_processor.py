@@ -17,6 +17,9 @@ class PointNetPreProcessor:
     # -------------------- #
     def __call__(self, inputs):
         # TODO Rethink : Use support points to build the input ?
-        X, y = inputs['X'], inputs['y']
-        return np.expand_dims(X[:self.num_points], 0), \
-            np.expand_dims(y[:self.num_points], 0)
+        X, y = inputs['X'], inputs.get('y', None)
+        Xout = np.expand_dims(X[:self.num_points], 0)
+        if y is not None:
+            yout = np.expand_dims(y[:self.num_points], 0)
+            return Xout, yout
+        return Xout

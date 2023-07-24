@@ -1,6 +1,9 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from abc import abstractmethod
+from src.model.deeplearn.deep_learning_exception import DeepLearningException
+from src.model.deeplearn.layer.orthogonal_regularizer import \
+    OrthogonalRegularizer
 import tensorflow as tf
 
 
@@ -35,6 +38,8 @@ class Architecture:
     :ivar post_runnable: The callable to run the postprocessing logic.
     :vartype post_runnable: callable
     :ivar nn: The built neural network.
+    :ivar build_args: The key-word arguments used to build the neural network.
+    :vartype build_args: dict
     """
     # ---   INIT   --- #
     # ---------------- #
@@ -50,6 +55,9 @@ class Architecture:
         self.pre_runnable = kwargs.get('pre_runnable', None)
         self.post_runnable = kwargs.get('post_runnable', None)
         self.nn = None  # By default, there is no built neural network
+        # TODO Rethink : add nn_path to class sphinx doc
+        self.nn_path = None  # By default, no file contains the built neuralnet
+        self.build_args = None  # At instantiation, build args are not given
 
     # ---  ARCHITECTURE METHODS  --- #
     # ------------------------------ #
@@ -93,6 +101,8 @@ class Architecture:
             neural network.
         :return: Nothing, but the nn attribute is updated.
         """
+        # Cache build args
+        self.build_args = kwargs
         # Input layer
         inlayer = self.build_input(**kwargs)
         # Hidden layers
@@ -156,3 +166,49 @@ class Architecture:
         :rtype: :class:`tf.Tensor` or list or tuple or dict
         """
         pass
+
+    # ---   SERIALIZATION   --- #
+    # ------------------------- #
+    def __getstate__(self):  # TODO Rethink
+        # TODO Rethink : Sphinx doc
+        # Save the built neural network
+        nn_path = None
+        if self.nn_path is not None and self.nn is not None:
+            nn_path = self.nn_path
+            self.nn.save(
+                nn_path,
+                overwrite=True,
+                include_optimizer=True,
+                save_format='h5'
+            )
+        # Return architecture state (for serialization)
+        return {  # Must not include built architecture
+            'pre_runnable': self.pre_runnable,
+            'post_runnable': self.post_runnable,
+            'nn': None,
+            'nn_path': nn_path,
+            'build_args': self.build_args
+        }
+
+    def __setstate__(self, state):  # TODO Rethink
+        # TODO Rethink : Sphinx doc
+        # Must rebuild the architecture (it was not serialized)
+        self.pre_runnable = state['pre_runnable']
+        self.post_runnable = state['post_runnable']
+        self.nn_path = state['nn_path']
+        self.build_args = state['build_args']
+        # Load or rebuild
+        if self.nn_path is not None:  # If path to neuralnet, load it
+            self.nn = tf.keras.models.load_model(
+                self.nn_path,
+                custom_objects={
+                    'OrthogonalRegularizer': OrthogonalRegularizer
+                }
+            )
+        elif self.build_args is not None:  # Otherwise, rebuild
+            self.build(**self.build_args)
+        else:
+            raise DeepLearningException(
+                'Deep learning Architecture suffers an inconsistent state '
+                'on deserialization.'
+            )

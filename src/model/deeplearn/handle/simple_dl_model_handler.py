@@ -3,9 +3,11 @@
 from src.model.deeplearn.handle.dl_model_handler import DLModelHandler
 from src.report.deep_learning_model_summary_report import \
     DeepLearningModelSummaryReport
+from src.utils.dict_utils import DictUtils
+from src.model.deeplearn.deep_learning_exception import DeepLearningException
 import src.main.main_logger as LOGGING
 import tensorflow as tf
-import copy
+import numpy as np
 import time
 
 
@@ -29,9 +31,16 @@ class SimpleDLModelHandler(DLModelHandler):
         self.checkpoint_path = kwargs.get('checkpoint_path', None)
         self.checkpoint_monitor = kwargs.get('checkpoint_monitor', 'loss')
         self.compilation_args = kwargs.get('compilation_args', {
-            'optimizer': tf.keras.optimizers.SGD(learning_rate=1e-3),
-            'loss': tf.keras.losses.SparseCategoricalCrossentropy(),
-            'metrics': [tf.keras.metrics.sparse_categorical_accuracy]
+            'optimizer': {
+                'algorithm': 'SGD',
+                'learning_rate': 1e-3,
+            },
+            'loss': {
+                'function': 'sparse_categorical_crossentropy'
+            },
+            'metrics': [
+                'sparse_categorical_accuracy'
+            ]
         })
 
     # ---   MODEL HANDLER   --- #
@@ -68,7 +77,7 @@ class SimpleDLModelHandler(DLModelHandler):
         end = time.perf_counter()
         LOGGING.LOGGER.info(
             f'Deep learning model trained on {X.shape[0]} points during '
-            f'{self.training_epochs} in {end-start:.3f} seconds.'
+            f'{self.training_epochs} epochs in {end-start:.3f} seconds.'
         )
         # Take best model from checkpoint
         if self.checkpoint_path is not None:
@@ -78,9 +87,16 @@ class SimpleDLModelHandler(DLModelHandler):
         # Return
         return self
 
-    def _predict(self):
+    def _predict(self, X, F=None):
+        # Softmax scores
+        zhat = self.compiled.predict(self.arch.run_pre({'X': X}))[0]  # TODO Rethink : [0] because bs=1 for now
+        print(f'zhat: {zhat}')  # TODO Remove
+        print(f'zhat.shape: {zhat.shape}')  # TODO Remove
+        # Final predictions
+        yhat = np.argmax(zhat, axis=1)
+        # Return
+        return yhat
         # TODO Rethink : Implement
-        pass
 
     def compile(self, X=None, y=None, F=None):
         """
@@ -90,5 +106,75 @@ class SimpleDLModelHandler(DLModelHandler):
         if not self.arch.is_built():
             self.arch.build()
         self.compiled = self.arch.nn
-        self.compiled.compile(**self.compilation_args)
+        self.compiled.compile(
+            **SimpleDLModelHandler.build_compilation_args(
+                self.compilation_args
+            )
+        )
         return self
+
+    # ---  UTIL METHODS  --- #
+    # ---------------------- #
+    @staticmethod
+    def build_compilation_args(comp_args):
+        # TODO Rethink : Sphinx doc
+        # Build optimizer : Extract args
+        opt_args = comp_args['optimizer']
+        opt_alg = opt_args['algorithm'].lower()
+        opt_lr = opt_args.get('learning_rate', None)
+        # Build optimizer : Determine class (algorithm)
+        optimizer = None
+        if opt_alg == 'sgd':
+            optimizer = tf.keras.optimizers.SGD
+        if optimizer is None:
+            raise DeepLearningException(
+                'SimpleDLModelHandler cannot compile a model without an '
+                'optimizer. None was given.'
+            )
+        # Build optimizer
+        optimizer = optimizer(**DictUtils.delete_by_val({
+            'learning_rate': opt_lr
+        }, None))
+        # Build loss : Extract args
+        loss_args = comp_args['loss']
+        loss_fun = loss_args['function'].lower()
+        # Build loss : Determine class (function)
+        loss = None
+        if loss_fun == 'sparse_categorical_crossentropy':
+            loss = tf.keras.losses.SparseCategoricalCrossentropy
+        if loss is None:
+            raise DeepLearningException(
+                'SimpleDLModelHandler cannot compile a model without a loss '
+                'function. None was given.'
+            )
+        # Build loss
+        loss = loss()
+        # Build metrics : Extract args
+        metrics_args = comp_args['metrics']
+        # Build metrics : Determine metrics (list of classes)
+        metrics = []
+        for metric_name in metrics:
+            metric_class = None
+            if metric_name == 'sparse_categorical_accuracy':
+                metric_class = tf.keras.metrics.sparse_categorical_accuracy
+            if metric_class is None:
+                raise DeepLearningException(
+                    'SimpleDLModelHandler cannot compile a model because a '
+                    f'given metric cannot be interpreted ("{metric_name}").'
+                )
+            metrics.append(metric_class)
+        if len(metrics) < 1:
+            LOGGING.LOGGER.debug(
+                'SimpleDLModelHandler detected a model compilation with no '
+                'metrics. While this is supported, recall an arbitrary number '
+                'of evaluation metrics can be used to evaluate the training '
+                'performance. These metrics can be more easy to interpret or '
+                'bring further insights into the model than the loss function '
+                'alone.'
+            )
+        # Return dictionary of built compilation args
+        return {
+            'optimizer': optimizer,
+            'loss': loss,
+            'metrics': metrics
+        }

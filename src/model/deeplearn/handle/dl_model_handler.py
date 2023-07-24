@@ -28,21 +28,25 @@ class DLModelHandler:
     # ---   MODEL HANDLER   --- #
     # ------------------------- #
     def fit(self, X, y, F=None):
+        # TODO Rethink : Sphinx doc
         if not self.is_compiled():
             self.compile(X=X, F=F, y=y)
         return self._fit(X, y, F=F)
 
     @abstractmethod
     def _fit(self, X, y, F=None):
+        # TODO Rethink : Sphinx doc
         pass
 
     def predict(self, X, F=None):
+        # TODO Rethink : Sphinx doc
         if not self.is_compiled():
             self.compile(X=X, F=F)
         return self._predict(X, F=F)
 
     @abstractmethod
     def _predict(self, X, F=None):
+        # TODO Rethink : Sphinx doc
         pass
 
     @abstractmethod
@@ -67,3 +71,21 @@ class DLModelHandler:
 
     def is_compiled(self):
         return self.compiled is not None
+
+    # ---   SERIALIZATION   --- #
+    # ------------------------- #
+    def __getstate__(self):
+        # TODO Rethink : Sphinx doc
+        # Return DL Model Handler state (for serialization)
+        return {  # Must not include compiled model (it will be rebuilt)
+            'arch': self.arch,
+            'compilation_args': self.compilation_args,
+            'compiled': None  # Compiled model is not serialized
+        }
+
+    def __setstate__(self, state):
+        # TODO Rethink : Sphinx doc
+        # Must rebuild the compiled model (it was not serialized)
+        self.arch = state['arch']
+        self.compilation_args = state['compilation_args']
+        self.compile()

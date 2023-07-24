@@ -68,7 +68,8 @@ class ClassificationModel(Model, ABC):
         """
         # TODO Rethink : Implement through Evaluator ?
         evals = np.array([
-            metric(y, yhat) for metric in self.autoval_metrics
+            #metric(y, yhat) for metric in self.autoval_metrics  # TODO Restore
+            metric(y[:16384], yhat) for metric in self.autoval_metrics  # TODO Remove
         ])
         if info:
             evals_str = "Classification auto validation:"

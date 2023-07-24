@@ -2,6 +2,7 @@
 # ------------------- #
 from src.inout.io_utils import IOUtils
 from src.model.model import Model
+from src.model.deeplearn.handle.dl_model_handler import DLModelHandler
 import joblib
 import os
 
@@ -62,5 +63,8 @@ class ModelIO:
             raise TypeError(
                 'Given object will not be written because it is not a model.'
             )
+        # If model is based on DL, assign path for built neuralnet arch.
+        if isinstance(model.model, DLModelHandler):
+            model.model.arch.nn_path = path[:path.rfind('.')] + '.nn'
         # Write output model
         joblib.dump(model, path, compress=True)
