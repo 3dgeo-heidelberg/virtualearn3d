@@ -72,9 +72,14 @@ class ReceptiveField:
             # Build KDTs
             non_empty_Y = Y[not_nan_flags]
             non_empty_kdt = KDT(non_empty_Y)
+            # Obtain neighborhoods
+            num_neighs = 3**self.dimensionality-1
             I = non_empty_kdt.query(
-                sup_missing_Y, k=3**self.dimensionality-1
+                sup_missing_Y, k=num_neighs
             )[1]
+            # Filter neighbors with out-of-bounds index
+            if non_empty_Y.shape[0] < num_neighs:
+                I = [Ii[Ii < non_empty_Y.shape[0]] for Ii in I]
             # Interpolate from (3^n)-1 neighbors (where n is dimensionality)
             for iter, missing_idx in enumerate(missing_indices):
                 # One iteration per missing index (missing_idx)
@@ -120,7 +125,7 @@ class ReceptiveField:
         for i in range(1, self.dimensionality):
             dim_factors[i] = int(
                 dim_factors[i-1] * np.ceil(
-                    (b[i]-a[i]) / self.cell_size[i]
+                    (b[i-1]-a[i-1]) / self.cell_size[i-1]
                 )
             )
         I = np.sum(

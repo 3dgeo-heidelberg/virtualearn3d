@@ -143,9 +143,87 @@ class ReceptiveFieldTest(VL3DTest):
                 *[[9, 19]]*2,
                 [10, 24]
             ], dtype=int)
-        )
+        )  # TODO Restore
         # 2) Test irregular 2D receptive field
-        # TODO Rethink : Implement
+        status = status and self.test_receptive_field(
+            bounding_radii=np.array([1.0, 1.0]),
+            cell_size=np.array([1/3, 2/3]),
+            center_point=np.array([0.0, 0.0]),
+            input_points=np.array([
+                [0.79, -0.95],
+                [0.38, 0.02],
+                [0.57, -0.3],
+                [0.37, 0.01],
+                [0.81, 0.03],
+                [0.77, -0.23],
+                [0.11, 0.98],
+                [0.12, 0.52],
+                [0.17, 0.53],
+                [0.17, 0.74],
+                [0.63, 0.42],
+                [0.59, 0.71],
+                [0.54, 0.38],
+                [0.92, 0.81],
+                [0.80, 0.48]
+            ]),
+            values_to_propagate=np.array([
+                [0, 5],
+                [1, 10],
+                [2, 11],
+                [3, 15],
+                [4, 16],
+                [5, 17]
+            ], dtype=int),
+            expected_num_cells=18,
+            expected_centroid_nointerp=np.array([
+                [np.nan, np.nan],           # mu_0
+                [np.nan, np.nan],           # mu_1
+                [np.nan, np.nan],           # mu_2
+                [np.nan, np.nan],           # mu_3
+                [np.nan, np.nan],           # mu_4
+                [0.79, -0.95],              # mu_5
+                [np.nan, np.nan],           # mu_6
+                [np.nan, np.nan],           # mu_7
+                [np.nan, np.nan],           # mu_8
+                [np.nan, np.nan],           # mu_9
+                [0.44, -0.09],              # mu_10
+                [0.79, -0.1],               # mu_11
+                [np.nan, np.nan],           # mu_12
+                [np.nan, np.nan],           # mu_13
+                [np.nan, np.nan],           # mu_14
+                [0.1425, 0.6925],           # mu_15
+                [0.58666666, 0.50333333],   # mu_16
+                [0.86, 0.645],              # mu_17
+            ]),
+            expected_centroid_interp=np.array([
+                [0.60152778, 0.11680556],   # mu_0
+                [0.60152778, 0.11680556],   # mu_1
+                [0.60152778, 0.11680556],   # mu_2
+                [0.60152778, 0.11680556],   # mu_3
+                [0.60152778, 0.11680556],   # mu_4
+                [0.79, -0.95],              # mu_5
+                [0.60152778, 0.11680556],   # mu_6
+                [0.60152778, 0.11680556],   # mu_7
+                [0.60152778, 0.11680556],   # mu_8
+                [0.60152778, 0.11680556],   # mu_9
+                [0.44, -0.09],              # mu_10
+                [0.79, -0.1],               # mu_11
+                [0.60152778, 0.11680556],   # mu_12
+                [0.60152778, 0.11680556],   # mu_13
+                [0.60152778, 0.11680556],   # mu_14
+                [0.1425, 0.6925],           # mu_15
+                [0.58666666, 0.50333333],   # mu_16
+                [0.86, 0.645],              # mu_17
+            ]),
+            expected_propagated_values=np.array([
+                [0, 5],
+                *[[1, 10]]*3,
+                *[[2, 11]]*2,
+                *[[3, 15]]*4,
+                *[[4, 16]]*3,
+                *[[5, 17]]*2
+            ], dtype=int)
+        )
         # 3) Test regular 3D receptive field
         # TODO Rethink : Implement
         # 4) Test irregular 3D receptive field
@@ -229,7 +307,8 @@ class ReceptiveFieldTest(VL3DTest):
             input_points,
             interpolate=True
         ))
-        if np.sum(np.abs(centroid_interp-expected_centroid_interp)) > eps:
+        sum_abs_diff = np.sum(np.abs(centroid_interp-expected_centroid_interp))
+        if sum_abs_diff > eps or np.any(np.isnan(sum_abs_diff)):
             return False
         # Validate propagated values
         propagated_values = rf.propagate_values(values_to_propagate, safe=True)
