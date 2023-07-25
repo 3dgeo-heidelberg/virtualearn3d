@@ -11,7 +11,7 @@ class MinerException(VL3DException):
     :author: Alberto M. Esmoris Pena
 
     Class for exceptions related to data mining components.
-    See :class:`.VL3DException`
+    See :class:`.VL3DException`.
     """
     def __init__(self, message=''):
         # Call parent VL3DException

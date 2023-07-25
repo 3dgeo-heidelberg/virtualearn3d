@@ -1,6 +1,7 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 import numpy as np
+from scipy.spatial import KDTree as KDT
 
 
 # ---   CLASS   --- #
@@ -19,16 +20,13 @@ class ReceptiveField:
         # Assign attributes
         self.cell_size = kwargs.get('cell_size', np.array([0.05, 0.05, 0.05]))
         self.dimensionality = self.cell_size.shape[0]
-        self.bounding_radius = kwargs.get('bounding_radius', None)
-        if self.bounding_radius is None:
+        self.bounding_radii = kwargs.get('bounding_radii', None)
+        if self.bounding_radii is None:
             raise ValueError(
                 'ReceptiveField must be instantiated for a given bounding '
-                'radius. None was given.'
+                'radii. None were given.'
             )
-        self.num_cells = int(np.round(
-            np.power(2, self.dimensionality, dtype=int) /
-            np.prod(self.cell_size)
-        ))
+        self.num_cells = int(np.round(1/np.prod(self.cell_size/2)))
         self.N = None  # The indexing matrix will be created during fit
         self.x = None  # The center point of the receptive field
         self.m = None  # Number of points the receptive field has been fit to
@@ -39,28 +37,31 @@ class ReceptiveField:
         # TODO Rethink : Sphinx doc
         # Center and scale the input point cloud
         self.x = x
-        X = (X - self.x) / self.bounding_radius
+        X = self.center_and_scale(X)
         # Find the indexing matrix N
         self.N = self.shadow_indexing_matrix_from_points(X)
         # Store the number of points seen during fit
         self.m = X.shape[0]
-        # TODO Rethink : Interpolate missing neighborhoods with 3^n-1
 
     def centroids_from_points(self, X, interpolate=False):
         # TODO Rethink : Sphinx doc
-        # TODO Rethink : Implement
-        # Center and scale the input point cloud
-        X = (X - self.x) / self.bounding_radius
-        # Compute the centroids
-        Y = np.array([np.mean(X[Ni[Ni >= 0]], axis=0) for Ni in self.N])
+        # Center and scale the input point cloud (X)
+        X = self.center_and_scale(X)
+        # Compute the centroids (Y)
+        nanvec = np.full(X.shape[1], np.nan)
+        not_nan_flags = np.sum(self.N >= 0, axis=1, dtype=bool)
+        Y = np.array([
+            np.mean(X[Ni[Ni >= 0]], axis=0) if not_nan_flags[i] else nanvec
+            for i, Ni in enumerate(self.N)
+        ])
         # Interpolate the centroid of missing cells
-        if interpolate:  # TODO Rethink : Implement
+        if interpolate:
             # Prepare interpolation
             b = np.ones(self.x.shape[0])  # Max vertex (1, 1, 1)
             a = -b  # Min vertex (-1, -1, -1)
             cells_per_axis = np.ceil((b-a)/self.cell_size).astype(int)
-            # Build support points from missing indices
-            missing_indices = np.flatnonzero(np.sum(np.isnan(Y), axis=1))
+            # Build support points from missing indices (as empty cell centers)
+            missing_indices = np.flatnonzero(~not_nan_flags)
             num_steps = np.array([
                 np.mod(
                     np.floor(missing_indices / np.prod(cells_per_axis[:j])),
@@ -68,10 +69,17 @@ class ReceptiveField:
                 ) for j in range(self.dimensionality)
             ]).T
             sup_missing_Y = a + num_steps * self.cell_size
+            # Build KDTs
+            non_empty_Y = Y[not_nan_flags]
+            non_empty_kdt = KDT(non_empty_Y)
+            I = non_empty_kdt.query(
+                sup_missing_Y, k=3**self.dimensionality-1
+            )[1]
             # Interpolate from (3^n)-1 neighbors (where n is dimensionality)
-            for i in missing_indices:  # For each empty cell i
-                Y[i] = np.mean(Y[I[i]])
-
+            for iter, missing_idx in enumerate(missing_indices):
+                # One iteration per missing index (missing_idx)
+                Y[missing_idx] = np.mean(non_empty_Y[I[iter]], axis=0)
+        # Return
         return Y
 
     def propagate_values(self, v, safe=True):
@@ -85,7 +93,9 @@ class ReceptiveField:
         # Prepare output matrix (last row is shadow)
         Y = np.full([self.m+1, val_dim], np.nan)
         # Populate output matrix
-        for i, Ni in enumerate(self.N):
+        for i, Ni in enumerate(
+            self.N[np.sum(self.N >= 0, dtype=bool, axis=1)]  # Non-empty cells
+        ):
             Y[Ni] = v[i]
         # Remove shadow row
         Y = Y[:-1]
@@ -113,13 +123,24 @@ class ReceptiveField:
                     (b[i]-a[i]) / self.cell_size[i]
                 )
             )
-        I = (np.floor((X-a) / self.cell_size) * dim_factors).astype(int)
+        I = np.sum(
+            (np.floor((X-a)/self.cell_size + 1e-15) * dim_factors).astype(int),
+            axis=1
+        )
         # Populate cells
-        max_num_neighs = np.max(np.unique(I[I!=-1], return_counts=True)[1])
-        N = np.full((self.num_cells, max_num_neighs), np.nan, dtype=int)
+        max_num_neighs = np.max(np.unique(I[I != -1], return_counts=True)[1])
+        N = np.full((self.num_cells, max_num_neighs), -1, dtype=int)
         index_pointers = np.zeros(self.num_cells, dtype=int)
         for j, i in enumerate(I):
             N[i, index_pointers[i]] = j
             index_pointers[i] += 1
         # Return
         return N
+
+    def center_and_scale(self, X):
+        # TODO Rethink : Sphinx doc
+        return (X - self.x) / self.bounding_radii
+
+    def undo_center_and_scale(self, X):
+        # TODO Rethink : Sphinx doc
+        return self.bounding_radii * X + self.x
