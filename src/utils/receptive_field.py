@@ -96,13 +96,14 @@ class ReceptiveField:
         except Exception as ex:
             val_dim = 1
         # Prepare output matrix (last row is shadow)
-        Y = np.full([self.m+1, val_dim], np.nan)
+        Ytype = v.dtype if isinstance(v, np.ndarray) else type(v[0])
+        Y = np.full([self.m+1, val_dim], np.nan, dtype=Ytype)
         # Populate output matrix
         for i, Ni in enumerate(
             self.N[np.sum(self.N >= 0, dtype=bool, axis=1)]  # Non-empty cells
         ):
             Y[Ni] = v[i]
-        # Remove shadow row
+        # Remove shadow row (it was used for shadow neighbors, i.e., index -1)
         Y = Y[:-1]
         # Validate
         if safe:
@@ -111,8 +112,8 @@ class ReceptiveField:
                     'The receptive field propagated NaN values. This is not '
                     'allowed in safe mode.'
                 )
-        # Return output matrix
-        return Y
+        # Return output matrix (or vector if single-column)
+        return Y if Y.shape[1] > 1 else Y.flatten()
 
     # ---   UTIL METHODS   --- #
     # ------------------------ #
@@ -128,10 +129,15 @@ class ReceptiveField:
                     (b[i-1]-a[i-1]) / self.cell_size[i-1]
                 )
             )
-        I = np.sum(
-            (np.floor((X-a)/self.cell_size + 1e-15) * dim_factors).astype(int),
-            axis=1
-        )
+        I = np.sum(np.apply_along_axis(  # Compute point-wise indices
+            np.clip,  # Function to be applied
+            1,  # Axis 1, i.e., apply along columns (coordinates)
+            (  # Compute the coordinate-wise indices for each point
+                np.floor((X-a)/self.cell_size + 1e-15) * dim_factors
+            ).astype(int),
+            None,  # No clip to min, only coordinate-wise clip to max
+            ((2/self.cell_size-1)*dim_factors).astype(int)
+        ), axis=1)  # Point index as superposition of coordinate indices
         # Populate cells
         max_num_neighs = np.max(np.unique(I[I != -1], return_counts=True)[1])
         N = np.full((self.num_cells, max_num_neighs), -1, dtype=int)
