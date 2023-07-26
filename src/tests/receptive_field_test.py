@@ -331,7 +331,52 @@ class ReceptiveFieldTest(VL3DTest):
             ], dtype=int)
         )
         # 4) Test irregular 3D receptive field
-        # TODO Rethink : Implement
+        status = status and self.test_receptive_field(
+            bounding_radii=np.array([7.5, 3.5, 5]),
+            cell_size=np.array([2/3, 2, 1]),
+            center_point=np.array([7.5, 3.5, 5]),
+            input_points=np.array([
+                [0.1, 1, 0.5],
+                [4, 3, 2],
+                [5.5, 7, 0],
+                [15, 0, 0],
+                [12, 6, 4],
+                [7, 7, 7],
+                [8, 8, 8],
+                [11, 7, 5]
+            ]),
+            values_to_propagate=np.array(
+                [[np.pi/i, np.exp(i)] for i in range(6, 0, -1) if i !=3],
+                dtype=float
+            ),
+            expected_num_cells=6,
+            expected_centroid_nointerp=np.array([
+                [2.05, 2, 1.25],            # mu_0
+                [5.5, 7, 0],                # mu_1
+                [13.5, 3, 2],               # mu_2
+                [np.nan, np.nan, np.nan],   # mu_3
+                [7.5, 7.5, 7.5],            # mu_4
+                [11, 7, 5]                  # mu_5
+            ]),
+            expected_centroid_interp=np.array([
+                [2.05, 2, 1.25],            # mu_0
+                [5.5, 7, 0],                # mu_1
+                [13.5, 3, 2],               # mu_2
+                [7.91, 5.3, 3.15],          # mu_3
+                [7.5, 7.5, 7.5],            # mu_4
+                [11, 7, 5]                  # mu_5
+            ]),
+            expected_propagated_values=np.array([
+                [np.pi/6, np.exp(6)],
+                [np.pi/6, np.exp(6)],
+                [np.pi/5, np.exp(5)],
+                [np.pi/4, np.exp(4)],
+                [np.pi/4, np.exp(4)],
+                [np.pi/2, np.exp(2)],
+                [np.pi/2, np.exp(2)],
+                [np.pi/1, np.exp(1)]
+            ], dtype=float)
+        )
         # Return
         return status
 
