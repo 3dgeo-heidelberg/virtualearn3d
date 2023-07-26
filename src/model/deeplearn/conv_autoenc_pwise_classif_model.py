@@ -42,7 +42,7 @@ class ConvAutoencClassificationModel(ClassificationModel):
 
         :return: The prepared model itself. Note it is also assigned as the
             model attribute of the object/instance.
-        :rtype: :class:`.ConvAutoencPwiseClassif
+        :rtype: :class:`.ConvAutoencPwiseClassif`
         """
         # Instantiate the model
         if self.model_args is not None:
