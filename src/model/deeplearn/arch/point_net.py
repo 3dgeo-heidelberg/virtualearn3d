@@ -7,6 +7,8 @@ from src.model.deeplearn.arch.architecture import Architecture
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
 from src.model.deeplearn.dlrun.point_net_pre_processor import \
     PointNetPreProcessor
+from src.model.deeplearn.dlrun.point_net_post_processor import  \
+    PointNetPostProcessor
 from src.utils.dict_utils import DictUtils
 import tensorflow as tf
 import numpy as np
@@ -46,7 +48,7 @@ class PointNet(Architecture, ABC):
         # Update the preprocessing logic
         self.pre_runnable = PointNetPreProcessor()  # TODO Rethink : kwargs
         # Update the postprocessing logic
-        #self.post_runnable(PointNetPostProcessor(self.pre_runnable))  # TODO Rethink : Implement
+        self.post_runnable = PointNetPostProcessor(self.pre_runnable)  # TODO Rethink : kwargs?
 
     # ---   ARCHITECTURE METHODS   --- #
     # -------------------------------- #

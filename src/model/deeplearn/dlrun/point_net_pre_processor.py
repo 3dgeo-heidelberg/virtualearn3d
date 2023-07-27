@@ -1,15 +1,21 @@
+# ---   IMPORTS   --- #
+# ------------------- #
 from src.utils.receptive_field import ReceptiveField
 import numpy as np
 from scipy.spatial import KDTree as KDT
 import scipy.stats
 
 
+# ---   CLASS   --- #
+# ----------------- #
 class PointNetPreProcessor:
     """
     :author: Alberto M. Esmoris Pena
 
     Preprocess the input dictionary of X (coordinates), F (features), and y
     (expected values) so it can be feed into the PointNet neural network.
+
+    # TODO Rethink : Sphinx doc @ member attributes
     """
     # ---   INIT   --- #
     # ---------------- #
@@ -17,14 +23,16 @@ class PointNetPreProcessor:
         # Assign attributes
         self.sphere_radius = kwargs.get('sphere_radius', 1.0)
         self.separation_factor = kwargs.get('separation_factor', np.sqrt(3)/4)
-        self.separation_factor = 2.0  # TODO Remove
+        self.separation_factor = np.sqrt(3)/2  # TODO Remove
         self.cell_size = np.array(kwargs.get('cell_size', [0.1, 0.1, 0.1]))
         # Initialize last call cache
         self.last_call_receptive_fields = None
+        self.last_call_neighborhoods = None
 
     # ---   RUN/CALL   --- #
     # -------------------- #
     def __call__(self, inputs):
+        # TODO Rethink : Sphinx doc
         # Extract inputs
         X, y = inputs['X'], inputs.get('y', None)
         # Build support points
@@ -45,6 +53,7 @@ class PointNetPreProcessor:
         non_empty_mask = [len(Ii) > 0 for Ii in I]
         I = [Ii for i, Ii in enumerate(I) if non_empty_mask[i]]
         sup_X = sup_X[non_empty_mask]
+        self.last_call_neighborhoods = [Ii for Ii in I]
         # Prepare receptive field
         self.last_call_receptive_fields = [
             ReceptiveField(

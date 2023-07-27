@@ -89,8 +89,12 @@ class SimpleDLModelHandler(DLModelHandler):
         return self
 
     def _predict(self, X, F=None):
+        # TODO Rethink : Sphinx doc
         # Softmax scores
-        zhat = self.compiled.predict(self.arch.run_pre({'X': X}))[0]  # TODO Rethink : [0] because bs=1 for now
+        zhat = self.arch.run_post({
+            'X': X,
+            'z': self.compiled.predict(self.arch.run_pre({'X': X})),
+        })
         print(f'zhat: {zhat}')  # TODO Remove
         print(f'zhat.shape: {zhat.shape}')  # TODO Remove
         # Final predictions
