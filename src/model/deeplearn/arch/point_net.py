@@ -44,9 +44,9 @@ class PointNet(Architecture, ABC):
         self.pretransf_feats, self.postransf_feats = [None]*2
         self.transf_feats = None
         # Update the preprocessing logic
-        self.pre_runnable = PointNetPreProcessor(
-            self.num_points
-        )
+        self.pre_runnable = PointNetPreProcessor()  # TODO Rethink : kwargs
+        # Update the postprocessing logic
+        #self.post_runnable(PointNetPostProcessor(self.pre_runnable))  # TODO Rethink : Implement
 
     # ---   ARCHITECTURE METHODS   --- #
     # -------------------------------- #

@@ -92,7 +92,7 @@ class PointCloud:
         :return: The vector of classes.
         :rtype: :class:`np.ndarray`
         """
-        return self.las.classification
+        return np.array(self.las.classification)
 
     # ---  UPDATE METHODS  --- #
     # ------------------------ #

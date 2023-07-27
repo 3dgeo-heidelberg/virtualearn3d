@@ -216,19 +216,10 @@ class ReceptiveField:
         # Interpolate the centroid of missing cells
         if interpolate:
             # Prepare interpolation
-            b = np.ones(self.x.shape[0])  # Max vertex (1, 1, 1)
-            a = -b  # Min vertex (-1, -1, -1)
-            cells_per_axis = np.ceil((b-a)/self.cell_size).astype(int)
-            # Build support points from missing indices (as empty cell centers)
             missing_indices = np.flatnonzero(~not_nan_flags)
-            num_steps = np.array([
-                np.mod(
-                    np.floor(missing_indices / np.prod(cells_per_axis[:j])),
-                    cells_per_axis[j]
-                ) for j in range(self.dimensionality)
-            ]).T
-            sup_missing_Y = a + num_steps * self.cell_size
-            # Build KDTs
+            sup_missing_Y = self.get_center_of_empty_cells(
+                missing_indices=missing_indices
+            )
             non_empty_Y = Y[not_nan_flags]
             non_empty_kdt = KDT(non_empty_Y)
             # Obtain neighborhoods
@@ -308,6 +299,64 @@ class ReceptiveField:
                 )
         # Return output matrix (or vector if single-column)
         return Y if Y.shape[1] > 1 else Y.flatten()
+
+    def reduce_values(self, X, v, reduce_f=np.mean, fill_nan=False):
+        r"""
+        Let :math:`\pmb{X} \in \mathbb{R}^{R \times n}` be the matrix of
+        row-wise points such that the row i is the centroid that represents the
+        cell i in the receptive field. Let :math:`\pmb{v} \in \mathbb{K}^{m}`
+        be a vector that must be reduced to the receptive field to produce
+        :math:`\pmb{y} \in \mathbb{K}^{R}`.
+
+        For a given reduce function :math:`f` that maps an arbitrary number
+        of input values to a single value, let :math:`u` represent its input.
+        Note that :math:`u` represents any vector whose components are a subset
+        of the set of components defining the vector :math:`v`. For then, the
+        :meth:`reduce_values` procedure can be expressed as
+        :math:`y_{i} = f(u_i)`.
+
+        It might happen that some cells are empty and thus, no value is
+        assigned to them during reduction. In those cases, it is possible to
+        apply a filling rule that consists of assuming each empty cell has
+        a value equal to that of its closest neighbor.
+
+        :param X: The centroid representing each cell in matrix form. Each
+            row i of X represents the centroid of a cell i from the receptive
+            field.
+        :type X: :class:`np.ndarray`
+        :param v: The vector of values to reduce. The :math:`m` input
+            components will be reduced to :math:`R` output components.
+        :param reduce_f: The function to reduce many values to a single
+            one. By default, it is mean.
+        :type reduce_f: callable
+        :param fill_nan: True to fill NaN values with the value of the closest
+            non-empty cell in the receptive field.
+        :type fill_nan: bool
+        :return: The reduced vector.
+        :rtype: `np.ndarray`
+        """
+        # Reduce
+        not_nan_flags = np.any(self.N >= 0, axis=1)
+        v_reduced = np.array([
+            reduce_f(v[Ni[Ni >= 0]]) if not_nan_flags[i] else np.nan
+            for i, Ni in enumerate(self.N)
+        ])
+        # Fill NaN from closest neighbor (if requested)
+        if fill_nan:
+            # Prepare filling
+            missing_indices = np.flatnonzero(~not_nan_flags)
+            sup_missing_Y = self.get_center_of_empty_cells(
+                missing_indices=missing_indices
+            )
+            # Find index of closest non-empty centroid
+            non_empty_X = X[not_nan_flags]
+            kdt = KDT(non_empty_X)
+            I = kdt.query(sup_missing_Y, 1)[1]
+            # Fill nan reduced values
+            non_empty_v_reduced = v_reduced[not_nan_flags]
+            v_reduced[missing_indices] = non_empty_v_reduced[I]
+        # Return
+        return v_reduced
 
     # ---   UTIL METHODS   --- #
     # ------------------------ #
@@ -435,3 +484,29 @@ class ReceptiveField:
         :rtype: :class:`np.ndarray`
         """
         return self.bounding_radii * X + self.x
+
+    def get_center_of_empty_cells(self, missing_indices=None):
+        """
+        Obtain the center point (computed as the midrange) for each empty cell.
+
+        :param missing_indices: The indices of empty cells. It can be None,
+            in that case it will be computed internally.
+        :return: Matrix of geometric centers, one row per empty cell.
+        :rtype: :class:`np.ndarray`
+        """
+        # Prepare
+        b = np.ones(self.x.shape[0])  # Max vertex (1, 1, 1)
+        a = -b  # Min vertex (-1, -1, -1)
+        cells_per_axis = np.ceil((b-a)/self.cell_size).astype(int)
+        if missing_indices is None:
+            empty_flags = np.any(self.N < 0, axis=1)
+            missing_indices = np.flatnonzero(~empty_flags)
+        # Compute the steps per axis to define the centers
+        num_steps = np.array([
+            np.mod(
+                np.floor(missing_indices / np.prod(cells_per_axis[:j])),
+                cells_per_axis[j]
+            ) for j in range(self.dimensionality)
+        ]).T
+        # Return centers of empty cells
+        return a + num_steps * self.cell_size

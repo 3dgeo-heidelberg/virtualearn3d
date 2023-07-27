@@ -72,7 +72,8 @@ class SimpleDLModelHandler(DLModelHandler):
         self.history = self.compiled.fit(
             *self.arch.run_pre({'X': X, 'y': y}),
             epochs=self.training_epochs,
-            callbacks=callbacks
+            callbacks=callbacks,
+            batch_size=16  # TODO Rethink : Externalize argument
         )
         end = time.perf_counter()
         LOGGING.LOGGER.info(
