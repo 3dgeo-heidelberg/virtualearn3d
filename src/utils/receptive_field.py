@@ -162,7 +162,48 @@ class ReceptiveField:
         return self
 
     def centroids_from_points(self, X, interpolate=False):
-        # TODO Rethink : Sphinx doc
+        r"""
+        Compute the centroids, i.e., for each cell in the receptive field
+        the point that represents the cell assuming the receptive field is
+        applied to the rows of :math:`\pmb{X} \in \mathbb{R}^{m \times n}`
+        understood as points.
+
+        Let :math:`\pmb{Y} \in \mathbb{R}^{R \times n}` be the matrix whose
+        rows represent the centroids. Besides, consider the set of neighbors
+        for a given point :math:`i` as
+        :math:`\mathcal{N}_i = \lvert\left\{n_{ij} \geq 0 : 1 \leq j \leq R^* \rvert\right\}`
+        , where :math:`n_{ij}` is the element at row :math:`i` column :math:`j`
+        in the matrix :math:`\pmb{N}` (see :class:`.ReceptiveField`). For then,
+        each centroid can be computed such that:
+
+        .. math::
+            \pmb{y}_{i*} =
+                \lvert\mathcal{N}_{i}\rvert^{-1}
+                \sum_{j \in \mathcal{N}_{i}}{\pmb{x}_{j*}}
+
+        Regarding the interpolation, any missing centroid is defined
+        considering the midrange point of the cell (i.e., the geometric center)
+        and its :math:`3^{n}-1` closest neighbors. The coordinate-wise mean
+        of these points yields the interpolated value. The reason why
+        :math:`3^{n}-1` is selected as the number of neighbors for the
+        interpolation is based on the idea that for 2D and 3D neighborhoods
+        considering a cell in a grid and all its neighbor cells yields
+        :math:`3^{n}` neighbors. One is discarded because it corresponds to the
+        cell itself being interpolated. Consequently, :math:`3^{n}-1` is
+        expected to be a reasonable compromise to avoid considering too much
+        points so the interpolated point represents the entire receptive field
+        instead of the local region where it belongs to. At the same time,
+        the number of neighbors also scales with the dimensionality to provide
+        an acceptable sample for a reliable interpolation.
+
+        :param X: The matrix of input points
+        :type X: :class:`np.ndarray`
+        :param interpolate: True to interpolate missing centroids from
+            non-missing centroids, False otherwise.
+        :type interpolate: bool
+        :return: A matrix which rows are the points representing the centroids.
+        :rtype: :class:`np.ndarray`
+        """
         # Center and scale the input point cloud (X)
         X = self.center_and_scale(X)
         # Compute the centroids (Y)
@@ -351,9 +392,46 @@ class ReceptiveField:
         return N
 
     def center_and_scale(self, X):
-        # TODO Rethink : Sphinx doc
+        r"""
+        Let :math:`\pmb{o}` be the origin of the receptive field (also referred
+        to as center point), and :math:`\pmb{r}` be the bounding radii vector.
+
+        Any row in :math:`\pmb{X}` is assumed to represent a point in the
+        canonical reference system. Thus, it is possible to obtain a matrix
+        :math:`\pmb{Y}` which rows are the points in :math:`\pmb{X}`
+        transformed to the internal reference system of the receptive field.
+        Each point in this matrix can be computed as:
+
+        .. math::
+            \pmb{y}_{i*} = \left[\begin{array}{ccc}
+                \dfrac{x_{i1} - o_1}{r_1} &
+                \cdots &
+                \dfrac{x_{in} - o_n}{r_n}
+            \end{array}\right]
+
+        :param X: The matrix of points to be transformed.
+        :type X: :class:`np.ndarray`
+        :return: The matrix of transformed points.
+        :rtype: :class:`np.ndarray`
+        """
         return (X - self.x) / self.bounding_radii
 
     def undo_center_and_scale(self, X):
-        # TODO Rethink : Sphinx doc
+        r"""
+        The inverse transform of the
+        :meth:`receptive_field.ReceptiveField.center_and_scale` method.
+
+        .. math::
+            \pmb{x}_{i*} = \left[\begin{array}{ccc}
+                r_1 x_{i1} + o_1 &
+                \cdots &
+                r_n x_{in} + o_n
+            \end{array}\right]
+
+        :param X: The matrix of transformed points to be transformed back to
+            their original representations.
+        :type X: :class:`np.ndarray`
+        :return: The matrix of points after reversing the transformation.
+        :rtype: :class:`np.ndarray`
+        """
         return self.bounding_radii * X + self.x
