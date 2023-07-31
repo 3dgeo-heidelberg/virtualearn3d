@@ -38,6 +38,10 @@ class Architecture:
     :ivar post_runnable: The callable to run the postprocessing logic.
     :vartype post_runnable: callable
     :ivar nn: The built neural network.
+    :ivar nn_path: The path to the file that represents the built neural
+        network. The neural network will only be serialized when a not None
+        path is provided.
+    :vartype nn_path: str
     :ivar build_args: The key-word arguments used to build the neural network.
     :vartype build_args: dict
     """

@@ -61,7 +61,6 @@ class PointNetPreProcessor:
         # Assign attributes
         self.sphere_radius = kwargs.get('sphere_radius', 1.0)
         self.separation_factor = kwargs.get('separation_factor', np.sqrt(3)/4)
-        self.separation_factor = 1  # TODO Remove
         self.cell_size = np.array(kwargs.get('cell_size', [0.1, 0.1, 0.1]))
         # Initialize last call cache
         self.last_call_receptive_fields = None

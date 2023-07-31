@@ -117,7 +117,7 @@ class ReceptiveField:
                 'ReceptiveField must be instantiated for a given bounding '
                 'radii. None were given.'
             )
-        self.num_cells = int(np.round(1/np.prod(self.cell_size/2)))
+        self.num_cells = np.prod(np.ceil(2/self.cell_size), dtype=int)
         self.N = None  # The indexing matrix will be created during fit
         self.x = None  # The center point of the receptive field
         self.m = None  # Number of points the receptive field has been fit to
@@ -428,7 +428,7 @@ class ReceptiveField:
                 np.floor((X-a)/self.cell_size + 1e-15) * dim_factors
             ).astype(int),
             None,  # No clip to min, only coordinate-wise clip to max
-            ((np.floor(2/self.cell_size)-1) * dim_factors).astype(int)
+            ((np.ceil(2/self.cell_size)-1) * dim_factors).astype(int)
         ), axis=1)  # Point index as superposition of coordinate indices
         # Populate cells
         max_num_neighs = np.max(np.unique(I[I != -1], return_counts=True)[1])

@@ -60,6 +60,5 @@ class PointNetPostProcessor:
             z[I[i]] += z_prop_i
             count[I[i]] += 1
         z = z / count if len(z.shape) < 2 else (z.T/count).T
-        z = np.sum(z, axis=1)
         # Return
         return z

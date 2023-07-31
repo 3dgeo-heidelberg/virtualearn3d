@@ -31,7 +31,7 @@ class PointNetPwiseClassifModel(ClassificationModel):
         """
         # Call parent init
         super().__init__(**kwargs)
-        # Basic attributes of the PointNetPiseClassifModel
+        # Basic attributes of the PointNetPwiseClassifModel
         # TODO Rethink : Implement
 
     # ---   MODEL METHODS   --- #
@@ -53,7 +53,11 @@ class PointNetPwiseClassifModel(ClassificationModel):
             )
             self.model = PointNetPwiseClassif()
         # Wrap model with handler
-        self.model = SimpleDLModelHandler(self.model)
+        self.model = SimpleDLModelHandler(
+            self.model,
+            compilation_args=self.model_args.get('compilation_args', None),
+            **self.model_args.get('model_handling', None)
+        )
         return self.model
 
     def predict(self, pcloud, X=None, F=None):

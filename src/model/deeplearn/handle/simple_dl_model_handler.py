@@ -26,22 +26,12 @@ class SimpleDLModelHandler(DLModelHandler):
         # Assign member attributes
         self.summary_report_path = kwargs.get('summary_report_path', None)
         self.out_prefix = kwargs.get('out_prefix', None)
-        self.training_epochs = kwargs.get('epochs', 100)
+        self.training_epochs = kwargs.get('training_epochs', 100)
+        self.batch_size = kwargs.get('batch_size', 16)
         self.history = kwargs.get('history', None)
         self.checkpoint_path = kwargs.get('checkpoint_path', None)
         self.checkpoint_monitor = kwargs.get('checkpoint_monitor', 'loss')
-        self.compilation_args = kwargs.get('compilation_args', {
-            'optimizer': {
-                'algorithm': 'SGD',
-                'learning_rate': 1e-3,
-            },
-            'loss': {
-                'function': 'sparse_categorical_crossentropy'
-            },
-            'metrics': [
-                'sparse_categorical_accuracy'
-            ]
-        })
+        self.compilation_args = kwargs.get('compilation_args', None)
 
     # ---   MODEL HANDLER   --- #
     # ------------------------- #
@@ -73,7 +63,7 @@ class SimpleDLModelHandler(DLModelHandler):
             *self.arch.run_pre({'X': X, 'y': y}),
             epochs=self.training_epochs,
             callbacks=callbacks,
-            batch_size=16  # TODO Rethink : Externalize argument
+            batch_size=self.batch_size
         )
         end = time.perf_counter()
         LOGGING.LOGGER.info(
@@ -147,6 +137,8 @@ class SimpleDLModelHandler(DLModelHandler):
         loss = None
         if loss_fun == 'sparse_categorical_crossentropy':
             loss = tf.keras.losses.SparseCategoricalCrossentropy
+        if loss_fun == 'binary_crossentropy':
+            loss = tf.keras.losses.BinaryCrossentropy
         if loss is None:
             raise DeepLearningException(
                 'SimpleDLModelHandler cannot compile a model without a loss '
@@ -158,10 +150,16 @@ class SimpleDLModelHandler(DLModelHandler):
         metrics_args = comp_args['metrics']
         # Build metrics : Determine metrics (list of classes)
         metrics = []
-        for metric_name in metrics:
+        for metric_name in metrics_args:
             metric_class = None
             if metric_name == 'sparse_categorical_accuracy':
                 metric_class = tf.keras.metrics.sparse_categorical_accuracy
+            if metric_name == 'binary_accuracy':
+                metric_class = tf.keras.metrics.binary_accuracy
+            if metric_name == 'precision':
+                metric_class = tf.keras.metrics.Precision(name='precision')
+            if metric_name == 'recall':
+                metric_class = tf.keras.metrics.Recall(name='recall')
             if metric_class is None:
                 raise DeepLearningException(
                     'SimpleDLModelHandler cannot compile a model because a '
