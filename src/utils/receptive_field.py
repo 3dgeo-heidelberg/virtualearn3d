@@ -117,7 +117,9 @@ class ReceptiveField:
                 'ReceptiveField must be instantiated for a given bounding '
                 'radii. None were given.'
             )
-        self.num_cells = np.prod(np.ceil(2/self.cell_size), dtype=int)
+        self.num_cells = ReceptiveField.num_cells_from_cell_size(
+            self.cell_size
+        )
         self.N = None  # The indexing matrix will be created during fit
         self.x = None  # The center point of the receptive field
         self.m = None  # Number of points the receptive field has been fit to
@@ -510,3 +512,17 @@ class ReceptiveField:
         ]).T
         # Return centers of empty cells
         return a + num_steps * self.cell_size
+
+    @staticmethod
+    def num_cells_from_cell_size(cell_size):
+        """
+        Compute the number of cells for a receptive field defined by the given
+        cell size.
+
+
+        :param cell_size: The cell size for which the number of cells must be
+            computed. See :class:`.ReceptiveField` for further details.
+        :return: The number of cells composing the receptive field.
+        :rtype: int
+        """
+        return int(np.prod(np.ceil(2/cell_size)))

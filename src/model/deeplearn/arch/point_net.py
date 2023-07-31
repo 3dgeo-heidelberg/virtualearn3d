@@ -4,6 +4,7 @@ from abc import ABC
 from src.model.deeplearn.layer.orthogonal_regularizer import \
     OrthogonalRegularizer
 from src.model.deeplearn.arch.architecture import Architecture
+from src.utils.receptive_field import ReceptiveField
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
 from src.model.deeplearn.dlrun.point_net_pre_processor import \
     PointNetPreProcessor
@@ -34,21 +35,17 @@ class PointNet(Architecture, ABC):
         # Call parent's init
         kwargs['arch_name'] = 'PointNet'
         super().__init__(**kwargs)
-        # Assign the attributes of the PointNet architecture
-        self.num_points = kwargs.get('num_points', None)
-        if self.num_points is None:
-            raise DeepLearningException(
-                'The PointNet architecture instantiation requires '
-                'the number of points because it works with a fixed input '
-                'size. None was given.'
-            )
-        # Initialize cache-like attributes
-        self.pretransf_feats, self.postransf_feats = [None]*2
-        self.transf_feats = None
         # Update the preprocessing logic
         self.pre_runnable = PointNetPreProcessor(**kwargs['pre_processing'])
         # Update the postprocessing logic
         self.post_runnable = PointNetPostProcessor(self.pre_runnable)  # TODO Rethink : kwargs?
+        # The number of points is the number of cells in the receptive fields
+        self.num_points = ReceptiveField.num_cells_from_cell_size(
+            self.pre_runnable.cell_size
+        )
+        # Initialize cache-like attributes
+        self.pretransf_feats, self.postransf_feats = [None]*2
+        self.transf_feats = None
 
     # ---   ARCHITECTURE METHODS   --- #
     # -------------------------------- #

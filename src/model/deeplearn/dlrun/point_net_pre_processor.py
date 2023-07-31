@@ -126,7 +126,7 @@ class PointNetPreProcessor:
         non_empty_mask = [len(Ii) > 0 for Ii in I]
         I = [Ii for i, Ii in enumerate(I) if non_empty_mask[i]]
         sup_X = sup_X[non_empty_mask]
-        self.last_call_neighborhoods = [Ii for Ii in I]  # TODO Restore or Rethink
+        self.last_call_neighborhoods = [Ii for Ii in I]
         # Prepare receptive field
         self.last_call_receptive_fields = [
             ReceptiveField(

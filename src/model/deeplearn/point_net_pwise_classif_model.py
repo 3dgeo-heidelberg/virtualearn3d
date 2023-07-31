@@ -32,6 +32,7 @@ class PointNetPwiseClassifModel(ClassificationModel):
         # Call parent init
         super().__init__(**kwargs)
         # Basic attributes of the PointNetPwiseClassifModel
+        self.model = None  # By default, internal model is not instantiated
         # TODO Rethink : Implement
 
     # ---   MODEL METHODS   --- #
