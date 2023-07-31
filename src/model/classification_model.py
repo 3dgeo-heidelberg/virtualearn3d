@@ -4,8 +4,7 @@ from abc import ABC
 from src.model.model import Model
 import src.main.main_logger as LOGGING
 from src.utils.dict_utils import DictUtils
-from sklearn.metrics import accuracy_score, precision_score, recall_score, \
-    f1_score, jaccard_score, matthews_corrcoef, cohen_kappa_score
+from src.eval.classification_evaluator import ClassificationEvaluator
 import numpy as np
 
 
@@ -33,6 +32,31 @@ class ClassificationModel(Model, ABC):
         kwargs = Model.extract_model_args(spec)
         # Extract particular arguments for classification models
         kwargs['autoval_metrics'] = spec.get('autoval_metrics', None)
+        kwargs['class_names'] = spec.get('class_names', None)
+        kwargs['training_evaluation_metrics'] = spec.get(
+            'training_evaluation_metrics', None
+        )
+        kwargs['training_class_evaluation_metrics'] = spec.get(
+            'training_class_evaluation_metrics', None
+        )
+        kwargs['training_evaluation_report_path'] = spec.get(
+            'training_evaluation_report_path', None
+        )
+        kwargs['training_class_evaluation_report_path'] = spec.get(
+            'training_class_evaluation_report_path', None
+        )
+        kwargs['training_confusion_matrix_report_path'] = spec.get(
+            'training_confusion_matrix_report_path', None
+        )
+        kwargs['training_confusion_matrix_plot_path'] = spec.get(
+            'training_confusion_matrix_plot_path', None
+        )
+        kwargs['training_class_distribution_report_path'] = spec.get(
+            'training_class_distribution_report_path', None
+        )
+        kwargs['training_class_distribution_plot_path'] = spec.get(
+            'training_class_distribution_plot_path', None
+        )
         # Delete keys with None value
         kwargs = DictUtils.delete_by_val(kwargs, None)
         # Return
@@ -52,6 +76,32 @@ class ClassificationModel(Model, ABC):
             self.autoval_metrics = self.autoval_metrics_from_names(
                 self.autoval_metrics_names
             )
+        self.class_names = kwargs.get('class_names', None)
+        # Training evaluation attributes (do not confuse with autoval or kfold)
+        self.training_evaluation_metrics = kwargs.get(
+            'training_evaluation_metrics', None
+        )
+        self.training_class_evaluation_metrics = kwargs.get(
+            'training_class_evaluation_metrics', None
+        )
+        self.training_evaluation_report_path = kwargs.get(
+            'training_evaluation_report_path', None
+        )
+        self.training_class_evaluation_report_path = kwargs.get(
+            'training_class_evaluation_report_path', None
+        )
+        self.training_confusion_matrix_report_path = kwargs.get(
+            'training_confusion_matrix_report_path', None
+        )
+        self.training_confusion_matrix_plot_path = kwargs.get(
+            'training_confusion_matrix_plot_path', None
+        )
+        self.training_class_distribution_report_path = kwargs.get(
+            'training_class_distribution_report_path', None
+        )
+        self.training_class_distribution_plot_path = kwargs.get(
+            'training_class_distribution_plot_path', None
+        )
 
     # ---   TRAINING METHODS   --- #
     # ---------------------------- #
@@ -80,79 +130,48 @@ class ClassificationModel(Model, ABC):
             LOGGING.LOGGER.info(evals_str)
         return evals
 
+    def on_training_finished(self, X, y, yhat=None):
+        """
+        See :meth:`model.Model.on_training_finished`.
+        """
+        # Compute the estimations on the training dataset if not given
+        if yhat is None:
+            yhat = self._predict(X, F=None)
+        # Training evaluation
+        training_eval = ClassificationEvaluator(
+            class_names=self.class_names,
+            metrics=self.training_evaluation_metrics,
+            class_metrics=self.training_class_evaluation_metrics,
+            report_path=self.training_evaluation_report_path,
+            class_report_path=self.training_class_evaluation_report_path,
+            confusion_matrix_report_path=self.training_confusion_matrix_report_path,
+            confusion_matrix_plot_path=self.training_confusion_matrix_plot_path,
+            class_distribution_report_path=self.training_class_distribution_report_path,
+            class_distribution_plot_path=self.training_class_distribution_plot_path
+        ).eval(yhat, y=y)
+        if training_eval.can_report():
+            training_eval_report = training_eval.report()
+            LOGGING.LOGGER.info(
+                f'{self.__class__.__name__} training evaluation:\n'
+                f'{training_eval_report.to_string()}'
+            )
+            training_eval_report.to_file(
+                self.training_evaluation_report_path,
+                class_report_path=self.training_class_evaluation_report_path,
+                confusion_matrix_report_path=self.training_confusion_matrix_report_path,
+                class_distribution_report_path=self.training_class_distribution_report_path
+            )
+        if training_eval.can_plot():
+            training_eval.plot(
+                path=self.training_confusion_matrix_plot_path,
+                class_distribution_path=self.training_class_distribution_plot_path
+            ).plot()
+
     # ---   UTIL METHODS   --- #
     # ------------------------ #
     @staticmethod
     def autoval_metrics_from_names(names):
-        """
-        Obtain a list of metrics that can be evaluated for vectors of classes
-        y (expected), and yhat (predicted).
-
-        :param names: The names of the metrics. Currently supported metrics are
-            Overall Accuracy "OA", Precision "P", Recall "R", F1 score "F1",
-            Intersection over Union "IoU", weighted Precision "wP", weighted
-            Recall "wR", weighted F1 score "wF1", weighted Intersection over
-            Union "wIoU", Matthews Correlation Coefficient "MCC", and Kohen's
-            Kappa score "Kappa".
-        :return: List of metrics such that metric_i(y, yhat) can be invoked.
-        :rtype: list
-        """
-        metrics = []
-        if "OA" in names:
-            metrics.append(accuracy_score)
-        if "P" in names:
-            metrics.append(
-                lambda y, yhat: precision_score(
-                    y, yhat, average='macro'
-                )
-            )
-        if "R" in names:
-            metrics.append(
-                lambda y, yhat: recall_score(
-                    y, yhat, average='macro'
-                )
-            )
-        if "F1" in names:
-            metrics.append(
-                lambda y, yhat: f1_score(
-                    y, yhat, average='macro'
-                )
-            )
-        if "IoU" in names:
-            metrics.append(
-                lambda y, yhat: jaccard_score(
-                    y, yhat, average='macro'
-                )
-            )
-        if "wP" in names:
-            metrics.append(
-                lambda y, yhat: precision_score(
-                    y, yhat, average='weighted'
-                )
-            )
-        if "wR" in names:
-            metrics.append(
-                lambda y, yhat: recall_score(
-                    y, yhat, average='weighted'
-                )
-            )
-        if "wF1" in names:
-            metrics.append(
-                lambda y, yhat : f1_score(
-                    y, yhat, average='weighted'
-                )
-            )
-        if "wIoU" in names:
-            metrics.append(
-                lambda y, yhat : jaccard_score(
-                    y, yhat, average='weighted'
-                )
-            )
-        if "MCC" in names:
-            metrics.append(matthews_corrcoef)
-        if "Kappa" in names:
-            metrics.append(cohen_kappa_score)
-        return metrics
+        return ClassificationEvaluator.metrics_from_names(names)
 
     # ---  PICKLE METHODS  --- #
     # ------------------------ #

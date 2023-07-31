@@ -33,7 +33,6 @@ class PointNetPwiseClassifModel(ClassificationModel):
         super().__init__(**kwargs)
         # Basic attributes of the PointNetPwiseClassifModel
         self.model = None  # By default, internal model is not instantiated
-        # TODO Rethink : Implement
 
     # ---   MODEL METHODS   --- #
     # ------------------------- #
@@ -101,18 +100,13 @@ class PointNetPwiseClassifModel(ClassificationModel):
         # Initialize model instance
         self.prepare_model()
         # Train the model
-        start = time.perf_counter()
         self.model = self.model.fit(X, y)
-        end = time.perf_counter()
-        # TODO Rethink : Implement
-        pass
 
     def on_training_finished(self, X, y):
-        """
-        See :meth:`model.Model.on_training_finished`.
-        """
-        # Report scores for trained model
-        # TODO Rethink : Implement
+        # Compute predictions on training data
+        yhat = self._predict(X, F=None)
+        # Training evaluation
+        super().on_training_finished(X, y, yhat=yhat)
         # Report point-wise activation maps
         # TODO Rethink : Implement
         # Plot point-wise activation

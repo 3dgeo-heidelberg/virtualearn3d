@@ -7,7 +7,40 @@
 	"random_seed": null,
 	"model_args": {
 		"num_classes": 2,
-		"num_points": 16384
+		"class_names": ["wood", "leaf"],
+		"num_pwise_feats": 128,
+		"pre_processing":{
+			"sphere_radius": 1.0,
+			"separation_factor": 1.866025404,
+			"cell_size": [0.3, 0.3, 0.3]
+		},
+		"model_handling": {
+			"summary_report_path": "out/PointnetPwiseClassifier/model_summary.log",
+			"training_epochs": 100,
+			"batch_size": 16,
+			"checkpoint_path": "out/PointnetPwiseClassifier/checkpoint.model",
+			"checkpoint_monitor": "loss"
+		},
+		"compilation_args": {
+			"optimizer":{
+				"algorithm": "SGD",
+				"learning_rate": 1e-3
+			},
+			"loss": {
+				"function": "sparse_categorical_crossentropy"
+			},
+			"metrics": [
+				"sparse_categorical_accuracy"
+			]
+		}	
 	},
-	"autoval_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"]
+	"autoval_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
+	"training_evaluation_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
+  	"training_class_evaluation_metrics": ["P", "R", "F1", "IoU"],
+	"training_evaluation_report_path": "out/PointnetPwiseClassifier/eval/evaluation.log",
+	"training_class_evaluation_report_path": "out/PointnetPwiseClassifier/eval/class_evaluation.log",
+	"training_confusion_matrix_report_path": "out/PointnetPwiseClassifier/eval/confusion.log",
+	"training_confusion_matrix_plot_path": "out/PointnetPwiseClassifier/eval/confusion.svg",
+	"training_class_distribution_report_path": "out/PointnetPwiseClassifier/eval/class_distribution.log",
+	"training_class_distribution_plot_path": "out/PointnetPwiseClassifier/eval/class_distribution.svg"
 }

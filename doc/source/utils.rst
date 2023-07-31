@@ -38,6 +38,14 @@ utils.imputer\_utils module
    :undoc-members:
    :show-inheritance:
 
+utils.receptive\_field module
+-----------------------------
+
+.. automodule:: utils.receptive_field
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 utils.tuner\_utils module
 -------------------------
 

@@ -5,7 +5,6 @@ from src.model.deeplearn.layer.orthogonal_regularizer import \
     OrthogonalRegularizer
 from src.model.deeplearn.arch.architecture import Architecture
 from src.utils.receptive_field import ReceptiveField
-from src.model.deeplearn.deep_learning_exception import DeepLearningException
 from src.model.deeplearn.dlrun.point_net_pre_processor import \
     PointNetPreProcessor
 from src.model.deeplearn.dlrun.point_net_post_processor import  \
