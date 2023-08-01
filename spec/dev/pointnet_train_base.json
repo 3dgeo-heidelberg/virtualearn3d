@@ -10,40 +10,40 @@
 		"class_names": ["wood", "leaf"],
 		"num_pwise_feats": 128,
 		"pre_processing": {
-			"sphere_radius": 0.75,
-			"separation_factor": 0.8,
-			"cell_size": [0.08, 0.08, 0.08],
+			"sphere_radius": 1.0,
+			"separation_factor": 1.0,
+			"cell_size": [0.07, 0.07, 0.07],
 			"nthreads": 6
 		},
 		"pretransf_feats_spec": [
 			{
 				"filters": 64,
-				"name": "feats_64"
+				"name": "feats_64A"
+			},
+			{
+				"filters": 64,
+				"name": "feats_64B"
 			},
 			{
 				"filters": 128,
-				"name": "feats_128A"
-			},
-			{
-				"filters": 128,
-				"name": "feats_128B"
+				"name": "feats_128"
 			}	
 		],
 		"postransf_feats_spec": [
 			{
-				"filters": 512,
-				"name": "feats_512"
+				"filters": 256,
+				"name": "feats_256"
 			},
 			{
-				"filters": 2048,
-				"name": "feats_2048"
+				"filters": 1024,
+				"name": "feats_1024"
 			}
 		],
-		"tnet_pre_filters_spec": [64, 128, 1024],
+		"tnet_pre_filters_spec": [64, 128, 512],
 		"tnet_post_filters_spec": [512, 256],
 		"model_handling": {
 			"summary_report_path": "out/PointnetPwiseClassifier/model_summary.log",
-			"training_epochs": 100,
+			"training_epochs": 10,
 			"batch_size": 8,
 			"checkpoint_path": "out/PointnetPwiseClassifier/checkpoint.model",
 			"checkpoint_monitor": "loss",
