@@ -42,6 +42,10 @@ class PointNet(Architecture, ABC):
         self.num_points = ReceptiveField.num_cells_from_cell_size(
             self.pre_runnable.cell_size
         )
+        self.pretransf_feats_spec = kwargs['pretransf_feats_spec']
+        self.postransf_feats_spec = kwargs['postransf_feats_spec']
+        self.tnet_pre_filters_spec = kwargs['tnet_pre_filters_spec']
+        self.tnet_post_filters_spec = kwargs['tnet_post_filters_spec']
         # Initialize cache-like attributes
         self.pretransf_feats, self.postransf_feats = [None]*2
         self.transf_feats = None
@@ -72,8 +76,18 @@ class PointNet(Architecture, ABC):
         """
         # Build the input dictionary for the build_hidden_pointnet function
         _kwargs = {
-            'pretransf_feats': kwargs.get('pretransf_feats', None),
-            'postransf_feats': kwargs.get('postransf_feats', None)
+            'pretransf_feats': kwargs.get(
+                'pretransf_feats', self.pretransf_feats_spec
+            ),
+            'postransf_feats': kwargs.get(
+                'postransf_feats', self.postransf_feats_spec
+            ),
+            'tnet_pre_filters': kwargs.get(
+                'tnet_pre_filters', self.tnet_pre_filters_spec
+            ),
+            'tnet_post_filters': kwargs.get(
+                'tnet_post_filters', self.tnet_post_filters_spec
+            )
         }
         # Remove None from dictionary to prevent overriding defaults
         _kwargs = DictUtils.delete_by_val(_kwargs, None)
@@ -92,30 +106,10 @@ class PointNet(Architecture, ABC):
     @staticmethod
     def build_hidden_pointnet(
         x,
-        pretransf_feats=(
-            {
-                'filters': 64,
-                'name': 'feats_64'
-            },
-            {
-                'filters': 128,
-                'name': 'feats_128_A'
-            },
-            {
-                'filters': 128,
-                'name': 'feats_128_B'
-            }
-        ),
-        postransf_feats=(
-            {
-                'filters': 512,
-                'name': 'feats_512'
-            },
-            {
-                'filters': 2048,
-                'name': 'feats_2018'
-            }
-        )
+        pretransf_feats,
+        postransf_feats,
+        tnet_pre_filters,
+        tnet_post_filters
     ):
         """
         Build the PointNet block of the architecture on the given input.
@@ -130,6 +124,12 @@ class PointNet(Architecture, ABC):
             for each feature extraction layer after the transformation block
             in the middle.
         :type postransf_feats: list
+        :param tnet_pre_filters: The list of number of filters (integer)
+            defining each convolutional block before the global pooling.
+        :type tnet_pre_filters: list
+        :param tnet_post_filters: The list of nubmer of filters (integer)
+            defining each MLP block after the global pooling.
+        :type tnet_post_filters: list
         :return: Last layer of the built PointNet, the list of
             pre-transformations, the layer of transformed features, and the
             list of post-transformations.
@@ -139,7 +139,9 @@ class PointNet(Architecture, ABC):
         x = PointNet.build_transformation_block(
             x,
             num_features=3,
-            name='input_transf'
+            name='input_transf',
+            tnet_pre_filters=tnet_pre_filters,
+            tnet_post_filters=tnet_post_filters
         )
         # Features before the second transformation block
         pretransf_feat_layers = []
@@ -154,7 +156,9 @@ class PointNet(Architecture, ABC):
         x = PointNet.build_transformation_block(
             x,
             num_features=pretransf_feats[-1]['filters'],
-            name='hidden_transf'
+            name='hidden_transf',
+            tnet_pre_filters=tnet_pre_filters,
+            tnet_post_filters=tnet_post_filters
         )
         transf_feats = x
         # Features after the second transformation block
@@ -169,7 +173,13 @@ class PointNet(Architecture, ABC):
         return x, pretransf_feat_layers, transf_feats, postransf_feat_layers
 
     @staticmethod
-    def build_transformation_block(inputs, num_features, name):
+    def build_transformation_block(
+        inputs,
+        num_features,
+        name,
+        tnet_pre_filters,
+        tnet_post_filters
+    ):
         """
         Build a transformation block.
 
@@ -179,10 +189,20 @@ class PointNet(Architecture, ABC):
         :type num_features: int
         :param name: The name of the block.
         :type name: str
+        :param tnet_pre_filters: The list of number of filters (integer)
+            defining each convolutional block before the global pooling.
+        :type tnet_pre_filters: list
+        :param tnet_post_filters: The list of nubmer of filters (integer)
+            defining each MLP block after the global pooling.
+        :type tnet_post_filters: list
         :return: The last layer of the transformation block
         """
         transf = PointNet.build_transformation_net(
-            inputs, num_features, name=name
+            inputs,
+            num_features,
+            name=name,
+            tnet_pre_filters=tnet_pre_filters,
+            tnet_post_filters=tnet_post_filters
         )
         transf = tf.keras.layers.Reshape((num_features, num_features))(transf)
         return tf.keras.layers.Dot(axes=(2, 1), name=f'{name}_mm')([
@@ -190,17 +210,34 @@ class PointNet(Architecture, ABC):
         ])
 
     @staticmethod
-    def build_transformation_net(inputs, num_features, name):
+    def build_transformation_net(
+        inputs,
+        num_features,
+        name,
+        tnet_pre_filters,
+        tnet_post_filters
+    ):
         """
         Assists the :func:`point_net.PointNet.build_transformation_block`
         method.
         """
-        x = PointNet.build_conv_block(inputs, filters=64, name=f'{name}_1')
-        x = PointNet.build_conv_block(x, filters=128, name=f'{name}_2')
-        x = PointNet.build_conv_block(x, filters=1024, name=f'{name}_3')
+        x = inputs
+        # Compute the filters before the global pooling (pre filters)
+        for i, filters in enumerate(tnet_pre_filters):
+            x = PointNet.build_conv_block(
+                x,
+                filters=filters,
+                name=f'{name}_pre{i+1}_f{filters}'
+            )
+        # Global pooling
         x = tf.keras.layers.GlobalMaxPooling1D(name=f'{name}_GMaxPool')(x)
-        x = PointNet.build_mlp_block(x, filters=512, name=f'{name}_1_1')
-        x = PointNet.build_mlp_block(x, filters=256, name=f'{name}_2_1')
+        # Compute the filters after the global pooling (post filters)
+        for i, filters in enumerate(tnet_post_filters):
+            x = PointNet.build_mlp_block(
+                x,
+                filters=filters,
+                name=f'{name}_post{i+1}_f{filters}'
+            )
         return tf.keras.layers.Dense(
             num_features*num_features,
             kernel_initializer='zeros',

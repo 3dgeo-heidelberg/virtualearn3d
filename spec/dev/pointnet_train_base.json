@@ -3,26 +3,69 @@
 	"in_pcloud": "https://3dweb.geog.uni-heidelberg.de/trees_leafwood/PinSyl_KA09_T048_2019-08-20_q1_TLS-on_c_t.laz",
 	"out_model": "out/PointnetPwiseClassifier/pnet_pwise_classif.model",
 	"fnames": ["AUTO"],
-	"training_type": "autoval",
+	"training_type": "base",
 	"random_seed": null,
 	"model_args": {
 		"num_classes": 2,
 		"class_names": ["wood", "leaf"],
 		"num_pwise_feats": 128,
-		"pre_processing":{
-			"sphere_radius": 1.0,
-			"separation_factor": 1.866025404,
-			"cell_size": [0.3, 0.3, 0.3]
+		"pre_processing": {
+			"sphere_radius": 0.75,
+			"separation_factor": 0.8,
+			"cell_size": [0.08, 0.08, 0.08],
+			"nthreads": 6
 		},
+		"pretransf_feats_spec": [
+			{
+				"filters": 64,
+				"name": "feats_64"
+			},
+			{
+				"filters": 128,
+				"name": "feats_128A"
+			},
+			{
+				"filters": 128,
+				"name": "feats_128B"
+			}	
+		],
+		"postransf_feats_spec": [
+			{
+				"filters": 512,
+				"name": "feats_512"
+			},
+			{
+				"filters": 2048,
+				"name": "feats_2048"
+			}
+		],
+		"tnet_pre_filters_spec": [64, 128, 1024],
+		"tnet_post_filters_spec": [512, 256],
 		"model_handling": {
 			"summary_report_path": "out/PointnetPwiseClassifier/model_summary.log",
 			"training_epochs": 100,
-			"batch_size": 16,
+			"batch_size": 8,
 			"checkpoint_path": "out/PointnetPwiseClassifier/checkpoint.model",
-			"checkpoint_monitor": "loss"
+			"checkpoint_monitor": "loss",
+			"learning_rate_on_plateau": {
+				"monitor": "loss",
+				"mode": "min",
+				"factor": 0.1,
+				"patience": 10,
+				"cooldown": 5,
+				"min_delta": 0.01,
+				"min_lr": 1e-6
+			},
+			"early_stopping": {
+				"monitor": "loss",
+				"mode": "min",
+				"min_delta": 0.01,
+				"patience": 20
+			}
+
 		},
 		"compilation_args": {
-			"optimizer":{
+			"optimizer": {
 				"algorithm": "SGD",
 				"learning_rate": 1e-3
 			},

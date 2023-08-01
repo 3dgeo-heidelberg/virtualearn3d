@@ -31,6 +31,11 @@ class SimpleDLModelHandler(DLModelHandler):
         self.history = kwargs.get('history', None)
         self.checkpoint_path = kwargs.get('checkpoint_path', None)
         self.checkpoint_monitor = kwargs.get('checkpoint_monitor', 'loss')
+        self.learning_rate_on_plateau = kwargs.get(
+            'learning_rate_on_plateau',
+            None
+        )
+        self.early_stopping = kwargs.get('early_stopping', None)
         self.compilation_args = kwargs.get('compilation_args', None)
 
     # ---   MODEL HANDLER   --- #
@@ -56,6 +61,14 @@ class SimpleDLModelHandler(DLModelHandler):
                 monitor=self.checkpoint_monitor,
                 save_best_only=True,
                 save_weights_only=True
+            ))
+        if self.learning_rate_on_plateau is not None:
+            callbacks.append(tf.keras.callbacks.ReduceLROnPlateau(
+                **self.learning_rate_on_plateau
+            ))
+        if self.early_stopping is not None:
+            callbacks.append(tf.keras.callbacks.EarlyStopping(
+                **self.early_stopping
             ))
         # Fit the model
         start = time.perf_counter()
@@ -83,7 +96,10 @@ class SimpleDLModelHandler(DLModelHandler):
         # Softmax scores
         zhat = self.arch.run_post({
             'X': X,
-            'z': self.compiled.predict(self.arch.run_pre({'X': X})),
+            'z': self.compiled.predict(
+                self.arch.run_pre({'X': X}),
+                batch_size=self.batch_size
+            ),
         })
         print(f'zhat: {zhat}')  # TODO Remove
         print(f'zhat.shape: {zhat.shape}')  # TODO Remove

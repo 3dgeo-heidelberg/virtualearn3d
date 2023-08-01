@@ -33,6 +33,10 @@ class ClassificationModel(Model, ABC):
         # Extract particular arguments for classification models
         kwargs['autoval_metrics'] = spec.get('autoval_metrics', None)
         kwargs['class_names'] = spec.get('class_names', None)
+        if kwargs['class_names'] is None:
+            model_args = spec.get('model_args', None)
+            if model_args is not None:
+                kwargs['class_names'] = model_args.get('class_names', None)
         kwargs['training_evaluation_metrics'] = spec.get(
             'training_evaluation_metrics', None
         )

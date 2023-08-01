@@ -5,6 +5,8 @@ import src.main.main_logger as LOGGING
 import numpy as np
 from scipy.spatial import KDTree as KDT
 import scipy.stats
+import joblib
+import time
 
 
 # ---   CLASS   --- #
@@ -62,6 +64,7 @@ class PointNetPreProcessor:
         self.sphere_radius = kwargs.get('sphere_radius', 1.0)
         self.separation_factor = kwargs.get('separation_factor', np.sqrt(3)/4)
         self.cell_size = np.array(kwargs.get('cell_size', [0.1, 0.1, 0.1]))
+        self.nthreads = kwargs.get('nthreads', 1)
         # Initialize last call cache
         self.last_call_receptive_fields = None
         self.last_call_neighborhoods = None
@@ -106,6 +109,7 @@ class PointNetPreProcessor:
             "y" was given in the inputs dictionary) the corresponding
             reference values for those points.
         """
+        start = time.perf_counter()
         # Extract inputs
         X, y = inputs['X'], inputs.get('y', None)
         # Build support points
@@ -139,24 +143,38 @@ class PointNetPreProcessor:
         ]
         # Neighborhoods ready to be fed into the neural network
         # TODO Rethink : Use support points to build the input ?
-        Xout = np.array([
-            self.last_call_receptive_fields[i].centroids_from_points(
+        Xout = np.array(joblib.Parallel(n_jobs=self.nthreads)(
+            joblib.delayed(
+                self.last_call_receptive_fields[i].centroids_from_points
+            )(
                 X[Ii], interpolate=True
             )
             for i, Ii in enumerate(I)
-        ])
+        ))
+        end = time.perf_counter()
         LOGGING.LOGGER.info(
             f'The point net pre processor generated {Xout.shape[0]} receptive '
             'fields. '
         )
         if y is not None:
-            yout = np.array([
-                self.last_call_receptive_fields[i].reduce_values(
+            yout = np.array(joblib.Parallel(n_jobs=self.nthreads)(
+                joblib.delayed(
+                    self.last_call_receptive_fields[i].reduce_values
+                )(
                     Xout[i],
                     y[Ii],
                     reduce_f=lambda x: scipy.stats.mode(x)[0][0],
                     fill_nan=True
                 ) for i, Ii in enumerate(I)
-            ])
+            ))
+            end = time.perf_counter()
+            LOGGING.LOGGER.info(
+                f'The point net pre processor pre-processed {X.shape[0]} '
+                f'points for training in {end-start:.3f} seconds.'
+            )
             return Xout, yout
+        LOGGING.LOGGER.info(
+            f'The point net pre processor pre-processed {X.shape[0]} '
+            f'points for predictions in {end-start:.3f} seconds.'
+        )
         return Xout
