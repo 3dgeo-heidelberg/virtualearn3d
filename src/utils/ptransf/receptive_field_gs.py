@@ -1,16 +1,17 @@
 # ---   IMPORTS   --- #
 # ------------------- #
+from src.utils.ptransf.receptive_field import ReceptiveField
 import numpy as np
 from scipy.spatial import KDTree as KDT
 
 
 # ---   CLASS   --- #
 # ----------------- #
-class ReceptiveField:
+class ReceptiveFieldGS(ReceptiveField):
     r"""
     :author: Alberto M. Esmoris Pena
 
-    Class representing a receptive field.
+    Class representing a receptive field based on grid subsampling.
 
     Receptive fields constitute a discrete representation of a point cloud of
     m points using R points. More formally, the receptive field can be
@@ -81,13 +82,14 @@ class ReceptiveField:
         of x with round half toward positive infinity as tie-breaking rule.
     :vartype num_cells: int
     :ivar N: The indexing matrix :math:`\pmb{N}_{\geq -1}` described above. It
-        is computed when calling :meth:`receptive_field.ReceptiveField.fit`.
+        is computed when calling
+        :meth:`receptive_field_gs.ReceptiveFieldGS.fit`.
     :vartype N: :class:`np.ndarray`
     :ivar x: The center point of the receptive field. It is assigned when
-        calling :meth:`receptive_field.ReceptiveField.fit`.
+        calling :meth:`receptive_field_gs.ReceptiveFieldGS.fit`.
     :vartype x: :class:`np.ndarray`
     :ivar m: The number of points represented in the receptive fields. It is
-        assigned when calling :meth:`receptive_field.ReceptiveField.fit`.
+        assigned when calling :meth:`receptive_field_gs.ReceptiveFieldGS.fit`.
     :vartype m: int
     """
     # ---   INIT   --- #
@@ -97,43 +99,46 @@ class ReceptiveField:
         Initialize/instantiate a receptive field object.
 
         :param kwargs: The key-word specification to instantiate the
-            ReceptiveField.
+            ReceptiveFieldGS.
 
         :Keyword Arguments:
             *   *bounding_radii* (``np.ndarray``) --
                 The bounding radius for each axis defining the receptive field.
-                See :class:`.ReceptiveField` for a more detailed description.
+                See :class:`.ReceptiveFieldGS` for a more detailed description.
             *   *cell_size* (``np.ndarray``) --
                 The cell size defining the receptive field. By default it is
-                :math:`(0.05, 0.05, 0.05)`. See :class:`.ReceptiveField` for
+                :math:`(0.05, 0.05, 0.05)`. See :class:`.ReceptiveFieldGS` for
                 a more detailed description.
         """
+        # Call parent's init
+        super().__init__(**kwargs)
         # Assign attributes
         self.cell_size = kwargs.get('cell_size', np.array([0.05, 0.05, 0.05]))
         self.dimensionality = self.cell_size.shape[0]
         self.bounding_radii = kwargs.get('bounding_radii', None)
         if self.bounding_radii is None:
             raise ValueError(
-                'ReceptiveField must be instantiated for a given bounding '
+                'ReceptiveFieldGS must be instantiated for a given bounding '
                 'radii. None were given.'
             )
-        self.num_cells = ReceptiveField.num_cells_from_cell_size(
+        self.num_cells = ReceptiveFieldGS.num_cells_from_cell_size(
             self.cell_size
         )
         self.N = None  # The indexing matrix will be created during fit
         self.x = None  # The center point of the receptive field
         self.m = None  # Number of points the receptive field has been fit to
 
-    # ---   MAIN METHODS   --- #
-    # ------------------------ #
+    # ---   RECEPTIVE FIELD METHODS   --- #
+    # ----------------------------------- #
     def fit(self, X, x):
         r"""
-        Fit the receptive field to represent the given points.
+        Fit the receptive field to represent the given points by building a
+        grid containing them.
 
         The matrix of indices
         :math:`\pmb{N} \in \mathbb{Z}_{\geq -1}^{R \times R^*}` is computed
         here. See also
-        :meth:`receptive_field.ReceptiveField.shadow_indexing_matrix_from_points`
+        :meth:`receptive_field_gs.ReceptiveFieldGS.shadow_indexing_matrix_from_points`
         .
 
         :param X: The input matrix of m points in an n-dimensional space.
@@ -142,16 +147,16 @@ class ReceptiveField:
             field.
         :type x: :class:`np.ndarray`
         :return: The fit receptive field itself (for fluent programming).
-        :rtype: :class:`.ReceptiveField`
+        :rtype: :class:`.ReceptiveFieldGS`
         """
         # Validate input
         if x is None:
             raise ValueError(
-                'ReceptiveField cannot fit without an input center point x.'
+                'ReceptiveFieldGS cannot fit without an input center point x.'
             )
         if X is None:
             raise ValueError(
-                'ReceptiveField cannot fit without input points X.'
+                'ReceptiveFieldGS cannot fit without input points X.'
             )
         # Center and scale the input point cloud
         self.x = x
@@ -175,8 +180,8 @@ class ReceptiveField:
         for a given point :math:`i` as
         :math:`\mathcal{N}_i = \lvert\left\{n_{ij} \geq 0 : 1 \leq j \leq R^* \rvert\right\}`
         , where :math:`n_{ij}` is the element at row :math:`i` column :math:`j`
-        in the matrix :math:`\pmb{N}` (see :class:`.ReceptiveField`). For then,
-        each centroid can be computed such that:
+        in the matrix :math:`\pmb{N}` (see :class:`.ReceptiveFieldGS`). For
+        then, each centroid can be computed such that:
 
         .. math::
             \pmb{y}_{i*} =
@@ -296,8 +301,8 @@ class ReceptiveField:
         if safe:
             if np.any(np.isnan(Y)):
                 raise ValueError(
-                    'The receptive field propagated NaN values. This is not '
-                    'allowed in safe mode.'
+                    'The GS receptive field propagated NaN values. This is '
+                    'not allowed in safe mode.'
                 )
         # Return output matrix (or vector if single-column)
         return Y if Y.shape[1] > 1 else Y.flatten()
@@ -335,7 +340,7 @@ class ReceptiveField:
             non-empty cell in the receptive field.
         :type fill_nan: bool
         :return: The reduced vector.
-        :rtype: `np.ndarray`
+        :rtype: :class:`np.ndarray`
         """
         # Reduce
         not_nan_flags = np.any(self.N >= 0, axis=1)
@@ -408,8 +413,8 @@ class ReceptiveField:
             indexing matrix. The points must have been centered and scaled,
             so they are expressed in the internal reference system of the
             receptive field. See
-            :meth:`receptive_field.ReceptiveField.center_and_scale` for more
-            information.
+            :meth:`receptive_field_gs.ReceptiveFieldGS.center_and_scale` for
+            more information.
         :return: The built indexing matrix.
         :rtype: :class:`np.ndarray`
         """
@@ -470,7 +475,7 @@ class ReceptiveField:
     def undo_center_and_scale(self, X):
         r"""
         The inverse transform of the
-        :meth:`receptive_field.ReceptiveField.center_and_scale` method.
+        :meth:`receptive_field_gs.ReceptiveFieldGS.center_and_scale` method.
 
         .. math::
             \pmb{x}_{i*} = \left[\begin{array}{ccc}
@@ -521,7 +526,7 @@ class ReceptiveField:
 
 
         :param cell_size: The cell size for which the number of cells must be
-            computed. See :class:`.ReceptiveField` for further details.
+            computed. See :class:`.ReceptiveFieldGS` for further details.
         :return: The number of cells composing the receptive field.
         :rtype: int
         """

@@ -4,7 +4,6 @@ from abc import ABC
 from src.model.deeplearn.layer.orthogonal_regularizer import \
     OrthogonalRegularizer
 from src.model.deeplearn.arch.architecture import Architecture
-from src.utils.receptive_field import ReceptiveField
 from src.model.deeplearn.dlrun.point_net_pre_processor import \
     PointNetPreProcessor
 from src.model.deeplearn.dlrun.point_net_post_processor import  \
@@ -39,9 +38,8 @@ class PointNet(Architecture, ABC):
         # Update the postprocessing logic
         self.post_runnable = PointNetPostProcessor(self.pre_runnable)  # TODO Rethink : kwargs?
         # The number of points is the number of cells in the receptive fields
-        self.num_points = ReceptiveField.num_cells_from_cell_size(
-            self.pre_runnable.cell_size
-        )
+        self.num_points = self.pre_runnable.get_num_input_points()
+        # Neural network architecture specifications
         self.pretransf_feats_spec = kwargs['pretransf_feats_spec']
         self.postransf_feats_spec = kwargs['postransf_feats_spec']
         self.tnet_pre_filters_spec = kwargs['tnet_pre_filters_spec']

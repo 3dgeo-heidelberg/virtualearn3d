@@ -1,7 +1,7 @@
 # ---   IMPORTS   --- #
 # ------------------- #
-from src.tests.vl3d_test import VL3DTest, VL3DTestException
-from src.utils.receptive_field import ReceptiveField
+from src.tests.vl3d_test import VL3DTest
+from src.utils.ptransf.receptive_field import ReceptiveField
 import numpy as np
 
 

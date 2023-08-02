@@ -10,6 +10,7 @@
 		"class_names": ["wood", "leaf"],
 		"num_pwise_feats": 128,
 		"pre_processing": {
+			"pre_processor": "grid_subsampling",
 			"sphere_radius": 1.0,
 			"separation_factor": 1.0,
 			"cell_size": [0.07, 0.07, 0.07],

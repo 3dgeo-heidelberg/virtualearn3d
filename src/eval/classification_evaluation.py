@@ -93,7 +93,7 @@ class ClassificationEvaluation(Evaluation):
 
         See :class:`.ClassificationPlot`.
 
-        :param kwargs:
+        :param kwargs: The key-word arguments for the plot.
         :return: The ClassificationPlot representing the
             ClassificationEvaluation.
         :rtype: :class:`.ClassificationEvaluation`

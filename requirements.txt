@@ -12,3 +12,4 @@ pdal~=3.2.3
 
 # Deep learning requirements
 tensorflow-gpu~=2.11.0
+open3d~=0.17.0

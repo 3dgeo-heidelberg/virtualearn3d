@@ -1,6 +1,10 @@
 # ---   IMPORTS   --- #
 # ------------------- #
-import numpy as np
+from src.model.deeplearn.deep_learning_exception import DeepLearningException
+from src.model.deeplearn.dlrun.grid_subsampling_post_processor import \
+    GridSubsamplingPostProcessor
+from src.model.deeplearn.dlrun.furthest_point_subsampling_post_processor \
+    import FurthestPointSubsamplingPostProcessor
 
 
 # ---   CLASS   --- #
@@ -14,6 +18,7 @@ class PointNetPostProcessor:
 
     :ivar pnet_preproc: The preprocessor that generated the input for the model
         which output must be handled by the post-processor.
+    :vartype pnet_preproc: :class:`.PointNetPreProcessor`
     """
     # ---   INIT   --- #
     # ---------------- #
@@ -28,6 +33,25 @@ class PointNetPostProcessor:
         """
         # Assign attributes
         self.pnet_preproc = pnet_preproc  # Corresponding pre-processor
+        if self.pnet_preproc is None:
+            raise DeepLearningException(
+                'PointNetPostProcessor needs the corresponding '
+                'PointNetPreProcessor.'
+            )
+        # Handle expected post-processors
+        if self.pnet_preproc.pre_processor_type == 'grid_subsampling':
+            self.post_processor = GridSubsamplingPostProcessor(
+                self.pnet_preproc.pre_processor
+            )
+        elif self.pnet_preproc.pre_processor_type == 'furthest_point_subsampling':
+            self.post_processor = FurthestPointSubsamplingPostProcessor(
+                self.pnet_preproc.pre_processor
+            )
+        else:
+            raise DeepLearningException(
+                'PointNetPostProcessor received an unexpected pre_processor_'
+                f'_type: "{self.pnet_preproc.pre_processor_type}"'
+            )
 
     # ---   RUN/CALL   --- #
     # -------------------- #
@@ -40,25 +64,6 @@ class PointNetPostProcessor:
         predictions computed on a receptive field of :math:`R` points that must
         be propagated back to the :math:`m` points of the original point cloud.
         :type inputs: dict
-        :return: The :math:`m` point-wise predictions derived from the
-            :math:`R` input predictions on the receptive field.
+        :return: The :math:`m` point-wise predictions.
         """
-        # Extract inputs
-        X = inputs['X']  # The original point cloud (before receptive field)
-        z_reduced = inputs['z']  # Softmax scores reduced to receptive field
-        num_classes = z_reduced.shape[-1]
-        # Transform each prediction by propagation
-        z_propagated = []
-        rf = self.pnet_preproc.last_call_receptive_fields
-        I = self.pnet_preproc.last_call_neighborhoods
-        for i, rfi in enumerate(rf):
-            z_propagated.append(rfi.propagate_values(z_reduced[i]))
-        # Reduce point-wise many predictions by computing the mean
-        count = np.zeros(X.shape[0], dtype=int)
-        z = np.zeros((X.shape[0], num_classes), dtype=float)
-        for i, z_prop_i in enumerate(z_propagated):
-            z[I[i]] += z_prop_i
-            count[I[i]] += 1
-        z = z / count if len(z.shape) < 2 else (z.T/count).T
-        # Return
-        return z
+        return self.post_processor(inputs)
