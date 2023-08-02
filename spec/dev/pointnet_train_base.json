@@ -40,7 +40,7 @@
 			}
 		],
 		"tnet_pre_filters_spec": [64, 128, 512],
-		"tnet_post_filters_spec": [512, 256],
+		"tnet_post_filters_spec": [256, 128],
 		"model_handling": {
 			"summary_report_path": "out/PointnetPwiseClassifier/model_summary.log",
 			"training_epochs": 10,
