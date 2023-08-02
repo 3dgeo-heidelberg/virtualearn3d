@@ -112,7 +112,7 @@ class ReceptiveFieldFPS(ReceptiveField):
         # Populate output matrix : Reduce by mean
         if reduce_strategy == 'mean':
             for i, Mi in enumerate(self.M):
-                Y[i] += np.mean(v[Mi])
+                Y[i] = np.mean(v[Mi], axis=0)
         # Populate output matrix : Take from closest
         elif reduce_strategy == 'closest':
             for i, Mi in enumerate(self.M):

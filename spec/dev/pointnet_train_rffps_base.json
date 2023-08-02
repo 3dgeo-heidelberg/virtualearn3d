@@ -11,7 +11,7 @@
 		"num_pwise_feats": 128,
 		"pre_processing": {
 			"pre_processor": "furthest_point_subsampling",
-			"num_points": 8000,
+			"num_points": 32000,
 			"num_encoding_neighbors": 3,
 			"fast": false,
 			"neighborhood": {	
@@ -49,7 +49,7 @@
 		"tnet_post_filters_spec": [256, 128],
 		"model_handling": {
 			"summary_report_path": "out/PointnetPwiseClassifier/model_summary.log",
-			"training_epochs": 10,
+			"training_epochs": 60,
 			"batch_size": 8,
 			"checkpoint_path": "out/PointnetPwiseClassifier/checkpoint.model",
 			"checkpoint_monitor": "loss",
