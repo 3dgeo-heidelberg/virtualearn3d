@@ -1,6 +1,7 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.utils.ptransf.receptive_field_gs import ReceptiveFieldGS
+from src.model.deeplearn.deep_learning_exception import DeepLearningException
 import src.main.main_logger as LOGGING
 from scipy.spatial import KDTree as KDT
 import scipy.stats
@@ -18,6 +19,8 @@ class GridSubsamplingPreProcessor:
     Preprocess the input dictionary of X (coordinates), F (features), and y
     (expected values) so it can be feed to some neural networks such as
     PointNet.
+
+    See :class:`.ReceptiveFieldGS`.
 
     :ivar sphere_radius: The radius of the sphere that bounds a neighborhood.
         For an arbitrary set of 3D points it can be found as follows:
@@ -45,6 +48,10 @@ class GridSubsamplingPreProcessor:
     :ivar cell_size: The cell size defining the receptive field. See
         :class:`.ReceptiveFieldGS`.
     :vartype cell_size: :class:`np.ndarray`
+    :ivar receptive_fields_dir: Directory where the point clouds representing
+        the many receptive fields will be exported (OPTIONAL). If given, it
+        will be used by the post-processor.
+    :vartype receptive_fields_dir: str or None
     :ivar last_call_receptive_fields: List of the receptive fields used the
         last time that the pre-processing logic was executed.
     :vartype last_call_receptive_fields: list
@@ -67,6 +74,7 @@ class GridSubsamplingPreProcessor:
         self.separation_factor = kwargs.get('separation_factor', np.sqrt(3)/4)
         self.cell_size = np.array(kwargs.get('cell_size', [0.1, 0.1, 0.1]))
         self.nthreads = kwargs.get('nthreads', 1)
+        self.receptive_fields_dir = kwargs.get('receptive_fields_dir', None)
         # Initialize last call cache
         self.last_call_receptive_fields = None
         self.last_call_neighborhoods = None
@@ -128,8 +136,7 @@ class GridSubsamplingPreProcessor:
         I, sup_X = GridSubsamplingPreProcessor.clean_support_neighborhoods(
             sup_X, I
         )
-        #self.last_call_neighborhoods = [Ii for Ii in I]  # TODO Restore ?
-        self.last_call_neighborhoods = I  # TODO Rethink : Works?
+        self.last_call_neighborhoods = I
         # Prepare receptive field
         self.last_call_receptive_fields = [
             ReceptiveFieldGS(
@@ -165,16 +172,7 @@ class GridSubsamplingPreProcessor:
             'receptive fields. '
         )
         if y is not None:
-            yout = np.array(joblib.Parallel(n_jobs=self.nthreads)(
-                joblib.delayed(
-                    self.last_call_receptive_fields[i].reduce_values
-                )(
-                    Xout[i],
-                    y[Ii],
-                    reduce_f=lambda x: scipy.stats.mode(x)[0][0],
-                    fill_nan=True
-                ) for i, Ii in enumerate(I)
-            ))
+            yout = self.reduce_labels(Xout, y, I=I)
             end = time.perf_counter()
             LOGGING.LOGGER.info(
                 f'The grid subsampling pre processor pre-processed '
@@ -212,6 +210,7 @@ class GridSubsamplingPreProcessor:
         :param sphere_radius: :math:`r`
         :return: The support points as a matrix where rows are support points
             and columns are coordinates.
+        :rtype: :class:`np.ndarray`
         """
         xmin, xmax = np.min(X, axis=0), np.max(X, axis=0)
         l = separation_factor * sphere_radius  # Cell size
@@ -242,3 +241,43 @@ class GridSubsamplingPreProcessor:
         I = [Ii for i, Ii in enumerate(I) if non_empty_mask[i]]
         sup_X = sup_X[non_empty_mask]
         return I, sup_X
+
+    def reduce_labels(self, X_rf, y, I=None):
+        r"""
+        Reduce the given labels :math:`\pmb{y} \in \mathbb{Z}_{\geq 0}^{m}`
+        to the receptive field labels
+        :math:`\pmb{y}_{\mathrm{rf}} \in \mathbb{Z}_{\geq 0}^{R}`.
+
+        :param X_rf: The matrices of coordinates representing the receptive
+            fields.
+        :type X_rf: :class:`np.ndarray`
+        :param y: The labels of the original point cloud that must be reduced
+            to the receptive field.
+        :type y: :class:`np.ndarray`
+        :param I: The list of neighborhoods. Each element of I is itself a list
+            of indices that represents the neighborhood in the point cloud
+            that corresponds to the point in the receptive field.
+        :type I: list
+        :return: The reduced labels for each receptive field.
+        """
+
+        # Handle automatic neighborhoods from cache
+        if I is None:
+            I = self.last_call_neighborhoods
+        # Validate neighborhoods are given
+        if I is None or len(I) < 1:
+            raise DeepLearningException(
+                'GridSubsamplingPreProcessor cannot reduce labels because '
+                'no neighborhood indices were given.'
+            )
+        # Compute and return the reduced labels
+        return np.array(joblib.Parallel(n_jobs=self.nthreads)(
+            joblib.delayed(
+                self.last_call_receptive_fields[i].reduce_values
+            )(
+                X_rf[i],
+                y[Ii],
+                reduce_f=lambda x: scipy.stats.mode(x)[0][0],
+                fill_nan=True
+            ) for i, Ii in enumerate(I)
+        ))

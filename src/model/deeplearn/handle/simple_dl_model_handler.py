@@ -3,6 +3,7 @@
 from src.model.deeplearn.handle.dl_model_handler import DLModelHandler
 from src.report.deep_learning_model_summary_report import \
     DeepLearningModelSummaryReport
+from src.report.receptive_fields_report import ReceptiveFieldsReport
 from src.utils.dict_utils import DictUtils
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
 import src.main.main_logger as LOGGING
@@ -91,20 +92,42 @@ class SimpleDLModelHandler(DLModelHandler):
         # Return
         return self
 
-    def _predict(self, X, F=None):
+    def _predict(self, X, F=None, y=None, zout=None):
         # TODO Rethink : Sphinx doc
         # Softmax scores
-        zhat = self.arch.run_post({
-            'X': X,
-            'z': self.compiled.predict(
-                self.arch.run_pre({'X': X}),
-                batch_size=self.batch_size
-            ),
-        })
+        X_rf = self.arch.run_pre({'X': X})
+        zhat_rf = self.compiled.predict(X_rf, batch_size=self.batch_size)
+        zhat = self.arch.run_post({'X': X, 'z': zhat_rf})
+        if zout is not None:  # When z is not None it must be a list
+            zout.append(zhat)  # Append propagated zhat to z list
         print(f'zhat: {zhat}')  # TODO Remove
         print(f'zhat.shape: {zhat.shape}')  # TODO Remove
         # Final predictions
         yhat = np.argmax(zhat, axis=1)
+        # Report receptive fields, if requested
+        rf_dir = getattr(
+            self.arch.pre_runnable.pre_processor,
+            'receptive_fields_dir',
+            None
+        ) if getattr(
+            self.arch.pre_runnable, 'pre_processor', None
+        ) is not None else None
+        if rf_dir is not None:
+            ReceptiveFieldsReport(
+                X_rf=X_rf,  # X (for each receptive field)
+                zhat_rf=zhat_rf,  # Softmax scores (for each receptive field)
+                yhat_rf=np.array([  # Predictions (for each receptive field)
+                    np.argmax(zhat_rf_i, axis=1)
+                    for zhat_rf_i in zhat_rf
+                ]),
+                y_rf=self.arch.pre_runnable.pre_processor.reduce_labels(
+                    # Reduced expected classes (for each receptive field)
+                    X_rf, y
+                ) if y is not None else None,
+                class_names=self.class_names
+            ).to_file(rf_dir, self.out_prefix)
+        # Report softmax, if requested
+        # TODO Rethink : Implement
         # Return
         return yhat
         # TODO Rethink : Implement

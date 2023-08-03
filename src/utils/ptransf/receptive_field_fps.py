@@ -9,9 +9,55 @@ import open3d
 # ---   CLASS   --- #
 # ----------------- #
 class ReceptiveFieldFPS(ReceptiveField):
+    r"""
+    :author: Alberto M. Esmoris Pena
+
+    Class representing a receptive field based on furthest point subsampling.
+
+    See :class:`.ReceptiveField`, :class:`.ReceptiveFieldGS`, and
+    :class:`.FurthestPointSubsamplingPreProcessor`.
+
+    :ivar num_points: The number of points so each point cloud is subsampled
+        to this number of points through FPS. Typically noted as :math:`R`.
+    :vartype num_points: int
+    :ivar num_encoding_neighbors: How many neighbors consider when propagating
+        and reducing. Assume the number of encoding neighbors is
+        :math:`m^* \in \mathbb{Z}_{\geq 0}`. For then, when reducing values
+        from :math:`\pmb{X} \in \mathbb{R}^{m \times n}` (input point cloud)
+        to :math:`\pmb{Y} \in \mathbb{R}^{R \times n}` (receptive field
+        points), each reduced value in :math:`\pmb{Y}` will be obtained
+        by reducing :math:`m^*` values in :math:`\pmb{X}`. Also, when
+        propagating values from :math:`\pmb{Y} \in \mathbb{R \times n}` to
+        :math:`\pmb{X} \in \mathbb{m \times n}`, each propagated value in
+        :math:`\pmb{X}` will be obtained by reducing :math:`m^*` values from
+        :math:`\pmb{Y}`.
+    :vartype num_encoding_neighbors: int
+    :ivar fast: Flag to control whether to use the fast mode or not. When
+        running the FPS receptive field in fast mode, a random uniform sampling
+        is computed before the furthest poit subsampling. While faster because
+        it reduces the computational burden for the FPS, this approach is also
+        less stable and might produce unexpected results.
+    :vartype fast: bool
+    :ivar N: The indexing matrix
+        :math:`\pmb{N} \in \mathbb{Z}_{\geq 0}^{R \times m^*}`. Each row
+        :math:`i` in this
+        matrix represents the indices in :math:`\pmb{X}` that are associated
+        to the point represented by the row :math:`i` in :math:`\pmb{Y}`.
+    :vartype N: :class:`np.ndarray`
+    :ivar M: The reverse indexing matrix
+        :math:`\pmb{M} \in \mathbb{Z}_{\geq 0}^{m \times m^*}. Each row
+        :math:`i` in this matrix represents the indices in :math:`\pmb{Y}` that
+        are associated to the points represented by the row :math:`i` in
+        :math:`\pmb{X}`.
+    :vartype M: :class:`np.ndarray`
+    :ivar x: The center point of the receptive field. It is assigned when
+        calling :meth:`receptive_field_fps.ReceptiveFieldFPS.fit`.
+    :vartype x: :class:`np.ndarray`
+    :ivar Y: The subsample representing the original input point cloud, i.e.,
+        a matrix of coordinates in a :math:`n`-dimensional space such that
+        :math:`\pmb{Y} \in \mathbb{R}^{R \times n}`.
     """
-    # TODO Rethink : Doc
-    """
+
     # ---   INIT   --- #
     # ---------------- #
     def __init__(self, **kwargs):
@@ -59,7 +105,19 @@ class ReceptiveFieldFPS(ReceptiveField):
     # ----------------------------------- #
     def fit(self, X, x):
         """
-        # TODO Rethink : Doc
+        Fit the receptive field to represent the given points by taking the
+        subset of the furthest points, i.e., the subset of points that maximize
+        the distances between points. Typically, the next point in a FPS
+        iteration maximizes the distance with respect to the already
+        considered points in a greedy scheme.
+
+        :param X: The input matrix of m points in an n-dimensional space.
+        :type X: :class:`np.ndarray`
+        :param x: The center point used to define the origin of the receptive
+            field.
+        :type x: :class:`np.ndarray`
+        :return: The fit receptive field itself (for fluent programming)
+        :rtype: :class:`.ReceptiveFieldFPS`
         """
         # Validate input
         if x is None:
@@ -92,13 +150,33 @@ class ReceptiveFieldFPS(ReceptiveField):
 
     def centroids_from_points(self, X):
         """
-        # TODO Rethink: Doc
+        The centroids of an FPS receptive field are said to be the subsampled
+        points themselves.
+
+        :param X: The matrix of input points (can be NONE, in fact, it is not
+            used).
+        :type X: :class:`np.ndarray` or None
+        :return: A matrix which rows are the points representing the centroids.
+        :rtype: :class:`np.ndarray`
         """
         return self.Y
 
     def propagate_values(self, v, reduce_strategy='mean'):
-        """
-        # TODO Rethink: Doc
+        r"""
+        Propagate :math:`R` values associated to
+        :math:`\pmb{Y} \in \mathbb{R}^{R \times n}` to :math:`m`
+        values associated to :math:`\pmb{X} \in \mathbb{R}^{m \times n}`
+        through the indexing matrix
+        :math:`\pmb{M} \in \mathbb{Z}_{\geq 0}^{m \times m^*}.
+
+        :param v: The :math:`R` values to be propagated.
+        :type v: list
+        :param reduce_strategy: The reduction strategy, either "mean" or
+            "closest".
+        :type reduce_strategy: str
+        :return: The output as a matrix when there are more than two values per
+            point or the output as a vector when there is one value per point.
+        :rtype: :class:`np.ndarray`
         """
         # Determine the dimensionality of each value (both scalar and vectors
         # can be propagated). All values must have the same dimensionality.
@@ -126,8 +204,24 @@ class ReceptiveFieldFPS(ReceptiveField):
         return Y if Y.shape[1] > 1 else Y.flatten()
 
     def reduce_values(self, X, v, reduce_f=np.mean):
-        """
-        # TODO Rethink : Doc
+        r"""
+        Reduce :math:`m` values associated to
+        :math:`\pmb{X} \in \mathbb{R}^{m \times n} to :math:`R` values
+        associated to :math:`\pmb{Y} \in \mathbb{R}^{R \times n}` through the
+        indexing matrix
+        :math:`\pmb{N} \in \mathbb{Z}_{\geq 0}^{m \times m^*}.
+
+        :param X: The centroids representing the furthest point subsampling
+            computed by the receptive field. It can be None since it is not
+            used for an FPS receptive field.
+        :type X: :class:`np.ndarray` or None
+        :param v: The vector of values to reduce. The :math:`m` input
+            components will be reduced to :math:`R` output components.
+        :param reduce_f: The function to reduce many values to a single
+            one. By default, it is mean.
+        :type reduce_f: callable
+        :return: The reduced vector.
+        :rtype: :class:`np.ndarray`
         """
         # Reduce
         v_reduced = np.zeros(len(self.N))
@@ -140,12 +234,14 @@ class ReceptiveFieldFPS(ReceptiveField):
     # ------------------------ #
     def center_and_scale(self, X):
         """
-        # TODO Rethink : Doc
+        Like :meth:`receptive_field_gs.ReceptiveFieldGS.center_and_scale` but
+        without scaling, i.e., only centering.
         """
         return X - self.x
 
     def undo_center_and_scale(self, X):
         """
-        # TODO Rethink : Doc
+        Like :meth:`receptive_field_gs.ReceptiveFieldGS.undo_center_and_scale`
+        but without scaling, i.e., only centering.
         """
         return X + self.x

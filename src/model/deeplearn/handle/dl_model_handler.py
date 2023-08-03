@@ -23,6 +23,7 @@ class DLModelHandler:
         # Assign member attributes
         self.arch = arch
         self.compilation_args = kwargs.get('compilation_args', None)
+        self.class_names = kwargs.get('class_names', None)
         self.compiled = None
 
     # ---   MODEL HANDLER   --- #
@@ -38,14 +39,14 @@ class DLModelHandler:
         # TODO Rethink : Sphinx doc
         pass
 
-    def predict(self, X, F=None):
+    def predict(self, X, F=None, y=None, zout=None):
         # TODO Rethink : Sphinx doc
         if not self.is_compiled():
             self.compile(X=X, F=F)
-        return self._predict(X, F=F)
+        return self._predict(X, F=F, y=y, zout=zout)
 
     @abstractmethod
-    def _predict(self, X, F=None):
+    def _predict(self, X, F=None, y=None, zout=None):
         # TODO Rethink : Sphinx doc
         pass
 

@@ -10,13 +10,26 @@ import time
 # ----------------- #
 class FurthestPointSubsamplingPostProcessor:
     """
-    # TODO Rethink : Doc
+    :author: Alberto M. Esmoris Pena
+
+    Postprocess an input in the furthest point subsampling space back to the
+    original space before the subsampling.
+
+    See :class:`.FurthestPointSubsamplingPreProcessor`.
+
+    :ivar fps_preproc: The preprocessor that generated the furthest point
+        subsampling that must be reverted by the post-processor.
+    :vartype fps_preproc: :class:`.FurthestPointSubsamplingPreProcessor`
     """
     # ---   INIT   --- #
     # ---------------- #
     def __init__(self, fps_preproc, **kwargs):
         """
-        # TODO Rethink : Doc
+        Initialization/instantiation of a Furthest Point Subsampling
+        post-processor.
+
+        :param kwargs: The key-word arguments for the
+            FurthestPointSubsamplingPostProcessor.
         """
         # Assign attributes
         self.fps_preproc = fps_preproc
@@ -30,9 +43,15 @@ class FurthestPointSubsamplingPostProcessor:
     # -------------------- #
     def __call__(self, inputs):
         """
-        # TODO Rethink : Doc
-        :param inputs:
-        :return:
+        Executes the post-processing logic.
+
+        :param inputs: A key-word input where the key "X" gives the coordinates
+        of the points in the original point cloud. Also, the key "z" gives the
+        predictions computed on a receptive field of :math:`R` points that must
+        be propagated back to the :math:`m` points of the original point cloud.
+        :type inputs: dict
+        :return: The :math:`m` point-wise predictions derived from the
+            :math:`R` input predictions on the receptive field.
         """
         # TODO Rethink: Duplicated code wrt GS subsampling
         # Extract inputs

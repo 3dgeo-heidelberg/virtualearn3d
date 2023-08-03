@@ -43,6 +43,8 @@ class ReceptiveFieldGS(ReceptiveField):
     cloud. For example, the computation can be a classification computed by
     a neural network that works on sets of :math:`R` points.
 
+    See :class:`.ReceptiveField` and :class:`.GridSubsamplingPreProcessor`.
+
     :ivar cell_size: The cell size with respect to the radius. It is noted as
         :math:`\pmb{s} = (s_1, \ldots, s_n)`. Each :math:`s_i \in [0, 2]`
         defines how many times the radius must be considered as the step.

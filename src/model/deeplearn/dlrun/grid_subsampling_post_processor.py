@@ -25,7 +25,10 @@ class GridSubsamplingPostProcessor:
     # ---------------- #
     def __init__(self, gs_preproc, **kwargs):
         """
-        # TODO Rethink : Doc
+        Initialization/instantiation of a Grid Subsampling post-processor.
+
+        :param kwargs: The key-word arguments for the
+            GridSubsamplingPostProcessor.
         """
         # Assign attributes
         self.gs_preproc = gs_preproc

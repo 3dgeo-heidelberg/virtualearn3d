@@ -104,6 +104,7 @@ class Model:
         :param kwargs: The attributes for the Model.
         """
         # Fundamental initialization of any model
+        self.autoval_metrics_names = kwargs.get('autoval_metrics', None)
         self.training_type = kwargs.get("training_type", "base")
         self.random_seed = kwargs.get("random_seed", None)
         self.shuffle_points = kwargs.get("shuffle_points", True)

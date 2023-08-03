@@ -61,6 +61,9 @@ class ClassificationModel(Model, ABC):
         kwargs['training_class_distribution_plot_path'] = spec.get(
             'training_class_distribution_plot_path', None
         )
+        kwargs['training_classified_point_cloud_path'] = spec.get(
+            'training_classified_point_cloud_path', None
+        )
         # Delete keys with None value
         kwargs = DictUtils.delete_by_val(kwargs, None)
         # Return
@@ -75,7 +78,6 @@ class ClassificationModel(Model, ABC):
         # Call parent init
         super().__init__(**kwargs)
         # Basic attributes of the ClassificationModel
-        self.autoval_metrics_names = kwargs.get('autoval_metrics', None)
         if self.autoval_metrics_names is not None:
             self.autoval_metrics = self.autoval_metrics_from_names(
                 self.autoval_metrics_names
@@ -105,6 +107,9 @@ class ClassificationModel(Model, ABC):
         )
         self.training_class_distribution_plot_path = kwargs.get(
             'training_class_distribution_plot_path', None
+        )
+        self.training_classified_point_cloud_path = kwargs.get(
+            'training_classified_point_cloud_path', None
         )
 
     # ---   TRAINING METHODS   --- #

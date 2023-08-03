@@ -5,6 +5,7 @@ from src.model.deeplearn.arch.point_net_pwise_classif import \
     PointNetPwiseClassif
 from src.model.deeplearn.handle.simple_dl_model_handler import \
     SimpleDLModelHandler
+from src.report.classified_pcloud_report import ClassifiedPcloudReport
 import src.main.main_logger as LOGGING
 import time
 
@@ -56,6 +57,7 @@ class PointNetPwiseClassifModel(ClassificationModel):
         self.model = SimpleDLModelHandler(
             self.model,
             compilation_args=self.model_args.get('compilation_args', None),
+            class_names=self.class_names,
             **self.model_args.get('model_handling', None)
         )
         return self.model
@@ -95,18 +97,36 @@ class PointNetPwiseClassifModel(ClassificationModel):
         See :class:`.ClassificationModel` and :class:`.Model`.
         Also see :meth:`model.Model.training`.
 
-        :param F: Ignored
+        :param F: Ignored.
         """
         # Initialize model instance
         self.prepare_model()
         # Train the model
         self.model = self.model.fit(X, y)
 
-    def on_training_finished(self, X, y):
+    def on_training_finished(self, X, y, yhat=None):
+        """
+        # TODO Rethink : Doc
+        """
         # Compute predictions on training data
-        yhat = self._predict(X, F=None)
+        start = time.perf_counter()
+        zhat = []
+        yhat = self._predict(X, F=None, y=y, zout=zhat)
+        zhat = zhat[-1]
+        end = time.perf_counter()
+        LOGGING.LOGGER.info(
+            'PointNet point-wise classification on training point cloud '
+            f'computed in {end-start:.3f} seconds.'
+        )
         # Training evaluation
         super().on_training_finished(X, y, yhat=yhat)
+        # Write classified point cloud
+        if self.training_classified_point_cloud_path is not None:
+            ClassifiedPcloudReport(
+                X=X, y=y, yhat=yhat, zhat=zhat, class_names=self.class_names
+            ).to_file(
+                path=self.training_classified_point_cloud_path
+            )
         # Report point-wise activation maps
         # TODO Rethink : Implement
         # Plot point-wise activation
@@ -115,11 +135,15 @@ class PointNetPwiseClassifModel(ClassificationModel):
 
     # ---  PREDICTION METHODS  --- #
     # ---------------------------- #
-    def _predict(self, X, F=None):
+    def _predict(self, X, F=None, y=None, zout=None):
         """
         Extend the base _predict method to account for coordinates (X) as
         input.
 
         See :meth:`model.Model_predict`.
+
+        :param y: The expected point-wise labels/classes. It can be used by
+            predictions on training data to generate a thorough representation
+            of the receptive fields.
         """
-        return self.model.predict(X)
+        return self.model.predict(X, y=y, zout=zout)
