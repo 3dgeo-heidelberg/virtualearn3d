@@ -73,6 +73,7 @@ class GridSubsamplingPreProcessor:
         self.sphere_radius = kwargs.get('sphere_radius', 1.0)
         self.separation_factor = kwargs.get('separation_factor', np.sqrt(3)/4)
         self.cell_size = np.array(kwargs.get('cell_size', [0.1, 0.1, 0.1]))
+        self.interpolate = kwargs.get('interpolate', True)
         self.nthreads = kwargs.get('nthreads', 1)
         self.receptive_fields_dir = kwargs.get('receptive_fields_dir', None)
         # Initialize last call cache
@@ -162,7 +163,9 @@ class GridSubsamplingPreProcessor:
             joblib.delayed(
                 self.last_call_receptive_fields[i].centroids_from_points
             )(
-                X[Ii], interpolate=True
+                X[Ii],
+                interpolate=self.interpolate,
+                fill_centroid=not self.interpolate
             )
             for i, Ii in enumerate(I)
         ))

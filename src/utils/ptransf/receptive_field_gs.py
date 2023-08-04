@@ -170,7 +170,7 @@ class ReceptiveFieldGS(ReceptiveField):
         # Return self for fluent programming
         return self
 
-    def centroids_from_points(self, X, interpolate=False):
+    def centroids_from_points(self, X, interpolate=False, fill_centroid=False):
         r"""
         Compute the centroids, i.e., for each cell in the receptive field
         the point that represents the cell assuming the receptive field is
@@ -210,6 +210,10 @@ class ReceptiveFieldGS(ReceptiveField):
         :param interpolate: True to interpolate missing centroids from
             non-missing centroids, False otherwise.
         :type interpolate: bool
+        :param fill_centroid: When interpolate is False and fill_centroid is
+            True, all missing points will be fill as the centroid of the
+            input point cloud.
+        :type fill_centroid: bool
         :return: A matrix which rows are the points representing the centroids.
         :rtype: :class:`np.ndarray`
         """
@@ -243,6 +247,12 @@ class ReceptiveFieldGS(ReceptiveField):
             for iter, missing_idx in enumerate(missing_indices):
                 # One iteration per missing index (missing_idx)
                 Y[missing_idx] = np.mean(non_empty_Y[I[iter]], axis=0)
+        # Fill missing cells with centroid (only if no interpolation)
+        elif fill_centroid:
+            # Find centroid
+            mu = np.mean(X, axis=0)
+            # Assign centroid to missing indices
+            Y[~not_nan_flags] = mu
         # Return
         return Y
 

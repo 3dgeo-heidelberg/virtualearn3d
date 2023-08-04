@@ -1,60 +1,57 @@
 {
 	"train": "PointNetPwiseClassifier",
 	"in_pcloud": "https://3dweb.geog.uni-heidelberg.de/trees_leafwood/PinSyl_KA09_T048_2019-08-20_q1_TLS-on_c_t.laz",
-	"out_model": "out/PointnetPwiseClassifier/pnet_pwise_classif.model",
+	"out_model": "out/PointnetPwiseClassifier_GSinterp/pnet_pwise_classif.model",
 	"fnames": ["AUTO"],
 	"training_type": "base",
 	"random_seed": null,
 	"model_args": {
 		"num_classes": 2,
 		"class_names": ["wood", "leaf"],
-		"num_pwise_feats": 128,
+		"num_pwise_feats": 64,
 		"pre_processing": {
 			"pre_processor": "grid_subsampling",
-			"sphere_radius": 0.25,
-			"separation_factor": 0.8,
-			"cell_size": [0.08, 0.08, 0.08],
+			"sphere_radius": 0.2,
+			"separation_factor": 0.86,
+			"cell_size": [0.1, 0.1, 0.1],
+			"interpolate": false,
 			"nthreads": 6,
-			"receptive_fields_dir": "out/PointnetPwiseClassifier/eval/receptive_fields/"
+			"receptive_fields_dir": "out/PointnetPwiseClassifier_GSinterp/eval/receptive_fields/" 
 		},
 		"pretransf_feats_spec": [
 			{
-				"filters": 64,
-				"name": "feats_64A"
+				"filters": 32,
+				"name": "feats_32"
 			},
 			{
 				"filters": 64,
-				"name": "feats_64B"
-			},
-			{
-				"filters": 128,
-				"name": "feats_128"
+				"name": "feats_64"
 			}	
 		],
 		"postransf_feats_spec": [
 			{
-				"filters": 256,
-				"name": "feats_256"
+				"filters": 128,
+				"name": "feats_128"
 			},
 			{
-				"filters": 1024,
-				"name": "feats_1024"
+				"filters": 512,
+				"name": "feats_512"
 			}
 		],
-		"tnet_pre_filters_spec": [64, 128, 512],
-		"tnet_post_filters_spec": [256, 128],
+		"tnet_pre_filters_spec": [32, 64, 256],
+		"tnet_post_filters_spec": [128, 64],
 		"model_handling": {
-			"summary_report_path": "out/PointnetPwiseClassifier/model_summary.log",
-			"training_epochs": 50,
-			"batch_size": 8,
-			"checkpoint_path": "out/PointnetPwiseClassifier/checkpoint.model",
+			"summary_report_path": "out/PointnetPwiseClassifier_GSinterp/model_summary.log",
+			"training_epochs": 100,
+			"batch_size": 16,
+			"checkpoint_path": "out/PointnetPwiseClassifier_GSinterp/checkpoint.model",
 			"checkpoint_monitor": "loss",
 			"learning_rate_on_plateau": {
 				"monitor": "loss",
 				"mode": "min",
 				"factor": 0.1,
-				"patience": 10,
-				"cooldown": 5,
+				"patience": 5,
+				"cooldown": 2,
 				"min_delta": 0.01,
 				"min_lr": 1e-6
 			},
@@ -62,7 +59,7 @@
 				"monitor": "loss",
 				"mode": "min",
 				"min_delta": 0.01,
-				"patience": 20
+				"patience": 15
 			}
 
 		},
@@ -82,11 +79,11 @@
 	"autoval_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
 	"training_evaluation_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
   	"training_class_evaluation_metrics": ["P", "R", "F1", "IoU"],
-	"training_evaluation_report_path": "out/PointnetPwiseClassifier/eval/evaluation.log",
-	"training_class_evaluation_report_path": "out/PointnetPwiseClassifier/eval/class_evaluation.log",
-	"training_confusion_matrix_report_path": "out/PointnetPwiseClassifier/eval/confusion.log",
-	"training_confusion_matrix_plot_path": "out/PointnetPwiseClassifier/eval/confusion.svg",
-	"training_class_distribution_report_path": "out/PointnetPwiseClassifier/eval/class_distribution.log",
-	"training_class_distribution_plot_path": "out/PointnetPwiseClassifier/eval/class_distribution.svg",
-	"training_classified_point_cloud_path": "out/PointnetPwiseClassifier/eval/classified_point_cloud.laz"
+	"training_evaluation_report_path": "out/PointnetPwiseClassifier_GSinterp/eval/evaluation.log",
+	"training_class_evaluation_report_path": "out/PointnetPwiseClassifier_GSinterp/eval/class_evaluation.log",
+	"training_confusion_matrix_report_path": "out/PointnetPwiseClassifier_GSinterp/eval/confusion.log",
+	"training_confusion_matrix_plot_path": "out/PointnetPwiseClassifier_GSinterp/eval/confusion.svg",
+	"training_class_distribution_report_path": "out/PointnetPwiseClassifier_GSinterp/eval/class_distribution.log",
+	"training_class_distribution_plot_path": "out/PointnetPwiseClassifier_GSinterp/eval/class_distribution.svg",
+	"training_classified_point_cloud_path": "out/PointnetPwiseClassifier_GSinterp/eval/classified_point_cloud.laz"
 }
