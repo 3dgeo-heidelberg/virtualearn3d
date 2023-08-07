@@ -50,6 +50,7 @@
 		"tnet_post_filters_spec": [256, 128],
 		"model_handling": {
 			"summary_report_path": "out/PointnetPwiseClassifier_FPSone/model_summary.log",
+			"training_history_dir": "out/PointnetPwiseClassifier_FPSone/eval/history",
 			"training_epochs": 200,
 			"batch_size": 1,
 			"checkpoint_path": "out/PointnetPwiseClassifier_FPSone/checkpoint.model",

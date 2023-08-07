@@ -9,7 +9,6 @@ Subpackages
 
    utils.ftransf
    utils.imput
-   utils.ptransf
    utils.tuning
 
 Submodules
@@ -35,6 +34,14 @@ utils.imputer\_utils module
 ---------------------------
 
 .. automodule:: utils.imputer_utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+utils.receptive\_field module
+-----------------------------
+
+.. automodule:: utils.receptive_field
    :members:
    :undoc-members:
    :show-inheritance:

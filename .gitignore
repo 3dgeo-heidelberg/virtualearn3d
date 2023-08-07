@@ -166,6 +166,7 @@ tags
 
 # Output files
 out/
+*.log.*
 
 # Custom and temporary scripts
 myvl3d.sh

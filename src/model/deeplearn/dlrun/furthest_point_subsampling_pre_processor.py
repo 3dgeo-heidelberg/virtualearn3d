@@ -33,12 +33,17 @@ class FurthestPointSubsamplingPreProcessor:
     :ivar fast: Flag to control whether to use random methods to speed up the
         computation of the furthest point subsampling.
     :vartype fast: bool
-    :ivar neighborhood_spec: The neighborhood specification, for instance:
-        {
-            "type": "sphere",
-            "radius": 5.0,
-            "separation_factor": 1.0
-        }
+    :ivar neighborhood_spec: The neighborhood specification. See the example
+        below.
+
+        .. code-block:: JSON
+
+            {
+                "type": "sphere",
+                "radius": 5.0,
+                "separation_factor": 1.0
+            }
+
     :vartype neighborhood_spec: dict
     :ivar receptive_fields_dir: Directory where the point clouds representing
         the many receptive fields will be exported (OPTIONAL). If given, it

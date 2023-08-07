@@ -61,7 +61,7 @@ class ReceptiveFieldFPS(ReceptiveField):
     # ---   INIT   --- #
     # ---------------- #
     def __init__(self, **kwargs):
-        """
+        r"""
         Initialize/instantiate a receptive field object.
 
         :param kwargs: The key-word specification to instantiate the
@@ -167,7 +167,7 @@ class ReceptiveFieldFPS(ReceptiveField):
         :math:`\pmb{Y} \in \mathbb{R}^{R \times n}` to :math:`m`
         values associated to :math:`\pmb{X} \in \mathbb{R}^{m \times n}`
         through the indexing matrix
-        :math:`\pmb{M} \in \mathbb{Z}_{\geq 0}^{m \times m^*}.
+        :math:`\pmb{M} \in \mathbb{Z}_{\geq 0}^{m \times m^*}`.
 
         :param v: The :math:`R` values to be propagated.
         :type v: list
@@ -209,7 +209,7 @@ class ReceptiveFieldFPS(ReceptiveField):
         :math:`\pmb{X} \in \mathbb{R}^{m \times n} to :math:`R` values
         associated to :math:`\pmb{Y} \in \mathbb{R}^{R \times n}` through the
         indexing matrix
-        :math:`\pmb{N} \in \mathbb{Z}_{\geq 0}^{m \times m^*}.
+        :math:`\pmb{N} \in \mathbb{Z}_{\geq 0}^{m \times m^*}`.
 
         :param X: The centroids representing the furthest point subsampling
             computed by the receptive field. It can be None since it is not

@@ -60,14 +60,6 @@ plot.rand\_forest\_plot module
    :undoc-members:
    :show-inheritance:
 
-plot.training\_history\_plot module
------------------------------------
-
-.. automodule:: plot.training_history_plot
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Module contents
 ---------------
 

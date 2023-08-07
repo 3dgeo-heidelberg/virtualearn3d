@@ -60,14 +60,6 @@ main.main\_predict module
    :undoc-members:
    :show-inheritance:
 
-main.main\_test module
-----------------------
-
-.. automodule:: main.main_test
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 main.main\_train module
 -----------------------
 

@@ -20,22 +20,6 @@ report.classification\_report module
    :undoc-members:
    :show-inheritance:
 
-report.classified\_pcloud\_report module
-----------------------------------------
-
-.. automodule:: report.classified_pcloud_report
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-report.deep\_learning\_model\_summary\_report module
-----------------------------------------------------
-
-.. automodule:: report.deep_learning_model_summary_report
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 report.hyper\_search\_report module
 -----------------------------------
 
@@ -76,14 +60,6 @@ report.rand\_forest\_report module
    :undoc-members:
    :show-inheritance:
 
-report.receptive\_fields\_report module
----------------------------------------
-
-.. automodule:: report.receptive_fields_report
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 report.report module
 --------------------
 
@@ -96,14 +72,6 @@ report.standardization\_report module
 -------------------------------------
 
 .. automodule:: report.standardization_report
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-report.training\_history\_report module
----------------------------------------
-
-.. automodule:: report.training_history_report
    :members:
    :undoc-members:
    :show-inheritance:

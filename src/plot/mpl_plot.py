@@ -37,7 +37,7 @@ class MplPlot(Plot, ABC):
         :return: Nothing.
         """
         # Save
-        if self.path:
+        if self.path is not None:
             path = self.path
             if out_prefix is not None:
                 path = out_prefix[:-1] + path[1:]

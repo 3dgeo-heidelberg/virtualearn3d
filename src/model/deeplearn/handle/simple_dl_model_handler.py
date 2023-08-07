@@ -4,11 +4,14 @@ from src.model.deeplearn.handle.dl_model_handler import DLModelHandler
 from src.report.deep_learning_model_summary_report import \
     DeepLearningModelSummaryReport
 from src.report.receptive_fields_report import ReceptiveFieldsReport
+from src.report.training_history_report import TrainingHistoryReport
+from src.plot.training_history_plot import TrainingHistoryPlot
 from src.utils.dict_utils import DictUtils
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
 import src.main.main_logger as LOGGING
 import tensorflow as tf
 import numpy as np
+import os
 import time
 
 
@@ -26,6 +29,7 @@ class SimpleDLModelHandler(DLModelHandler):
         super().__init__(arch, **kwargs)
         # Assign member attributes
         self.summary_report_path = kwargs.get('summary_report_path', None)
+        self.training_history_dir = kwargs.get('training_history_dir', None)
         self.out_prefix = kwargs.get('out_prefix', None)
         self.training_epochs = kwargs.get('training_epochs', 100)
         self.batch_size = kwargs.get('batch_size', 16)
@@ -42,6 +46,7 @@ class SimpleDLModelHandler(DLModelHandler):
     # ---   MODEL HANDLER   --- #
     # ------------------------- #
     def _fit(self, X, y, F=None):
+        # TODO Rethink : Sphinx doc
         # Report the model
         summary = DeepLearningModelSummaryReport(self.compiled)
         LOGGING.LOGGER.info(summary.to_string())
@@ -87,8 +92,28 @@ class SimpleDLModelHandler(DLModelHandler):
         # Take best model from checkpoint
         if self.checkpoint_path is not None:
             self.compiled.load_weights(self.checkpoint_path)
-        # Plot history
-        # TODO Rethink : Implement
+        # Report and plot history
+        if self.training_history_dir is not None:
+            report_path = os.path.join(
+                self.training_history_dir, 'training_history.csv'
+            )
+            TrainingHistoryReport(
+                self.history
+            ).to_file(report_path, out_prefix=self.out_prefix)
+            LOGGING.LOGGER.info(
+                'Deep learning training history report written to '
+                f'"{report_path}"'
+            )
+            TrainingHistoryPlot(
+                self.history,
+                path=self.training_history_dir
+            ).plot(
+                out_prefix=self.out_prefix
+            )
+            LOGGING.LOGGER.info(
+                'Deep learning training history plots exported to '
+                f'"{self.training_history_dir}"'
+            )
         # Return
         return self
 

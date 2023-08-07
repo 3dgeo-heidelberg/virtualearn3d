@@ -180,6 +180,11 @@ class ClassificationModel(Model, ABC):
     # ------------------------ #
     @staticmethod
     def autoval_metrics_from_names(names):
+        """
+        See
+        :meth:`classification_evaluator.ClassificationEvaluator.metrics_from_names`
+        .
+        """
         return ClassificationEvaluator.metrics_from_names(names)
 
     # ---  PICKLE METHODS  --- #
