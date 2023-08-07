@@ -4,7 +4,10 @@ from abc import abstractmethod
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
 from src.model.deeplearn.layer.orthogonal_regularizer import \
     OrthogonalRegularizer
+from src.inout.io_utils import IOUtils
+import src.main.main_logger as LOGGING
 import tensorflow as tf
+import os
 
 
 # ---   CLASS   --- #
@@ -44,6 +47,13 @@ class Architecture:
     :vartype nn_path: str
     :ivar build_args: The key-word arguments used to build the neural network.
     :vartype build_args: dict
+    :ivar architecture_graph_path: The path where the graph representing the
+        architecture will be stored. If None, no architecture graph is
+        plotted.
+    :vartype architecture_graph_path: str
+    :ivar architecture_graph_args: The key-word arguments governing the
+        format of the graph representing the architecture.
+    :vartype architecture_graph_args: dict
     """
     # ---   INIT   --- #
     # ---------------- #
@@ -59,9 +69,22 @@ class Architecture:
         self.pre_runnable = kwargs.get('pre_runnable', None)
         self.post_runnable = kwargs.get('post_runnable', None)
         self.nn = None  # By default, there is no built neural network
-        # TODO Rethink : add nn_path to class sphinx doc
         self.nn_path = None  # By default, no file contains the built neuralnet
         self.build_args = None  # At instantiation, build args are not given
+        self.architecture_graph_path = kwargs.get(
+            'architecture_graph_path', None
+        )
+        self.architecture_graph_args = kwargs.get(
+            'architecture_graph_args', {
+                "show_shapes": True,
+                "show_dtype": True,
+                "show_layer_names": True,
+                "rankdir": "TB",
+                "expand_nested": True,
+                "dpi": 300,
+                "show_layer_activations": True
+            }
+        )
 
     # ---  ARCHITECTURE METHODS  --- #
     # ------------------------------ #
@@ -119,6 +142,23 @@ class Architecture:
             outputs=outlayer,
             name='PointNet'
         )
+        # Plot model graph
+        if self.architecture_graph_path is not None:
+            IOUtils.validate_path_to_directory(
+                os.path.dirname(self.architecture_graph_path),
+                'Deep learning Architecture received a path that does not '
+                'point to an accessible directory:',
+                True
+            )
+            tf.keras.utils.plot_model(
+                self.nn,
+                to_file=self.architecture_graph_path,
+                **self.architecture_graph_args
+            )
+            LOGGING.LOGGER.info(
+                'Deep learning architecture graph exported to '
+                f'"{self.architecture_graph_path}"'
+            )
 
     def is_built(self):
         """
