@@ -83,7 +83,17 @@
 			"metrics": [
 				"sparse_categorical_accuracy"
 			]
-		}	
+		},
+		"architecture_graph_path": "out/PointnetPwiseClassifier_FPSmany/model_graph.png",
+		"architecture_graph_args": {
+			"show_shapes": true,
+			"show_dtype": true,
+			"show_layer_names": true,
+			"rankdir": "TB",
+			"expand_nested": true,
+			"dpi": 300,
+			"show_layer_activations": true
+        }	
 	},
 	"autoval_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
 	"training_evaluation_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],

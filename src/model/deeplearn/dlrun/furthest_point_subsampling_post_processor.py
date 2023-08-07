@@ -64,6 +64,7 @@ class FurthestPointSubsamplingPostProcessor:
         rf = self.fps_preproc.last_call_receptive_fields
         I = self.fps_preproc.last_call_neighborhoods
         for i, rfi in enumerate(rf):
+            # TODO Rethink : Parallelize this for with joblib?
             z_propagated.append(rfi.propagate_values(
                 z_reduced[i], reduce_strategy='mean'
             ))

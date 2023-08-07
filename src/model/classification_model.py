@@ -26,7 +26,7 @@ class ClassificationModel(Model, ABC):
         from a key-word specification.
 
         :param spec: The key-word specification containing the arguments.
-        :return: The arguments to initialize/instantiate a ClassificationModel
+        :return: The arguments to initialize/instantiate a ClassificationModel.
         """
         # Initialize from parent
         kwargs = Model.extract_model_args(spec)

@@ -6,7 +6,11 @@ from src.model.deeplearn.arch.point_net_pwise_classif import \
 from src.model.deeplearn.handle.simple_dl_model_handler import \
     SimpleDLModelHandler
 from src.report.classified_pcloud_report import ClassifiedPcloudReport
+from src.report.pwise_activations_report import PwiseActivationsReport
+from src.utils.dict_utils import DictUtils
 import src.main.main_logger as LOGGING
+import tensorflow as tf
+import numpy as np
 import time
 
 
@@ -19,8 +23,35 @@ class PointNetPwiseClassifModel(ClassificationModel):
     PointNet model for point-wise classification tasks.
     See :class:`.ClassificationModel`.
 
-    # TODO Rethink : Doc internal variables (member attributes)
+    :ivar model: The deep learning model wrapped by the corresponding handler,
+        i.e., the :class:`.PointNetPwiseClassif` model wrapped by a
+        :class:`.SimpleDLModelHandler` handler.
+    :vartype model: :class:`.DLModelHandler`
     """
+
+    # ---  SPECIFICATION ARGUMENTS  --- #
+    # --------------------------------- #
+    @staticmethod
+    def extract_model_args(spec):
+        """
+        Extract the arguments to initialize/instantiate a
+        PointNetPwiseClassifModel from a key-word specification.
+
+        :param spec: The key-word specification containing the arguments.
+        :return: The arguments to initialize/instantiate a
+            PointNetPwiseClassifModel.
+        """
+        # Initialize from parent
+        kwargs = ClassificationModel.extract_model_args(spec)
+        # Extract particular arguments for PointNetPwiseClassif models
+        kwargs['training_activations_path'] = spec.get(
+            'training_activations_path', None
+        )
+        # Delete keys with None value
+        kwargs = DictUtils.delete_by_val(kwargs, None)
+        # Return
+        return kwargs
+
     # ---   INIT   --- #
     # ---------------- #
     def __init__(self, **kwargs):
@@ -34,6 +65,9 @@ class PointNetPwiseClassifModel(ClassificationModel):
         super().__init__(**kwargs)
         # Basic attributes of the PointNetPwiseClassifModel
         self.model = None  # By default, internal model is not instantiated
+        self.training_activations_path = kwargs.get(
+            'training_activations_path', None
+        )
 
     # ---   MODEL METHODS   --- #
     # ------------------------- #
@@ -106,6 +140,7 @@ class PointNetPwiseClassifModel(ClassificationModel):
 
     def on_training_finished(self, X, y, yhat=None):
         """
+        # TODO Rethink : yhat = None is it necessary?
         # TODO Rethink : Doc
         """
         # Compute predictions on training data
@@ -127,11 +162,20 @@ class PointNetPwiseClassifModel(ClassificationModel):
             ).to_file(
                 path=self.training_classified_point_cloud_path
             )
-        # Report point-wise activation maps
-        # TODO Rethink : Implement
-        # Plot point-wise activation
-        # TODO Rethink : Implement
-        pass
+        # Write point-wise activations
+        if self.training_activations_path is not None:
+            start = time.perf_counter()
+            activations = self.compute_pwise_activations(X)
+            end = time.perf_counter()
+            LOGGING.LOGGER.info(
+                'PointNet point-wise activations computed in '
+                f'{end-start:.3f} seconds.'
+            )
+            PwiseActivationsReport(
+                X=X, activations=activations, y=y
+            ).to_file(
+                path=self.training_activations_path
+            )
 
     # ---  PREDICTION METHODS  --- #
     # ---------------------------- #
@@ -147,3 +191,47 @@ class PointNetPwiseClassifModel(ClassificationModel):
             of the receptive fields.
         """
         return self.model.predict(X, y=y, zout=zout)
+
+    # ---  POINT NET PWISE CLASSIF METHODS  --- #
+    # ----------------------------------------- #
+    def compute_pwise_activations(self, X):
+        """
+        # TODO Rethink : Doc
+
+        :param X:
+        :return:
+        """
+        # Prepare model to compute activations
+        remodel = tf.keras.Model(
+            inputs=self.model.compiled.inputs,
+            outputs=self.model.compiled.get_layer("pwise_feats_relu").output
+        )
+        remodel.compile(
+            **SimpleDLModelHandler.build_compilation_args(
+                self.model.compilation_args
+            )
+        )
+        # Compute the activations
+        X_rf = self.model.arch.run_pre({'X': X})
+        activations = remodel.predict(X_rf, batch_size=self.model.batch_size)
+        # Propagate activations to original dimensionality
+        propagated_activations = []
+        rf = self.model.arch.pre_runnable.pre_processor\
+            .last_call_receptive_fields
+        for i, rfi in enumerate(rf):
+            # TODO Rethink : Parallelize this for with joblib?
+            propagated_activations.append(rfi.propagate_values(
+                activations[i], reduce_strategy='mean'
+            ))
+        # Reduce overlapping propagations to mean
+        I = self.model.arch.pre_runnable.pre_processor\
+            .last_call_neighborhoods
+        count = np.zeros(X.shape[0], dtype=int)
+        activations = np.zeros((X.shape[0], activations.shape[-1]))
+        for i, prop_act_i in enumerate(propagated_activations):
+            activations[I[i]] += prop_act_i
+            count[I[i]] += 1
+        activations = activations / count if len(activations.shape) < 2 \
+            else (activations.T/count).T
+        # Return
+        return activations
