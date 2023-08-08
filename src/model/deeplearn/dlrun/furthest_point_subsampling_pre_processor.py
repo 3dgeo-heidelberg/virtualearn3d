@@ -96,10 +96,10 @@ class FurthestPointSubsamplingPreProcessor:
         :class:`.ReceptiveFieldGS`.
 
         :param inputs: See
-            :meth:`grid_subsampling_pre_processor.GridSubsamplingPrePRocessor.__call__`
+            :meth:`grid_subsampling_pre_processor.GridSubsamplingPreProcessor.__call__`
             .
         :return: See
-            :meth:`grid_subsampling_pre_processor.GridSubsamplingPrePRocessor.__call__`
+            :meth:`grid_subsampling_pre_processor.GridSubsamplingPreProcessor.__call__`
             .
         """
         # Extract inputs
@@ -107,20 +107,7 @@ class FurthestPointSubsamplingPreProcessor:
         X, y = inputs['X'], inputs.get('y', None)
         # Extract neighborhoods
         # TODO Rethink : Consider 2D support points for unbounded cylinders
-        if self.neighborhood_spec['radius'] == 0:
-            # The sphere of radius 0 is said to be the entire point cloud
-            I = [np.arange(len(X), dtype=int).tolist()]
-            sup_X = np.mean(X, axis=0).reshape(1, -1)
-        else:
-            # Spheres with a greater than zero radius
-            sup_X = GridSubsamplingPreProcessor.build_support_points(
-                X,
-                self.neighborhood_spec['separation_factor'],
-                self.neighborhood_spec['radius']
-            )
-            kdt = KDT(X)
-            kdt_sup = KDT(sup_X)
-            I = kdt_sup.query_ball_tree(kdt, self.neighborhood_spec['radius'])
+        sup_X, I = self.find_neighborhood(X)
         # Remove empty neighborhoods and corresponding support points
         I, sup_X = FurthestPointSubsamplingPreProcessor\
             .clean_support_neighborhoods(
@@ -241,3 +228,42 @@ class FurthestPointSubsamplingPreProcessor:
                 reduce_f=lambda x: scipy.stats.mode(x)[0][0]
             ) for i, Ii in enumerate(I)
         ))
+
+    def find_neighborhood(self, X):
+        # TODO Rethink : Doc
+        # Handle neighborhood finding
+        sup_X, I = None, None
+        ngbhd_type = self.neighborhood_spec['type']
+        ngbhd_type_low = ngbhd_type.lower()
+        if self.neighborhood_spec['radius'] == 0:
+            # The sphere/cylinder of radius 0 is said to be the entire point cloud
+            I = [np.arange(len(X), dtype=int).tolist()]
+            sup_X = np.mean(X, axis=0).reshape(1, -1)
+        elif ngbhd_type_low == 'cylinder':
+            X2D = X[:, :2]
+            sup_X = GridSubsamplingPreProcessor.build_support_points(
+                X2D,
+                self.neighborhood_spec['separation_factor'],
+                self.neighborhood_spec['radius']
+            )
+            kdt = KDT(X2D)
+            kdt_sup = KDT(sup_X)
+            I = kdt_sup.query_ball_tree(kdt, self.neighborhood_spec['radius'])
+            sup_X = np.hstack([sup_X, np.zeros((sup_X.shape[0], 1))])
+        elif ngbhd_type_low == 'sphere':
+            # Spheres with a greater than zero radius
+            sup_X = GridSubsamplingPreProcessor.build_support_points(
+                X,
+                self.neighborhood_spec['separation_factor'],
+                self.neighborhood_spec['radius']
+            )
+            kdt = KDT(X)
+            kdt_sup = KDT(sup_X)
+            I = kdt_sup.query_ball_tree(kdt, self.neighborhood_spec['radius'])
+        else:
+            raise DeepLearningException(
+                'FurthestPointSubsamplingPreProcessor does not expect a '
+                f'neighborhood specification of type "{ngbhd_type}"'
+            )
+        # Return found neighborhood
+        return sup_X, I

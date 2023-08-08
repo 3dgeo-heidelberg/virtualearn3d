@@ -214,12 +214,15 @@ class GridSubsamplingPreProcessor:
         """
         xmin, xmax = np.min(X, axis=0), np.max(X, axis=0)
         l = separation_factor * sphere_radius  # Cell size
-        A, B, C = np.meshgrid(
-            np.concatenate([np.arange(xmin[0], xmax[0], l), [xmax[0]]]),
-            np.concatenate([np.arange(xmin[1], xmax[1], l), [xmax[1]]]),
-            np.concatenate([np.arange(xmin[2], xmax[2], l), [xmax[2]]])
+        G = np.meshgrid(
+            *[
+                np.concatenate([
+                    np.arange(xmin[j], xmax[j], l), [xmax[j]]
+                ])
+                for j in range(X.shape[1])
+            ]
         )
-        return np.array([A.flatten(), B.flatten(), C.flatten()]).T
+        return np.array([Gi.flatten() for Gi in G]).T
 
     @staticmethod
     def clean_support_neighborhoods(sup_X, I):
