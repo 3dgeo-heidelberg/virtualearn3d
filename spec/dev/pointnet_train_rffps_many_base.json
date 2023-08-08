@@ -104,5 +104,6 @@
 	"training_confusion_matrix_plot_path": "out/PointnetPwiseClassifier_FPSmany/eval/confusion.svg",
 	"training_class_distribution_report_path": "out/PointnetPwiseClassifier_FPSmany/eval/class_distribution.log",
 	"training_class_distribution_plot_path": "out/PointnetPwiseClassifier_FPSmany/eval/class_distribution.svg",
-	"training_classified_point_cloud_path": "out/PointnetPwiseClassifier_FPSmany/eval/classified_point_cloud.laz"
+	"training_classified_point_cloud_path": "out/PointnetPwiseClassifier_FPSmany/eval/classified_point_cloud.laz",
+	"training_activations_path": "out/PointnetPwiseClassifier_FPSmany/eval/activations.laz"
 }

@@ -3,6 +3,7 @@
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
 import src.main.main_logger as LOGGING
 import numpy as np
+import joblib
 import time
 
 
@@ -58,18 +59,20 @@ class GridSubsamplingPostProcessor:
         z_reduced = inputs['z']  # Softmax scores reduced to receptive field
         num_classes = z_reduced.shape[-1]
         # Transform each prediction by propagation
-        z_propagated = []
         rf = self.gs_preproc.last_call_receptive_fields
         I = self.gs_preproc.last_call_neighborhoods
-        for i, rfi in enumerate(rf):
-            z_propagated.append(rfi.propagate_values(z_reduced[i]))
+        z_propagated = joblib.Parallel(n_jobs=self.gs_preproc.nthreads)(
+            joblib.delayed(
+                rfi.propagate_values
+            )(
+                z_reduced[i], reduce_strategy='mean'
+            )
+            for i, rfi in enumerate(rf)
+        )
         # Reduce point-wise many predictions by computing the mean
-        count = np.zeros(X.shape[0], dtype=int)
-        z = np.zeros((X.shape[0], num_classes), dtype=float)
-        for i, z_prop_i in enumerate(z_propagated):
-            z[I[i]] += z_prop_i
-            count[I[i]] += 1
-        z = z / count if len(z.shape) < 2 else (z.T/count).T
+        z = GridSubsamplingPostProcessor.pwise_reduce(
+            X.shape[0], num_classes, I, z_propagated
+        )
         end = time.perf_counter()
         LOGGING.LOGGER.info(
             f'The grid subsampling post processor generated {len(z)} '
@@ -79,3 +82,35 @@ class GridSubsamplingPostProcessor:
         )
         # Return
         return z
+
+    # ---   UTIL METHODS   --- #
+    # ------------------------ #
+    @staticmethod
+    def pwise_reduce(npoints, nvars, I, v_propagated):
+        """
+        Compute a point-wise reduction of propagated values with overlapping.
+        In other words, this method can be used to reduce values computed
+        on overlapping neighborhoods so there is potentially more than one
+        value for the same variable of the same point.
+
+        :param npoints: The number of points.
+        :param nvars: The number of considered point-wise variables.
+        :param I: The list of neighborhoods. I[i] is the list of indices
+            corresponding to the points composing the neighborhood i.
+        :param v_propagated: The values to be point-wise reduced. They often
+            come from a propagation operation computed on a receptive field,
+            thus the name.
+        :return: The reduced v vector with a single value for the same variable
+            of the same point.
+        """
+        count = np.zeros(npoints, dtype=int)
+        u = np.zeros((npoints, nvars), dtype=float)
+        for i, v_prop_i in enumerate(v_propagated):
+            u[I[i]] += v_prop_i
+            count[I[i]] += 1
+        non_zero_mask = count != 0
+        u[non_zero_mask] = \
+            u[non_zero_mask] / count[non_zero_mask] if len(u.shape) < 2 \
+            else (u[non_zero_mask].T/count[non_zero_mask]).T
+        # Return
+        return u

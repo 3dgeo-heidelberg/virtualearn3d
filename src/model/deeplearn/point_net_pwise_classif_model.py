@@ -5,12 +5,15 @@ from src.model.deeplearn.arch.point_net_pwise_classif import \
     PointNetPwiseClassif
 from src.model.deeplearn.handle.simple_dl_model_handler import \
     SimpleDLModelHandler
+from src.model.deeplearn.dlrun.grid_subsampling_post_processor import \
+    GridSubsamplingPostProcessor
 from src.report.classified_pcloud_report import ClassifiedPcloudReport
 from src.report.pwise_activations_report import PwiseActivationsReport
 from src.utils.dict_utils import DictUtils
 import src.main.main_logger as LOGGING
 import tensorflow as tf
 import numpy as np
+import joblib
 import time
 
 
@@ -215,23 +218,23 @@ class PointNetPwiseClassifModel(ClassificationModel):
         X_rf = self.model.arch.run_pre({'X': X})
         activations = remodel.predict(X_rf, batch_size=self.model.batch_size)
         # Propagate activations to original dimensionality
-        propagated_activations = []
         rf = self.model.arch.pre_runnable.pre_processor\
             .last_call_receptive_fields
-        for i, rfi in enumerate(rf):
-            # TODO Rethink : Parallelize this for with joblib?
-            propagated_activations.append(rfi.propagate_values(
+        propagated_activations = joblib.Parallel(
+            n_jobs=self.model.arch.pre_runnable.pre_processor.nthreads
+        )(
+            joblib.delayed(
+                rfi.propagate_values
+            )(
                 activations[i], reduce_strategy='mean'
-            ))
+            )
+            for i, rfi in enumerate(rf)
+        )
         # Reduce overlapping propagations to mean
         I = self.model.arch.pre_runnable.pre_processor\
             .last_call_neighborhoods
-        count = np.zeros(X.shape[0], dtype=int)
-        activations = np.zeros((X.shape[0], activations.shape[-1]))
-        for i, prop_act_i in enumerate(propagated_activations):
-            activations[I[i]] += prop_act_i
-            count[I[i]] += 1
-        activations = activations / count if len(activations.shape) < 2 \
-            else (activations.T/count).T
+        activations = GridSubsamplingPostProcessor.pwise_reduce(
+            X.shape[0], activations.shape[-1], I, propagated_activations
+        )
         # Return
         return activations

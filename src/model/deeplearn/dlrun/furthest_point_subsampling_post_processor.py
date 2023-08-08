@@ -1,8 +1,11 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
+from src.model.deeplearn.dlrun.grid_subsampling_post_processor import \
+    GridSubsamplingPostProcessor
 import src.main.main_logger as LOGGING
 import numpy as np
+import joblib
 import time
 
 
@@ -60,21 +63,20 @@ class FurthestPointSubsamplingPostProcessor:
         z_reduced = inputs['z']  # Softmax scores reduced to receptive field
         num_classes = z_reduced.shape[-1]
         # Transform each prediction by propagation
-        z_propagated = []
         rf = self.fps_preproc.last_call_receptive_fields
         I = self.fps_preproc.last_call_neighborhoods
-        for i, rfi in enumerate(rf):
-            # TODO Rethink : Parallelize this for with joblib?
-            z_propagated.append(rfi.propagate_values(
+        z_propagated = joblib.Parallel(n_jobs=self.fps_preproc.nthreads)(
+            joblib.delayed(
+                rfi.propagate_values
+            )(
                 z_reduced[i], reduce_strategy='mean'
-            ))
+            )
+            for i, rfi in enumerate(rf)
+        )
         # Reduce point-wise many predictions by computing the mean
-        count = np.zeros(X.shape[0], dtype=int)
-        z = np.zeros((X.shape[0], num_classes), dtype=float)
-        for i, z_prop_i in enumerate(z_propagated):
-            z[I[i]] += z_prop_i
-            count[I[i]] += 1
-        z = z / count if len(z.shape) < 2 else (z.T/count).T
+        z = GridSubsamplingPostProcessor.pwise_reduce(
+            X.shape[0], num_classes, I, z_propagated
+        )
         end = time.perf_counter()
         LOGGING.LOGGER.info(
             f'The furthest point subsampling post processor generated {len(z)} '
