@@ -18,7 +18,13 @@ class PwiseActivationsReport(Report):
     Class to handle reports related to point-wise activations.
     See :class:`.Report`.
 
-    # TODO Rethink : Doc ivars
+    :ivar X: The matrix of coordinates representing the point cloud.
+    :vartype X: :class:`np.ndarray`
+    :ivar activations: The matrix of features representing the point-wise
+        activations.
+    :vartype activations: :class:`np.ndarray`
+    :ivar y: The vector of expected classes.
+    :vartype y: :class:`np.ndarray`
     """
     # ---   INIT   --- #
     # ---------------- #

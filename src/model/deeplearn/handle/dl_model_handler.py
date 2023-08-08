@@ -7,7 +7,20 @@ from abc import abstractmethod
 # ----------------- #
 class DLModelHandler:
     """
-    # TODO Rethink : Document class and ivars
+    Class to handle deep learning models. Typically, fitting, predicting, and
+    compiling are the main operations supported by deep learning model
+    handlers.
+
+    :ivar arch: The model's architecture.
+    :vartype arch: :class:`.Architecture`
+    :ivar: compilation_args: The key-word specification on how to compile
+        the model.
+    :vartype compilation_args: dict
+    :ivar class_names: The name for each class involved in the classification
+        problem, if any (it can be ignored by regression models).
+    :vartype class_names: list
+    :ivar compiled: It is None by default, but it will be assigned the compiled
+        model after calling the fit or predict methods.
     """
     # ---   INIT   --- #
     # ---------------- #
@@ -29,25 +42,77 @@ class DLModelHandler:
     # ---   MODEL HANDLER   --- #
     # ------------------------- #
     def fit(self, X, y, F=None):
-        # TODO Rethink : Sphinx doc
+        """
+        Fit the handled model to given data.
+
+        :param X: The structure space matrix, typically the matrix with the
+            x, y, z coordinates as columns.
+        :type X: :class:`np.ndarray`
+        :param y: The vector of expected labels, the ground-truth from the
+            supervised training perspective.
+        :type y: :class:`np.ndarray`
+        :param F: The features matrix. Often, models can work without features
+            because they can derive their own features from the X matrix.
+        :type F: :class:`np.ndarray`
+        :return: The fit model handler.
+        :rtype: :class:`.DLModelHandler`
+        """
         if not self.is_compiled():
             self.compile(X=X, F=F, y=y)
         return self._fit(X, y, F=F)
 
     @abstractmethod
     def _fit(self, X, y, F=None):
-        # TODO Rethink : Sphinx doc
+        """
+        This method must be overriden by any concrete derived class to provide
+        the fit logic assuming the model has been compiled. It complements the
+        :meth:`dl_model_handler.DLModelHandler.fit` method.
+
+        :return: The fit model handler.
+        :rtype: :class:`.DLModelHandler`
+        """
         pass
 
     def predict(self, X, F=None, y=None, zout=None):
-        # TODO Rethink : Sphinx doc
+        """
+        Compute predictions for the given input data.
+
+        :param X: The structure space matrix, typically the matrix with the
+            x, y, z coordinates as columns.
+        :type X: :class:`np.ndarray`
+        :param F: The features matrix. Often, models can work without features
+            because they can derive their own features from the X matrix.
+        :type F: :class:`np.ndarray`
+        :param y: The vector of expected labels, the ground-truth from the
+            supervised training perspective. While it is not necessary to
+            compute predictions, when available it can be given because some
+            models can use it for evaluation and analysis purposes.
+        :type y: :class:`np.ndarray`
+        :param zout: It can be given as an empty list in which case its last
+            element after the call will contain the output from the last layer
+            of the neural network, e.g., the softmax scores for a point-wise
+            classification neural network. It can be None, in which case the
+            output from the last layer will not be considered. Note also that
+            zout does not necessarily return the softmax output, it can be
+            defined to consider different output layers or metrics for some
+            potential model.
+        :return: The predictions.
+        :rtype: :class:`np.ndarray`
+        """
         if not self.is_compiled():
             self.compile(X=X, F=F)
         return self._predict(X, F=F, y=y, zout=zout)
 
     @abstractmethod
     def _predict(self, X, F=None, y=None, zout=None):
-        # TODO Rethink : Sphinx doc
+        """
+        This method must be overriden by any concrete derived class to provide
+        the predictive logic assuming the model has been compiled. It
+        complements the :meth:`dl_model_handler.DLModelHandler.predict` method.
+
+        :return: The predictions.
+        :rtype: :class:`np.ndarray`
+        """
         pass
 
     @abstractmethod
@@ -76,7 +141,13 @@ class DLModelHandler:
     # ---   SERIALIZATION   --- #
     # ------------------------- #
     def __getstate__(self):
-        # TODO Rethink : Sphinx doc
+        """
+        Method to be called when saving the serialized deep learning model
+        handler.
+
+        :return: The state's dictionary of the object.
+        :rtype: dict
+        """
         # Return DL Model Handler state (for serialization)
         return {  # Must not include compiled model (it will be rebuilt)
             'arch': self.arch,
@@ -85,7 +156,14 @@ class DLModelHandler:
         }
 
     def __setstate__(self, state):
-        # TODO Rethink : Sphinx doc
+        """
+        Method to be called when loading and deserializing a previously
+        serialized deep learning model handler.
+
+        :param state: The state's dictionary of the saved deep learning model
+            handler.
+        :return: Nothing, but modifies the internal state of the object.
+        """
         # Must rebuild the compiled model (it was not serialized)
         self.arch = state['arch']
         self.compilation_args = state['compilation_args']

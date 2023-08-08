@@ -36,7 +36,7 @@ class PointNet(Architecture, ABC):
         # Update the preprocessing logic
         self.pre_runnable = PointNetPreProcessor(**kwargs['pre_processing'])
         # Update the postprocessing logic
-        self.post_runnable = PointNetPostProcessor(self.pre_runnable)  # TODO Rethink : kwargs?
+        self.post_runnable = PointNetPostProcessor(self.pre_runnable)
         # The number of points is the number of cells in the receptive fields
         self.num_points = self.pre_runnable.get_num_input_points()
         # Neural network architecture specifications

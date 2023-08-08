@@ -18,7 +18,18 @@ class ClassifiedPcloudReport(Report):
     Class to handle reports related to classified point clouds.
     See :class:`.Report`.
 
-    # TODO Rethink: Doc ivars
+    :ivar X: The matrix of coordinates representing the point cloud.
+    :vartype X: :class:`np.ndarray`
+    :ivar y: The vector of expected classes.
+    :vartype: :class:`np.ndarray`
+    :ivar yhat: The vector of point-wise predictions.
+    :vartype yhat: :class:`np.ndarray`
+    :ivar zhat: The matrix of point-wise softmax scores where the rows
+        represent the points and the columns the classes. It can be None
+        because it is a potential extra for the report but not essential to it.
+    :vartype zhat: :class:`np.ndarray`
+    :ivar class_names: The name for each class.
+    :vartype class_names: list
     """
     # ---   INIT   --- #
     # ---------------- #
@@ -36,8 +47,10 @@ class ClassifiedPcloudReport(Report):
             *   *yhat* (``np.ndarray``) --
                 The vector of point-wise predictions.
             *   *zhat* (``np.ndarray``) --
-                The matrix of point-wise softmax (row-points, col-classes).
-            *   *class_names* (``np.ndarray``) --
+                The matrix of point-wise softmax (row-points, col-classes). It
+                is OPTIONAL. When not given, it will not be considered in the
+                report.
+            *   *class_names* (``list``) --
                 The name for each class. If not given, they will be considered
                 as C1, ..., CN by default.
         """

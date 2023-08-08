@@ -213,8 +213,13 @@ class Architecture:
 
     # ---   SERIALIZATION   --- #
     # ------------------------- #
-    def __getstate__(self):  # TODO Rethink
-        # TODO Rethink : Sphinx doc
+    def __getstate__(self):
+        """
+        Method to be called when saving the serialized deep learning
+            architecture.
+        :return: The state's dictionary of the object.
+        :rtype: dict
+        """
         # Save the built neural network
         nn_path = None
         if self.nn_path is not None and self.nn is not None:
@@ -234,8 +239,15 @@ class Architecture:
             'build_args': self.build_args
         }
 
-    def __setstate__(self, state):  # TODO Rethink
-        # TODO Rethink : Sphinx doc
+    def __setstate__(self, state):
+        """
+        Method to be called when loading and deserializing a previously
+        serialized deep learning architecture.
+
+        :param state: The state's dictionary of the saved deep learning
+            architecture.
+        :return: Nothing, but modifies the internal state of the object.
+        """
         # Must rebuild the architecture (it was not serialized)
         self.pre_runnable = state['pre_runnable']
         self.post_runnable = state['post_runnable']

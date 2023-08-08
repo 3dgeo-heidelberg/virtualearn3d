@@ -87,7 +87,20 @@ class FurthestPointSubsamplingPreProcessor:
     # -------------------- #
     def __call__(self, inputs):
         """
-        # TODO Rethink : Doc
+        Executes the pre-processing logic. It also updates the cache-like
+        variables of the preprocessor.
+
+        The pre-processing logic is similar to that of
+        :meth:`grid_subsampling_pre_processor.GridSubsamplingPreProcessor.__call__`
+        but using a :class:`.ReceptiveFieldFPS` instead of
+        :class:`.ReceptiveFieldGS`.
+
+        :param inputs: See
+            :meth:`grid_subsampling_pre_processor.GridSubsamplingPrePRocessor.__call__`
+            .
+        :return: See
+            :meth:`grid_subsampling_pre_processor.GridSubsamplingPrePRocessor.__call__`
+            .
         """
         # Extract inputs
         start = time.perf_counter()
@@ -143,7 +156,6 @@ class FurthestPointSubsamplingPreProcessor:
             'The furthest point subsampling pre processor generated '
             f'{Xout.shape[0]} receptive fields.'
         )
-        # TODO Rethink : Duplicated code wrt GS subsampling
         if y is not None:
             yout = self.reduce_labels(Xout, y, I=I)
             end = time.perf_counter()

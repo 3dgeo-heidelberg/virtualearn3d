@@ -124,7 +124,6 @@ class GridSubsamplingPreProcessor:
         start = time.perf_counter()
         X, y = inputs['X'], inputs.get('y', None)
         # Extract neighborhoods
-        # TODO Rethink : Chunk queries to prevent OOM ?
         sup_X = GridSubsamplingPreProcessor.build_support_points(
             X,
             self.separation_factor,
@@ -157,8 +156,6 @@ class GridSubsamplingPreProcessor:
             for i, Ii in enumerate(I)
         )
         # Neighborhoods ready to be fed into the neural network
-        # TODO Rethink : Use support points to build the input ?
-        # TODO Rethink : Maybe class-based picking for training ?
         Xout = np.array(joblib.Parallel(n_jobs=self.nthreads)(
             joblib.delayed(
                 self.last_call_receptive_fields[i].centroids_from_points

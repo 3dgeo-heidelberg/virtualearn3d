@@ -125,7 +125,6 @@ class ClassificationModel(Model, ABC):
         :return: The results of the auto validation.
         :rtype: :class:`np.ndarray`
         """
-        # TODO Rethink : Implement through Evaluator ?
         evals = np.array([
             metric(y, yhat) for metric in self.autoval_metrics
         ])

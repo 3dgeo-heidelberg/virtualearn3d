@@ -8,6 +8,7 @@ import src.main.main_logger as LOGGING
 import numpy as np
 import os
 
+
 # ---   CLASS   --- #
 # ----------------- #
 class ReceptiveFieldsReport(Report):
@@ -15,9 +16,19 @@ class ReceptiveFieldsReport(Report):
     :author: Alberto M. Esmoris Pena
 
     Class to handle reports related to receptive fields.
-    See :class:`.Report`
+    See :class:`.Report`.
 
-    # TODO Rethink : Doc ivars
+    :ivar X_rf: The matrix of coordinates for each receptive field.
+    :vartype X_rf: :class:`np.ndarray`
+    :ivar zhat_rf: The softmax scores for the predictions on each receptive
+        field.
+    :vartype zhat_rf: :class:`np.ndarray`
+    :ivar yhat_rf: The predictions for each receptive field.
+    :vartype yhat_rf: :class:`np.ndarray`
+    :ivar y_rf: The expected values for each receptive field (can be None).
+    :vartype y_rf: :class:`np.ndarray` or None
+    :ivar class_names: The names representing each class.
+    :vartype class_names: list
     """
     # ---   INIT   --- #
     # ---------------- #

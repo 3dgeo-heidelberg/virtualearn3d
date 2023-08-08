@@ -56,33 +56,18 @@ class FurthestPointSubsamplingPostProcessor:
         :return: The :math:`m` point-wise predictions derived from the
             :math:`R` input predictions on the receptive field.
         """
-        # TODO Rethink: Duplicated code wrt GS subsampling
-        # Extract inputs
         start = time.perf_counter()
-        X = inputs['X']  # The original point cloud (before receptive field)
-        z_reduced = inputs['z']  # Softmax scores reduced to receptive field
-        num_classes = z_reduced.shape[-1]
-        # Transform each prediction by propagation
-        rf = self.fps_preproc.last_call_receptive_fields
-        I = self.fps_preproc.last_call_neighborhoods
-        z_propagated = joblib.Parallel(n_jobs=self.fps_preproc.nthreads)(
-            joblib.delayed(
-                rfi.propagate_values
-            )(
-                z_reduced[i], reduce_strategy='mean'
-            )
-            for i, rfi in enumerate(rf)
-        )
-        # Reduce point-wise many predictions by computing the mean
-        z = GridSubsamplingPostProcessor.pwise_reduce(
-            X.shape[0], num_classes, I, z_propagated
+        z = GridSubsamplingPostProcessor.post_process(
+            inputs,
+            self.fps_preproc.last_call_receptive_fields,
+            self.fps_preproc.last_call_neighborhoods,
+            nthreads=self.fps_preproc.nthreads
         )
         end = time.perf_counter()
         LOGGING.LOGGER.info(
             f'The furthest point subsampling post processor generated {len(z)} '
-            f'propagations from {len(z_reduced[0])} reduced predictions '
-            f'for each of the {len(z_reduced)} FPS receptive fields '
+            f'propagations from {len(inputs["z"][0])} reduced predictions '
+            f'for each of the {len(inputs["z"])} FPS receptive fields '
             f'in {end-start:.3f} seconds.'
         )
-        # Return
         return z

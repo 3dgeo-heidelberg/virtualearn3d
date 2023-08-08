@@ -46,41 +46,28 @@ class GridSubsamplingPostProcessor:
         Executes the post-processing logic.
 
         :param inputs: A key-word input where the key "X" gives the coordinates
-        of the points in the original point cloud. Also, the key "z" gives the
-        predictions computed on a receptive field of :math:`R` points that must
-        be propagated back to the :math:`m` points of the original point cloud.
+            of the points in the original point cloud. Also, the key "z" gives
+            the predictions computed on a receptive field of :math:`R` points
+            that must be propagated back to the :math:`m` points of the
+            original point cloud.
         :type inputs: dict
         :return: The :math:`m` point-wise predictions derived from the
             :math:`R` input predictions on the receptive field.
         """
-        # Extract inputs
         start = time.perf_counter()
-        X = inputs['X']  # The original point cloud (before receptive field)
-        z_reduced = inputs['z']  # Softmax scores reduced to receptive field
-        num_classes = z_reduced.shape[-1]
-        # Transform each prediction by propagation
-        rf = self.gs_preproc.last_call_receptive_fields
-        I = self.gs_preproc.last_call_neighborhoods
-        z_propagated = joblib.Parallel(n_jobs=self.gs_preproc.nthreads)(
-            joblib.delayed(
-                rfi.propagate_values
-            )(
-                z_reduced[i], reduce_strategy='mean'
-            )
-            for i, rfi in enumerate(rf)
-        )
-        # Reduce point-wise many predictions by computing the mean
-        z = GridSubsamplingPostProcessor.pwise_reduce(
-            X.shape[0], num_classes, I, z_propagated
+        z = GridSubsamplingPostProcessor.post_process(
+            inputs,
+            self.gs_preproc.last_call_receptive_fields,
+            self.gs_preproc.last_call_neighborhoods,
+            nthreads=self.gs_preproc.nthreads
         )
         end = time.perf_counter()
         LOGGING.LOGGER.info(
             f'The grid subsampling post processor generated {len(z)} '
-            f'propagations from {len(z_reduced[0])} reduced predictions '
-            f'for each of the {len(z_reduced)} GS receptive fields '
+            f'propagations from {len(inputs["z"][0])} reduced predictions '
+            f'for each of the {len(inputs["z"])} GS receptive fields '
             f'in {end-start:.3f} seconds.'
         )
-        # Return
         return z
 
     # ---   UTIL METHODS   --- #
@@ -102,6 +89,7 @@ class GridSubsamplingPostProcessor:
             thus the name.
         :return: The reduced v vector with a single value for the same variable
             of the same point.
+        :rtype: :class:`np.ndarray`
         """
         count = np.zeros(npoints, dtype=int)
         u = np.zeros((npoints, nvars), dtype=float)
@@ -114,3 +102,45 @@ class GridSubsamplingPostProcessor:
             else (u[non_zero_mask].T/count[non_zero_mask]).T
         # Return
         return u
+
+    @staticmethod
+    def post_process(inputs, rf, I, nthreads=1):
+        """
+        Computes the post-processing logic. The method is used to aid the
+        :meth:`grid_subsampling_post_processor.GridSubsamplingPostProcessor.__call__`
+        method.
+
+        :param inputs: A key-word input where the key "X" gives the coordinates
+            of the points in the original point cloud. Also, the key "z" gives
+            the predictions computed on a receptive field of :math:`R` points
+            that must be propagated back to the :math:`m` points of the
+            original point cloud.
+        :type inputs: dict
+        :param rf: The receptive fields to compute the propagations. See
+            :class:`.ReceptiveField` and :class:`.ReceptiveFieldGS`.
+        :type rf: list
+        :param I: The list of neighborhods, where each neighborhood is given
+            as a list of indices.
+        :type I: list
+        :param nthreads: The number of threads for parallel computing.
+        :type nthreads: int
+        :return: The :math:`m` point-wise predictions derived from the
+            :math:`R` input predictions on the receptive field.
+        """
+        # Extract inputs
+        X = inputs['X']  # The original point cloud (before receptive field)
+        z_reduced = inputs['z']  # Softmax scores reduced to receptive field
+        num_classes = z_reduced.shape[-1]
+        # Transform each prediction by propagation
+        z_propagated = joblib.Parallel(n_jobs=nthreads)(
+            joblib.delayed(
+                rfi.propagate_values
+            )(
+                z_reduced[i], reduce_strategy='mean'
+            )
+            for i, rfi in enumerate(rf)
+        )
+        # Reduce point-wise many predictions by computing the mean
+        return GridSubsamplingPostProcessor.pwise_reduce(
+            X.shape[0], num_classes, I, z_propagated
+        )

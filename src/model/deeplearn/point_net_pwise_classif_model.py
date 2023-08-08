@@ -143,14 +143,15 @@ class PointNetPwiseClassifModel(ClassificationModel):
 
     def on_training_finished(self, X, y, yhat=None):
         """
-        # TODO Rethink : yhat = None is it necessary?
-        # TODO Rethink : Doc
+        See :meth:`model.Model.on_training_finished`.
         """
         # Compute predictions on training data
         start = time.perf_counter()
-        zhat = []
-        yhat = self._predict(X, F=None, y=y, zout=zhat)
-        zhat = zhat[-1]
+        zhat = None
+        if yhat is None:
+            zhat = []
+            yhat = self._predict(X, F=None, y=y, zout=zhat)
+            zhat = zhat[-1]
         end = time.perf_counter()
         LOGGING.LOGGER.info(
             'PointNet point-wise classification on training point cloud '
@@ -199,10 +200,16 @@ class PointNetPwiseClassifModel(ClassificationModel):
     # ----------------------------------------- #
     def compute_pwise_activations(self, X):
         """
-        # TODO Rethink : Doc
+        Compute the point wise activations of the last layer before the
+        output softmax layer in the PointNet-based point-wise classification
+        model.
 
-        :param X:
-        :return:
+        :param X: The matrix of coordinates representing the point cloud.
+        :type X: :class:`np.ndarray`
+        :return: The matrix of point wise activations where points are rows
+            and the columns are the components of the output activation
+            function (activated vector or point-wise features).
+        :rtype: :class:`np.ndarray`
         """
         # Prepare model to compute activations
         remodel = tf.keras.Model(

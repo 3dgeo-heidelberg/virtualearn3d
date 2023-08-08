@@ -19,12 +19,54 @@ import time
 # ----------------- #
 class SimpleDLModelHandler(DLModelHandler):
     """
-    # TODO Rethink : Document class and ivars
+    Class to handle deep learning models in a simple way. It can be seen as the
+    baseline deep learning model handler. See :class:`.DLModelHandler`.
+
+    :ivar summary_report_path: Path to the file where the summary report
+        will be written, i.e., the report that summarizes the model's
+        architecture.
+    :vartype summary_report_path: str
+    :ivar training_history_dir: Path to the directory where the training
+        history plots and reports will be exported, i.e., information related
+        to the  training along many epochs.
+    :vartype training_history_dir: path
+    :ivar out_prefix: The output prefix for path expansions, when necessary.
+    :vartype out_prefix: str
+    :ivar training_epochs: The number of training epochs for fitting the model.
+    :vartype training_epochs: int
+    :ivar batch_size: The batch size governing the model's input.
+    :vartype batch_size: int
+    :ivar history: By default None. It will be updated to contain the training
+        history when calling fit.
+    :vartype history: None or :class:`tf.keras.callbacks.History`
+    :ivar checkpoint_path: The path where the model's checkpoint will be
+        exported. It is used to keep the best model when using the checkpoint
+        callback strategy during training.
+    :vartype checkpoint_path: str
+    :ivar checkpoint_monitor: The name of the metric to choose the best
+        model. By default, it is "loss", which represents the loss function.
+    :vartype checkpoint_monitor: str
+    :ivar learning_rate_on_plateau: The key-word arguments governing the
+        instantiation of the learning rate on plateau callback.
+    :vartype learning_rate_on_plateau: dict
+    :ivar early_stopping: The key-word arguments governing the instantiation
+        of the early stopping callback.
+    :vartype early_stopping: dict
+    :ivar compilation_args: The specification on how to compile the model.
+        See
+        :meth:`simple_dl_model_handler.SimpleDLModelHandler.build_compilation_args`
+        .
+    :vartype compilation_args: dict
     """
     # ---   INIT   --- #
     # ---------------- #
     def __init__(self, arch, **kwargs):
-        # TODO Rethink : doc
+        """
+        Initialize/instantiate a simple deep learning model handler.
+
+        See :class:`.DLModelHandler` and
+        :meth:`dl_model_handler.DLModelHandler.__init__`.
+        """
         # Call parent's init
         super().__init__(arch, **kwargs)
         # Assign member attributes
@@ -46,7 +88,10 @@ class SimpleDLModelHandler(DLModelHandler):
     # ---   MODEL HANDLER   --- #
     # ------------------------- #
     def _fit(self, X, y, F=None):
-        # TODO Rethink : Sphinx doc
+        """
+        See :class:`.DLModelHandler` and
+        :meth:`dl_model_handler.DLModelHandler._fit`.
+        """
         # Report the model
         summary = DeepLearningModelSummaryReport(self.compiled)
         LOGGING.LOGGER.info(summary.to_string())
@@ -118,15 +163,16 @@ class SimpleDLModelHandler(DLModelHandler):
         return self
 
     def _predict(self, X, F=None, y=None, zout=None):
-        # TODO Rethink : Sphinx doc
+        """
+        See :class:`.DLModelHandler` and
+        :meth:`dl_model_handler.DLModelHandler._predict`.
+        """
         # Softmax scores
         X_rf = self.arch.run_pre({'X': X})
         zhat_rf = self.compiled.predict(X_rf, batch_size=self.batch_size)
         zhat = self.arch.run_post({'X': X, 'z': zhat_rf})
         if zout is not None:  # When z is not None it must be a list
             zout.append(zhat)  # Append propagated zhat to z list
-        print(f'zhat: {zhat}')  # TODO Remove
-        print(f'zhat.shape: {zhat.shape}')  # TODO Remove
         # Final predictions
         yhat = np.argmax(zhat, axis=1)
         # Report receptive fields, if requested
@@ -151,11 +197,8 @@ class SimpleDLModelHandler(DLModelHandler):
                 ) if y is not None else None,
                 class_names=self.class_names
             ).to_file(rf_dir, self.out_prefix)
-        # Report softmax, if requested
-        # TODO Rethink : Implement
         # Return
         return yhat
-        # TODO Rethink : Implement
 
     def compile(self, X=None, y=None, F=None):
         """
@@ -176,7 +219,13 @@ class SimpleDLModelHandler(DLModelHandler):
     # ---------------------- #
     @staticmethod
     def build_compilation_args(comp_args):
-        # TODO Rethink : Sphinx doc
+        """
+        Build the compilation arguments from given spec.
+
+        :param comp_args: The specification to build the compilation arguments.
+        :return: The dictionary of compilation arguments.
+        :rtype: dict
+        """
         # Build optimizer : Extract args
         opt_args = comp_args['optimizer']
         opt_alg = opt_args['algorithm'].lower()
