@@ -89,8 +89,17 @@ class ClassifiedPcloudReport(Report):
         fnames = ['Prediction']
         feats = self.yhat.reshape(-1, 1)
         if self.zhat is not None:
-            fnames = fnames + self.class_names
-            feats = np.hstack([feats, self.zhat])
+            if len(self.zhat.shape) == 1:  # Handle binary classif case
+                fnames = fnames + [
+                    f'{self.class_names[0]}_to_{self.class_names[1]}'
+                ]
+            else:  # Otherwise, general case
+                fnames = fnames + self.class_names
+            feats = np.hstack([
+                feats,
+                self.zhat if len(self.zhat.shape) > 1
+                    else self.zhat.reshape(-1, 1)
+            ])
         PointCloudIO.write(
             PointCloudFactoryFacade.make_from_arrays(
                 self.X,

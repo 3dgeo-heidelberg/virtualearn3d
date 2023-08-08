@@ -33,6 +33,13 @@ class PointNetPwiseClassif(PointNet):
                 'the number of classes defining the problem. None was given.'
             )
         self.num_pwise_feats = kwargs.get('num_pwise_feats', 128)
+        self.binary_crossentropy = False
+        comp_args = kwargs.get('compilation_args', None)
+        if comp_args is not None:
+            loss_args = comp_args.get('loss', None)
+            if loss_args is not None:
+                self.binary_crossentropy = \
+                    loss_args.get('function', '') == 'binary_crossentropy'
 
     # ---   ARCHITECTURE METHODS   --- #
     # -------------------------------- #
@@ -85,6 +92,15 @@ class PointNetPwiseClassif(PointNet):
         :return: The output layer.
         :rtype: :class:`tf.Tensor`
         """
+        # Handle output layer for binary crossentropy loss
+        if self.binary_crossentropy:
+            return tf.keras.layers.Conv1D(
+                1,
+                kernel_size=1,
+                activation='sigmoid',
+                name='pwise_out'
+            )(x)
+        # Handle output layer for the general case
         return tf.keras.layers.Conv1D(
             self.num_classes,
             kernel_size=1,

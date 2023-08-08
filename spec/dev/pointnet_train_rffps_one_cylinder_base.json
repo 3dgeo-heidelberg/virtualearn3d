@@ -51,6 +51,7 @@
 		"model_handling": {
 			"summary_report_path": "out/PointnetPwiseClassifier_FPSone_cylinder/model_summary.log",
 			"training_history_dir": "out/PointnetPwiseClassifier_FPSone_cylinder/eval/history",
+			"class_weight": null,
 			"training_epochs": 200,
 			"batch_size": 1,
 			"checkpoint_path": "out/PointnetPwiseClassifier_FPSone_cylinder/checkpoint.model",
@@ -78,10 +79,12 @@
 				"learning_rate": 1e-2
 			},
 			"loss": {
-				"function": "sparse_categorical_crossentropy"
+				"function": "binary_crossentropy"
 			},
 			"metrics": [
-				"sparse_categorical_accuracy"
+				"binary_accuracy",
+				"precision",
+				"recall"
 			]
 		},
 		"architecture_graph_path": "out/PointnetPwiseClassifier_FPSone_cylinder/model_graph.png",

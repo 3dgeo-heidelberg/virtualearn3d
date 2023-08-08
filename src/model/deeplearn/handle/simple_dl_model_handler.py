@@ -10,6 +10,7 @@ from src.utils.dict_utils import DictUtils
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
 import src.main.main_logger as LOGGING
 import tensorflow as tf
+from sklearn.preprocessing import LabelBinarizer
 import numpy as np
 import os
 import time
@@ -123,11 +124,15 @@ class SimpleDLModelHandler(DLModelHandler):
             ))
         # Fit the model
         start = time.perf_counter()
+        X, y = self.arch.run_pre({'X': X, 'y': y})
+        class_weight = self.handle_class_weight(y)
+        y = self.handle_labels_format(y)
         self.history = self.compiled.fit(
-            *self.arch.run_pre({'X': X, 'y': y}),
+            X, y,
             epochs=self.training_epochs,
             callbacks=callbacks,
-            batch_size=self.batch_size
+            batch_size=self.batch_size,
+            class_weight=class_weight
         )
         end = time.perf_counter()
         LOGGING.LOGGER.info(
@@ -174,7 +179,8 @@ class SimpleDLModelHandler(DLModelHandler):
         if zout is not None:  # When z is not None it must be a list
             zout.append(zhat)  # Append propagated zhat to z list
         # Final predictions
-        yhat = np.argmax(zhat, axis=1)
+        yhat = np.argmax(zhat, axis=1) if len(zhat.shape) > 1 \
+            else np.round(zhat)
         # Report receptive fields, if requested
         rf_dir = getattr(
             self.arch.pre_runnable.pre_processor,
@@ -209,6 +215,7 @@ class SimpleDLModelHandler(DLModelHandler):
             self.arch.build()
         self.compiled = self.arch.nn
         self.compiled.compile(
+            run_eagerly=True,  # Uncomment for better debugging (but slower)
             **SimpleDLModelHandler.build_compilation_args(
                 self.compilation_args
             )
@@ -252,6 +259,8 @@ class SimpleDLModelHandler(DLModelHandler):
             loss = tf.keras.losses.SparseCategoricalCrossentropy
         if loss_fun == 'binary_crossentropy':
             loss = tf.keras.losses.BinaryCrossentropy
+        if loss_fun == 'categorical_crossentropy':
+            loss = tf.keras.losses.CategoricalCrossentropy
         if loss is None:
             raise DeepLearningException(
                 'SimpleDLModelHandler cannot compile a model without a loss '
@@ -294,3 +303,66 @@ class SimpleDLModelHandler(DLModelHandler):
             'loss': loss,
             'metrics': metrics
         }
+
+    def handle_class_weight(self, y):
+        """
+        # TODO Rethink : Doc
+        """
+        # No class weight specification
+        if self.class_weight is None:
+            return None
+        # Handle class weight specification
+        if self.class_weight == "auto":  # Automatic
+            num_classes = getattr(self.arch, "num_classes", None)
+            if num_classes is None:
+                raise DeepLearningException(
+                    'SimpleDLModelHandler does not support automatic class '
+                    'weight for current architecture: '
+                    f'"{self.arch.__class__.__name__}"'
+                )
+            keys = [class_id for class_id in range(num_classes)]
+            num_samples = len(y)
+            num_samples_per_class = np.array([
+                np.count_nonzero(y == class_id) for class_id in keys
+            ], dtype=int)
+            vals = num_samples/num_samples_per_class/num_classes
+            return dict(zip(keys, vals))
+        else:  # User-given
+            return self.class_weight
+
+    def handle_labels_format(self, y):
+        """
+        # TODO Rethink : Doc
+        """
+        # Extract loss function name
+        loss_low = self.compilation_args['loss']['function'].lower()
+        # Handle loss functions that demand one-hot labels
+        if (
+            loss_low == 'categorical_crossentropy' or
+            loss_low == 'binary_crossentropy'
+        ):  # Handle one hot encoding for labels
+            num_classes = getattr(self.arch, "num_classes", None)
+            if num_classes is None:
+                raise DeepLearningException(
+                    'SimpleDLModelHandler does not support categorical or '
+                    'binary crossentropy without a priori specifying the '
+                    'number of classes.'
+                )
+            label_binarizer = LabelBinarizer().fit([
+                class_id for class_id in range(num_classes)
+            ])
+            new_y = []
+            for i in range(len(y)):
+                new_y.append(label_binarizer.transform(y[i].flatten()))
+            y = np.array(new_y)
+        if (
+            loss_low == 'sparse_categorical_crossentropy' and
+            self.class_weight is not None
+        ):
+            raise DeepLearningException(
+                'SimpleDLModelHandler detected that class weight is requested '
+                'for a sparse categorical crossentropy loss. Currently, this '
+                'is not supported.'
+            )
+        # By default, labels can be used straight forward
+        return y

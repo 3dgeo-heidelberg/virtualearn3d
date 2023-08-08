@@ -89,6 +89,8 @@ class ReceptiveFieldsReport(Report):
         )
         # Write each receptive field
         fnames = [f'softmax_{cname}' for cname in self.class_names]
+        if self.zhat_rf.shape[-1] == 1:  # Assume binary classification
+            fnames = [f'{self.class_names[0]}_to_{self.class_names[1]}']
         if self.yhat_rf is not None:
             fnames.append('Predictions')
         for i in range(len(self.X_rf)):

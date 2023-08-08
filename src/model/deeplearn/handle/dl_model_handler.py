@@ -36,6 +36,7 @@ class DLModelHandler:
         # Assign member attributes
         self.arch = arch
         self.compilation_args = kwargs.get('compilation_args', None)
+        self.class_weight = kwargs.get('class_weight', None)
         self.class_names = kwargs.get('class_names', None)
         self.compiled = None
 
