@@ -1,6 +1,8 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.model.deeplearn.handle.dl_model_handler import DLModelHandler
+from src.model.deeplearn.loss.class_weighted_binary_crossentropy import \
+    vl3d_class_weighted_binary_crossentropy
 from src.report.deep_learning_model_summary_report import \
     DeepLearningModelSummaryReport
 from src.report.receptive_fields_report import ReceptiveFieldsReport
@@ -127,12 +129,17 @@ class SimpleDLModelHandler(DLModelHandler):
         X, y = self.arch.run_pre({'X': X, 'y': y})
         class_weight = self.handle_class_weight(y)
         y = self.handle_labels_format(y)
+        if class_weight is not None:  # Recompile for custom class weight loss
+            comp_args = SimpleDLModelHandler.build_compilation_args(
+                self.compilation_args
+            )
+            comp_args['loss'] = comp_args['loss'](class_weight)
+            self.compiled.compile(**comp_args)
         self.history = self.compiled.fit(
             X, y,
             epochs=self.training_epochs,
             callbacks=callbacks,
-            batch_size=self.batch_size,
-            class_weight=class_weight
+            batch_size=self.batch_size
         )
         end = time.perf_counter()
         LOGGING.LOGGER.info(
@@ -215,7 +222,7 @@ class SimpleDLModelHandler(DLModelHandler):
             self.arch.build()
         self.compiled = self.arch.nn
         self.compiled.compile(
-            run_eagerly=True,  # Uncomment for better debugging (but slower)
+            # run_eagerly=True,  # Uncomment for better debugging (but slower)
             **SimpleDLModelHandler.build_compilation_args(
                 self.compilation_args
             )
@@ -254,11 +261,15 @@ class SimpleDLModelHandler(DLModelHandler):
         loss_args = comp_args['loss']
         loss_fun = loss_args['function'].lower()
         # Build loss : Determine class (function)
+        instantiate_loss = True
         loss = None
         if loss_fun == 'sparse_categorical_crossentropy':
             loss = tf.keras.losses.SparseCategoricalCrossentropy
         if loss_fun == 'binary_crossentropy':
             loss = tf.keras.losses.BinaryCrossentropy
+        if loss_fun == 'class_weighted_binary_crossentropy':
+            loss = vl3d_class_weighted_binary_crossentropy
+            instantiate_loss = False  # Instantiate later with class weights
         if loss_fun == 'categorical_crossentropy':
             loss = tf.keras.losses.CategoricalCrossentropy
         if loss is None:
@@ -267,7 +278,8 @@ class SimpleDLModelHandler(DLModelHandler):
                 'function. None was given.'
             )
         # Build loss
-        loss = loss()
+        if instantiate_loss:
+            loss = loss()
         # Build metrics : Extract args
         metrics_args = comp_args['metrics']
         # Build metrics : Determine metrics (list of classes)
@@ -321,14 +333,22 @@ class SimpleDLModelHandler(DLModelHandler):
                     f'"{self.arch.__class__.__name__}"'
                 )
             keys = [class_id for class_id in range(num_classes)]
-            num_samples = len(y)
+            num_samples = np.prod(y.shape)
             num_samples_per_class = np.array([
                 np.count_nonzero(y == class_id) for class_id in keys
             ], dtype=int)
             vals = num_samples/num_samples_per_class/num_classes
-            return dict(zip(keys, vals))
+            class_weight_dict = dict(zip(keys, vals))
+            LOGGING.LOGGER.debug(
+                'Simple DL model handler automatically generated the '
+                f'following dictionary of class weights:\n{class_weight_dict}'
+            )
+            return class_weight_dict
         else:  # User-given
-            return self.class_weight
+            return dict(zip(  # List to dict with serial int key
+                np.arange(len(self.class_weight), dtype=int),
+                self.class_weight
+            ))
 
     def handle_labels_format(self, y):
         """

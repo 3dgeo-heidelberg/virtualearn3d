@@ -106,7 +106,6 @@ class FurthestPointSubsamplingPreProcessor:
         start = time.perf_counter()
         X, y = inputs['X'], inputs.get('y', None)
         # Extract neighborhoods
-        # TODO Rethink : Consider 2D support points for unbounded cylinders
         sup_X, I = self.find_neighborhood(X)
         # Remove empty neighborhoods and corresponding support points
         I, sup_X = FurthestPointSubsamplingPreProcessor\

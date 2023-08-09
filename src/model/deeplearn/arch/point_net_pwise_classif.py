@@ -38,8 +38,10 @@ class PointNetPwiseClassif(PointNet):
         if comp_args is not None:
             loss_args = comp_args.get('loss', None)
             if loss_args is not None:
+                fun_name = loss_args.get('function', '').lower()
                 self.binary_crossentropy = \
-                    loss_args.get('function', '') == 'binary_crossentropy'
+                    fun_name == 'binary_crossentropy' or \
+                    fun_name == 'class_weighted_binary_crossentropy'
 
     # ---   ARCHITECTURE METHODS   --- #
     # -------------------------------- #

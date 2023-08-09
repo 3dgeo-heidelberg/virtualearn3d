@@ -11,12 +11,12 @@
 		"num_pwise_feats": 128,
 		"pre_processing": {
 			"pre_processor": "furthest_point_subsampling",
-			"num_points": 256000,
+			"num_points": 64000,
 			"num_encoding_neighbors": 3,
 			"fast": true,
 			"neighborhood": {	
 				"type": "cylinder",
-				"radius": 10.0,
+				"radius": 2.5,
 				"separation_factor": 0.8
 			},
 			"nthreads": 6,
@@ -51,9 +51,9 @@
 		"model_handling": {
 			"summary_report_path": "out/PointnetPwiseClassifier_FPSone_cylinder/model_summary.log",
 			"training_history_dir": "out/PointnetPwiseClassifier_FPSone_cylinder/eval/history",
-			"class_weight": null,
+			"class_weight": "auto",
 			"training_epochs": 200,
-			"batch_size": 1,
+			"batch_size": 4,
 			"checkpoint_path": "out/PointnetPwiseClassifier_FPSone_cylinder/checkpoint.model",
 			"checkpoint_monitor": "loss",
 			"learning_rate_on_plateau": {
@@ -79,7 +79,7 @@
 				"learning_rate": 1e-2
 			},
 			"loss": {
-				"function": "binary_crossentropy"
+				"function": "class_weighted_binary_crossentropy"
 			},
 			"metrics": [
 				"binary_accuracy",
