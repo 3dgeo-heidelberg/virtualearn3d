@@ -17,7 +17,7 @@
 			"neighborhood": {	
 				"type": "cylinder",
 				"radius": 2.5,
-				"separation_factor": 0.8
+				"separation_factor": 0.4
 			},
 			"nthreads": 6,
 			"receptive_fields_dir": "out/PointnetPwiseClassifier_FPSone_cylinder/eval/receptive_fields/"
@@ -75,7 +75,7 @@
 		},
 		"compilation_args": {
 			"optimizer": {
-				"algorithm": "SGD",
+				"algorithm": "Adam",
 				"learning_rate": 1e-2
 			},
 			"loss": {

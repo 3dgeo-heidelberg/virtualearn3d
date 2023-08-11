@@ -229,7 +229,18 @@ class FurthestPointSubsamplingPreProcessor:
         ))
 
     def find_neighborhood(self, X):
-        # TODO Rethink : Doc
+        r"""
+        Find the requested neighborhoods in the given input point cloud
+        represented by the matrix of coordinates :math:`\pmb{X}`
+
+        :param X: The matrix of coordinates.
+        :return: A tuple which first element are the support points
+            representing the centers of the neighborhoods and which second
+            element is a list of neighborhoods, where each neighborhood is
+            represented by a list of indices corresponding to the rows (points)
+            in :math:`\pmb{X}` that compose the neighborhood.
+        :rtype: tuple
+        """
         # Handle neighborhood finding
         sup_X, I = None, None
         ngbhd_type = self.neighborhood_spec['type']

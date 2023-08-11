@@ -11,6 +11,7 @@ Subpackages
    model.deeplearn.dlrun
    model.deeplearn.handle
    model.deeplearn.layer
+   model.deeplearn.loss
 
 Submodules
 ----------

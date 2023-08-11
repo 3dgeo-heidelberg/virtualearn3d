@@ -248,6 +248,8 @@ class SimpleDLModelHandler(DLModelHandler):
         optimizer = None
         if opt_alg == 'sgd':
             optimizer = tf.keras.optimizers.SGD
+        if opt_alg == 'adam':
+            optimizer = tf.keras.optimizers.Adam
         if optimizer is None:
             raise DeepLearningException(
                 'SimpleDLModelHandler cannot compile a model without an '
@@ -317,8 +319,27 @@ class SimpleDLModelHandler(DLModelHandler):
         }
 
     def handle_class_weight(self, y):
-        """
-        # TODO Rethink : Doc
+        r"""
+        Handle the class weight parameter.
+
+        If no class weight is requested, then class weight will be None.
+
+        If automatic class weight is requested (i.e., "auto"), then the
+        class weight is automatically determined from the distribution of
+        expected classes to give a greater weight to less frequent classes
+        and a smaller weight to more frequent classes. More concretely, let
+        :math:`m` be the number of samples, :math:`m_i` be the number of
+        samples corresponding to class :math:`i`, and :math:`n` be the number
+        of classes. Thus, each class weight will be :math:`w_i = m/(n m_i)`.
+
+        If class weight is a list, tuple or array of weights it will be
+        translated to a dictionary such that the first element is the weight
+        for the first class, and so on.
+
+
+        :param y: The vector of expected point-wise classes.
+        :type y: :class:`np.ndarray`
+        :return: Class weight prepared for the model.
         """
         # No class weight specification
         if self.class_weight is None:
@@ -352,7 +373,13 @@ class SimpleDLModelHandler(DLModelHandler):
 
     def handle_labels_format(self, y):
         """
-        # TODO Rethink : Doc
+        Handles the format in which labels must be given to the model.
+
+        For instance, if categorical cross entropy is used, labels must be
+        given using one-hot-encoding. However, if sparse categorical cross
+        entropy is used, labels must be given as an integer.
+
+        :return: The labels prepared for the model.
         """
         # Extract loss function name
         loss_low = self.compilation_args['loss']['function'].lower()

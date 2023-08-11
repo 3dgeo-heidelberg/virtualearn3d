@@ -68,6 +68,14 @@ report.pca\_projection\_report module
    :undoc-members:
    :show-inheritance:
 
+report.pwise\_activations\_report module
+----------------------------------------
+
+.. automodule:: report.pwise_activations_report
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 report.rand\_forest\_report module
 ----------------------------------
 
