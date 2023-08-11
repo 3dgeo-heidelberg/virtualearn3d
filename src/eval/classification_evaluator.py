@@ -155,7 +155,10 @@ class ClassificationEvaluator(Evaluator):
         if self.class_names is None:
             self.class_names = [f'C{i}' for i in class_nums]
         # Evaluate : class distribution
-        yhat_count, yhat_bin = np.histogram(yhat, bins=len(class_nums))
+        yhat_count, yhat_bin = np.histogram(
+            yhat,
+            bins=np.linspace(0, len(class_nums)-1, len(class_nums)+1)
+        )
         y_count, y_bin = np.histogram(y, bins=len(class_nums))
         # Evaluate : confusion matrix
         conf_mat = confusion_matrix(y, yhat)

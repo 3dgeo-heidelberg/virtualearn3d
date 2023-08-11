@@ -202,6 +202,8 @@ class SimpleDLModelHandler(DLModelHandler):
                 zhat_rf=zhat_rf,  # Softmax scores (for each receptive field)
                 yhat_rf=np.array([  # Predictions (for each receptive field)
                     np.argmax(zhat_rf_i, axis=1)
+                    if len(zhat_rf_i.shape) > 1 and zhat_rf_i.shape[-1] != 1
+                    else np.round(np.squeeze(zhat_rf_i))
                     for zhat_rf_i in zhat_rf
                 ]),
                 y_rf=self.arch.pre_runnable.pre_processor.reduce_labels(
