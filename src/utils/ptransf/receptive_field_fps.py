@@ -161,7 +161,7 @@ class ReceptiveFieldFPS(ReceptiveField):
         """
         return self.Y
 
-    def propagate_values(self, v, reduce_strategy='mean'):
+    def propagate_values(self, v, reduce_strategy='mean', **kwargs):
         r"""
         Propagate :math:`R` values associated to
         :math:`\pmb{Y} \in \mathbb{R}^{R \times n}` to :math:`m`

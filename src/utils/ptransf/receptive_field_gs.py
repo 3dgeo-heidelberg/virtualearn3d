@@ -256,7 +256,7 @@ class ReceptiveFieldGS(ReceptiveField):
         # Return
         return Y
 
-    def propagate_values(self, v, safe=True):
+    def propagate_values(self, v, safe=True, **kwargs):
         r"""
         Propagate given values, so they are associated to the points in
         :math:`\pmb{X}`.
