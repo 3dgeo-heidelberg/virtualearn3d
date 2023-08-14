@@ -415,3 +415,54 @@ class SimpleDLModelHandler(DLModelHandler):
             )
         # By default, labels can be used straight forward
         return y
+
+    # ---   SERIALIZATION   --- #
+    # ------------------------- #
+    def __getstate__(self):
+        """
+        Method to be called when saving the serialized simple deep learning
+        model handler.
+
+        :return: The state's dictionary of the object
+        :rtype: dict
+        """
+        # Obtain from parent
+        state = super().__getstate__()
+        # Update
+        state['summary_report_path'] = self.summary_report_path
+        state['training_history_dir'] = self.training_history_dir
+        state['out_prefix'] = self.out_prefix
+        state['training_epochs'] = self.training_epochs
+        state['batch_size'] = self.batch_size
+        state['history'] = self.history
+        state['checkpoint_path'] = self.checkpoint_path
+        state['checkpoint_monitor'] = self.checkpoint_monitor
+        state['learning_rate_on_plateau'] = self.learning_rate_on_plateau
+        state['early_stopping'] = self.early_stopping
+        state['compilation_args'] = self.compilation_args
+        # Return Simple DL Model Handler state (for serialization)
+        return state
+
+    def __setstate__(self, state):
+        """
+        Method to be called when loading and deserializing a previously
+        serialized simple deep learning model handler.
+
+        :param state: The state's dictionary of the saved simple deep learning
+            model handler.
+        :return: Nothing, but modifies the internal state of the object.
+        """
+        # Call parent
+        super().__setstate__(state)
+        # Assign member attributes from state dictionary
+        self.summary_report_path = state['summary_report_path']
+        self.training_history_dir = state['training_history_dir']
+        self.out_prefix = state['out_prefix']
+        self.training_epochs = state['training_epochs']
+        self.batch_size = state['batch_size']
+        self.history = state['history']
+        self.checkpoint_path = state['checkpoint_path']
+        self.checkpoint_monitor = state['checkpoint_monitor']
+        self.learning_rate_on_plateau = state['learning_rate_on_plateau']
+        self.early_stopping = state['early_stopping']
+        self.compilation_args = state['compilation_args']

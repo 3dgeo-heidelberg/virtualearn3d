@@ -27,7 +27,7 @@ class Layer(tf.keras.layers.Layer):
         :param kwargs: The key-word specification to parametrize the layer.
         """
         # Call parent's init
-        super().__init__()
+        super().__init__(**kwargs)
 
     # ---   LAYER METHODS   --- #
     # ------------------------- #

@@ -1,8 +1,8 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from abc import ABC
-from src.model.deeplearn.layer.orthogonal_regularizer import \
-    OrthogonalRegularizer
+from src.model.deeplearn.regularizer.features_orthogonal_regularizer import \
+    FeaturesOrthogonalRegularizer
 from src.model.deeplearn.arch.architecture import Architecture
 from src.model.deeplearn.dlrun.point_net_pre_processor import \
     PointNetPreProcessor
@@ -242,7 +242,7 @@ class PointNet(Architecture, ABC):
             bias_initializer=tf.keras.initializers.Constant(
                 np.eye(num_features).flatten()
             ),
-            activity_regularizer=OrthogonalRegularizer(
+            activity_regularizer=FeaturesOrthogonalRegularizer(
                 num_features=num_features
             ),
             name=f'{name}_final'

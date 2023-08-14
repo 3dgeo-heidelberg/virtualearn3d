@@ -2,8 +2,8 @@
 # ------------------- #
 from abc import abstractmethod
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
-from src.model.deeplearn.layer.orthogonal_regularizer import \
-    OrthogonalRegularizer
+from src.model.deeplearn.regularizer.features_orthogonal_regularizer import \
+    FeaturesOrthogonalRegularizer
 from src.inout.io_utils import IOUtils
 import src.main.main_logger as LOGGING
 import tensorflow as tf
@@ -258,8 +258,10 @@ class Architecture:
             self.nn = tf.keras.models.load_model(
                 self.nn_path,
                 custom_objects={
-                    'OrthogonalRegularizer': OrthogonalRegularizer
-                }
+                    'FeaturesOrthogonalRegularizer':
+                        FeaturesOrthogonalRegularizer,
+                },
+                compile=False
             )
         elif self.build_args is not None:  # Otherwise, rebuild
             self.build(**self.build_args)

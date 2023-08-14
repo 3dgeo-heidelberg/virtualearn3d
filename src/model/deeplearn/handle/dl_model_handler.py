@@ -168,4 +168,4 @@ class DLModelHandler:
         # Must rebuild the compiled model (it was not serialized)
         self.arch = state['arch']
         self.compilation_args = state['compilation_args']
-        self.compile()
+        #self.compile()  # TODO Rethink : Is necessary? Delete if not
