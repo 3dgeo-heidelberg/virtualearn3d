@@ -2,6 +2,7 @@
 # ------------------- #
 from abc import abstractmethod
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
+from src.model.deeplearn.regularizer.regularizer import Regularizer
 from src.model.deeplearn.regularizer.features_orthogonal_regularizer import \
     FeaturesOrthogonalRegularizer
 from src.inout.io_utils import IOUtils

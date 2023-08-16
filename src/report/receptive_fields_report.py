@@ -102,7 +102,7 @@ class ReceptiveFieldsReport(Report):
                         self.zhat_rf[i],
                         np.expand_dims(self.yhat_rf[i], -1)
                     ]) if self.yhat_rf is not None else self.zhat_rf,
-                    self.y_rf[i],
+                    self.y_rf[i] if self.y_rf is not None else None,
                     fnames=fnames
                 ),
                 path_rf

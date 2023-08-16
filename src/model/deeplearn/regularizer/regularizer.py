@@ -17,6 +17,7 @@ class Regularizer(tf.keras.regularizers.Regularizer):
     The Regularizer class provides an interface that must be realized by any
     class that must assume the role of a regularizer inside a neural network.
     """
+
     # ---   INIT   --- #
     # ---------------- #
     def __init__(self, **kwargs):
@@ -43,3 +44,13 @@ class Regularizer(tf.keras.regularizers.Regularizer):
             "overload the __call__ method to define the computational "
             "logic of the layer."
         )
+
+    def get_config(self):
+        """
+        The dictionary specifying how to serialize the regularizer.
+
+        :return: The dictionary with the necessary data to serialize the
+            regularizer.
+        :rtype: dict
+        """
+        return {}

@@ -116,7 +116,10 @@ class PointNetPwiseClassifModel(ClassificationModel):
         """
         if X is None:
             X = pcloud.get_coordinates_matrix()
-        return self._predict(X, F=None)
+        y = None
+        if pcloud.has_classes():
+            y = pcloud.get_classes_vector()
+        return self._predict(X, y=y, F=None)
 
     def get_input_from_pcloud(self, pcloud):
         """

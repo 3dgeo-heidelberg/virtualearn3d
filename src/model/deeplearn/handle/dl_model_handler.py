@@ -153,6 +153,8 @@ class DLModelHandler:
         return {  # Must not include compiled model (it will be rebuilt)
             'arch': self.arch,
             'compilation_args': self.compilation_args,
+            'class_weight': self.class_weight,
+            'class_names': self.class_names,
             'compiled': None  # Compiled model is not serialized
         }
 
@@ -168,4 +170,6 @@ class DLModelHandler:
         # Must rebuild the compiled model (it was not serialized)
         self.arch = state['arch']
         self.compilation_args = state['compilation_args']
-        #self.compile()  # TODO Rethink : Is necessary? Delete if not
+        self.class_weight = state['class_weight']
+        self.class_names = state['class_names']
+        self.compiled = None

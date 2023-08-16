@@ -9,7 +9,7 @@ import tensorflow as tf
 # ----------------- #
 class FeaturesOrthogonalRegularizer(Regularizer):
     r"""
-    FeaturesOrthogonalRegularizer layer to enforce orthogonality in the
+    FeaturesOrthogonalRegularizer regularizer to enforce orthogonality in the
     feature space.
     Taken from the Keras web documentation on 2023-07-19
     https://keras.io/examples/vision/pointnet
@@ -18,8 +18,8 @@ class FeaturesOrthogonalRegularizer(Regularizer):
     # ---------------- #
     def __init__(self, **kwargs):
         """
-        Initialize the FeaturesOrthogonalRegularizer layer.
-        See :meth:`layer.Layer.__init__`.
+        Initialize the FeaturesOrthogonalRegularizer regularizer.
+        See :meth:`regularizer.Regularizer.__init__`.
         """
         # Call parent's init
         super().__init__(**kwargs)
@@ -27,8 +27,9 @@ class FeaturesOrthogonalRegularizer(Regularizer):
         self.num_features = kwargs.get('num_features', None)
         if self.num_features is None:
             raise DeepLearningException(
-                'FeaturesOrthogonalRegularizer layer cannot be instantiated '
-                'without the number of features. None was specified.'
+                'FeaturesOrthogonalRegularizer regularizer cannot be '
+                'instantiated without the number of features. '
+                'None was specified.'
             )
         self.l2reg = kwargs.get('l2reg', 0.001)
         self.eye = tf.eye(self.num_features)
@@ -37,8 +38,8 @@ class FeaturesOrthogonalRegularizer(Regularizer):
     # ------------------------------- #
     def __call__(self, x, training=False, mask=False):
         """
-        The computational logic of the orthogonal regularizer.
-        See :meth:`layer.Layer.call`.
+        The computational logic of the features orthogonal regularizer.
+        See :meth:`regularizer.Regularizer.__call__`.
         :param x: The input tensor.
         """
         x = tf.reshape(x, (-1, self.num_features, self.num_features))
@@ -48,27 +49,30 @@ class FeaturesOrthogonalRegularizer(Regularizer):
 
     def get_config(self):
         """
-        Obtain the dictionary specifying how to serialize the orthogonal
-        regularizer layer.
+        Obtain the dictionary specifying how to serialize the features
+        orthogonal regularizer.
 
-        :return: The dictionarty with the necessary data to serialize the
-            orthogonal regularizer layer.
+        :return: The dictionary with the necessary data to serialize the
+            features orthogonal regularizer.
         :rtype: dict
         """
+        # Get dictionary from parent
+        cfg = super().get_config()
+        # Add state variables from features orthogonal regularizer
+        cfg['num_features'] = self.num_features
+        cfg['l2reg'] = self.l2reg
         # Return dictionary of state variables
-        return {
-            'num_features': self.num_features,
-            'l2reg': self.l2reg
-        }
+        return cfg
 
     @classmethod
     def from_config(cls, cfg):
         """
-        Deserialize an ortoghonal regularizer layer from given specification.
+        Deserialize a features ortoghonal regularizer from given specification.
 
-        :param cfg: The dictionary specifying how to deserialize the layer.
+        :param cfg: The dictionary specifying how to deserialize the
+            regularizer.
 
-        :return: The deserialized orthogonal regularizer layer.
+        :return: The deserialized orthogonal regularizer.
         :rtype: :class:.FeaturesOrthogonalRegularizer`
         """
         # Instantiate from cfg

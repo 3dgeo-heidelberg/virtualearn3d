@@ -64,7 +64,8 @@ class ModelIO:
                 'Given object will not be written because it is not a model.'
             )
         # If model is based on DL, assign path for built neuralnet arch.
-        if isinstance(model.model, DLModelHandler):
-            model.model.arch.nn_path = path[:path.rfind('.')] + '.nn'
+        _model = getattr(model, "model", None)
+        if _model is not None and isinstance(_model, DLModelHandler):
+            _model.arch.nn_path = path[:path.rfind('.')] + '.nn'
         # Write output model
         joblib.dump(model, path, compress=True)

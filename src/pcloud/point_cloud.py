@@ -94,6 +94,16 @@ class PointCloud:
         """
         return np.array(self.las.classification)
 
+    def has_classes(self):
+        """
+        Check whether there are available classes for the point cloud.
+
+        :return: True if classes are available, false otherwise
+        :rtype: bool
+        """
+        return self.las.classification is not None and \
+            len(self.las.classification) > 0
+
     # ---  UPDATE METHODS  --- #
     # ------------------------ #
     def add_features(self, fnames, feats, ftypes="f"):

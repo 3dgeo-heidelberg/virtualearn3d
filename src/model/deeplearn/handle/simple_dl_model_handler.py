@@ -14,6 +14,7 @@ import src.main.main_logger as LOGGING
 import tensorflow as tf
 from sklearn.preprocessing import LabelBinarizer
 import numpy as np
+import copy
 import os
 import time
 
@@ -434,7 +435,8 @@ class SimpleDLModelHandler(DLModelHandler):
         state['out_prefix'] = self.out_prefix
         state['training_epochs'] = self.training_epochs
         state['batch_size'] = self.batch_size
-        state['history'] = self.history
+        state['history'] = copy.copy(self.history)
+        state['history'].model = None  # Do not serialize keras/tf model
         state['checkpoint_path'] = self.checkpoint_path
         state['checkpoint_monitor'] = self.checkpoint_monitor
         state['learning_rate_on_plateau'] = self.learning_rate_on_plateau
