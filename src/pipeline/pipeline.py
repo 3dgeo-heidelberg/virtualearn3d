@@ -66,7 +66,8 @@ class Pipeline:
                     IOUtils.validate_path_to_file(
                         path,
                         "Pipeline received an invalid input point cloud path "
-                        "in the list:"
+                        "in the list:",
+                        accept_url=True
                     )
             else:  # Path as string
                 IOUtils.validate_path_to_file(

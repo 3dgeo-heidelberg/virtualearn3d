@@ -86,7 +86,7 @@ class SequentialPipeline(Pipeline):
                     self.sequence.append(PipelineIO.read_predictive_pipeline(
                         comp['model_path']
                     ))
-                elif comp['predict'].ower() == 'modelloader':
+                elif comp['predict'].lower() == 'modelloader':
                     model = ModelIO.read(comp['model_path'])
                     self.sequence.append(ModelOp(model, ModelOp.OP.PREDICT))
                 else:

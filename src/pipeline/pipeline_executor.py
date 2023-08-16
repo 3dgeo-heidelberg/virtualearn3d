@@ -176,6 +176,11 @@ class PipelineExecutor:
                     comp,
                     new_preds=comp(state.pcloud, out_prefix=self.out_prefix)
                 )
+                state.pcloud.add_features(
+                    ['prediction'],
+                    state.preds.reshape((-1, 1)),
+                    ftypes=state.preds.dtype
+                )
             else:
                 raise PipelineExecutorException(
                     'PipelineExecutor received an unexpected model operation: '
