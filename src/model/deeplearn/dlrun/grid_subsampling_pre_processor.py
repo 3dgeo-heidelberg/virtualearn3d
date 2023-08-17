@@ -284,3 +284,46 @@ class GridSubsamplingPreProcessor:
                 fill_nan=True
             ) for i, Ii in enumerate(I)
         ))
+
+    # ---   SERIALIZATION   --- #
+    # ------------------------- #
+    def __getstate__(self):
+        """
+        Method to be called when saving the serialized grid subsampling
+        pre-processor.
+
+        :return: The state's dictionary of the object.
+        :rtype: dict
+        """
+        # Return pre-processor state (cache to None)
+        return {
+            'sphere_radius': self.sphere_radius,
+            'separation_factor': self.separation_factor,
+            'cell_size': self.cell_size,
+            'interpolate': self.interpolate,
+            'nthreads': self.nthreads,
+            'receptive_fields_dir': None,
+            # Cache attributes below
+            'last_call_receptive_fields': None,
+            'last_call_neighborhoods': None
+        }
+
+    def __setstate__(self, state):
+        """
+        Method to be called when loading and deserializing a previously
+        serialized grid subsampling pre-processor.
+
+        :param state: The state's dictionary of the saved grid subsampling
+            post-procesor.
+        :type state: dict
+        :return: Nothing, but modifies the internal state of the object.
+        """
+        # Assign member attributes from state
+        self.sphere_radius = state['sphere_radius']
+        self.separation_factor = state['separation_factor']
+        self.cell_size = state['cell_size']
+        self.interpolate = state['interpolate']
+        self.nthreads = state['nthreads']
+        self.receptive_fields_dir = None
+        self.last_call_neighborhoods = None
+        self.last_call_receptive_fields = None

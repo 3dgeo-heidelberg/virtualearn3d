@@ -1,0 +1,121 @@
+{
+	"train": "PointNetPwiseClassifier",
+	"in_pcloud": "https://3dweb.geog.uni-heidelberg.de/trees_leafwood/PinSyl_KA09_T048_2019-08-20_q1_TLS-on_c_t.laz",
+	"out_model": "out/PointnetPwiseClassifier/pnet_pwise_classif.model",
+	"fnames": ["AUTO"],
+	"training_type": "base",
+	"random_seed": null,
+	"model_args": {
+		"num_classes": 2,
+		"class_names": ["wood", "leaf"],
+		"num_pwise_feats": 8,
+		"pre_processing": {
+			"pre_processor": "furthest_point_subsampling",
+			"num_points": 256,
+			"num_encoding_neighbors": 1,
+			"fast": false,
+			"neighborhood": {	
+				"type": "sphere",
+				"radius": 0.4,
+				"separation_factor": 0.5
+			},
+			"nthreads": 6,
+			"receptive_fields_dir": "out/PointnetPwiseClassifier/training_eval/receptive_fields/"
+		},
+		"kernel_initializer": "he_normal",
+		"pretransf_feats_spec": [
+			{
+				"filters": 8,
+				"name": "prefeats8_A"
+			},
+			{
+				"filters": 8,
+				"name": "prefeats_8B"
+			},
+			{
+				"filters": 16,
+				"name": "prefeats_16"
+			},
+			{
+				"filters": 32,
+				"name": "prefeats_32"
+			}
+		],
+		"postransf_feats_spec": [
+			{
+				"filters": 32,
+				"name": "posfeats_32"
+			},
+			{
+				"filters": 64,
+				"name": "posfeats_64"
+			},
+			{
+				"filters": 16,
+				"name": "posfeats_end_16"
+			}
+		],
+		"tnet_pre_filters_spec": [8, 16, 32],
+		"tnet_post_filters_spec": [32, 16, 8],
+		"model_handling": {
+			"summary_report_path": "out/PointnetPwiseClassifier/model_summary.log",
+			"training_history_dir": "out/PointnetPwiseClassifier/training_eval/history",
+			"class_weight": "auto",
+			"training_epochs": 200,
+			"batch_size": 64,
+			"checkpoint_path": "out/PointnetPwiseClassifier/checkpoint.model",
+			"checkpoint_monitor": "loss",
+			"learning_rate_on_plateau": {
+				"monitor": "loss",
+				"mode": "min",
+				"factor": 0.1,
+				"patience": 10,
+				"cooldown": 5,
+				"min_delta": 0.01,
+				"min_lr": 1e-6
+			},
+			"early_stopping": {
+				"monitor": "loss",
+				"mode": "min",
+				"min_delta": 0.01,
+				"patience": 20
+			}
+
+		},
+		"compilation_args": {
+			"optimizer": {
+				"algorithm": "Adam",
+				"learning_rate": 1e-2
+			},
+			"loss": {
+				"function": "class_weighted_binary_crossentropy"
+			},
+			"metrics": [
+				"binary_accuracy",
+				"precision",
+				"recall"
+			]
+		},
+		"architecture_graph_path": "out/PointnetPwiseClassifier/model_graph.png",
+		"architecture_graph_args": {
+			"show_shapes": true,
+			"show_dtype": true,
+			"show_layer_names": true,
+			"rankdir": "TB",
+			"expand_nested": true,
+			"dpi": 300,
+			"show_layer_activations": true
+        }
+	},
+	"autoval_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
+	"training_evaluation_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
+  	"training_class_evaluation_metrics": ["P", "R", "F1", "IoU"],
+	"training_evaluation_report_path": "out/PointnetPwiseClassifier/training_eval/evaluation.log",
+	"training_class_evaluation_report_path": "out/PointnetPwiseClassifier/training_eval/class_evaluation.log",
+	"training_confusion_matrix_report_path": "out/PointnetPwiseClassifier/training_eval/confusion.log",
+	"training_confusion_matrix_plot_path": "out/PointnetPwiseClassifier/training_eval/confusion.svg",
+	"training_class_distribution_report_path": "out/PointnetPwiseClassifier/training_eval/class_distribution.log",
+	"training_class_distribution_plot_path": "out/PointnetPwiseClassifier/training_eval/class_distribution.svg",
+	"training_classified_point_cloud_path": "out/PointnetPwiseClassifier/training_eval/classified_point_cloud.laz",
+	"training_activations_path": "out/PointnetPwiseClassifier/training_eval/activations.laz"
+}

@@ -277,3 +277,46 @@ class FurthestPointSubsamplingPreProcessor:
             )
         # Return found neighborhood
         return sup_X, I
+
+    # ---   SERIALIZATION   --- #
+    # ------------------------- #
+    def __getstate__(self):
+        """
+        Method to be called when saving the serialized furthest point
+        subsampling pre-processor.
+
+        :return: The state's dictionary of the object.
+        :rtype: dict
+        """
+        # Return pre-processor state (cache to None)
+        return {
+            'num_points': self.num_points,
+            'num_encoding_neighbors': self.num_encoding_neighbors,
+            'fast': self.fast,
+            'neighborhood_spec': self.neighborhood_spec,
+            'nthreads': self.nthreads,
+            'receptive_fields_dir': None,
+            # Cache attributes below
+            'last_call_receptive_fields': None,
+            'last_call_neighborhoods': None
+        }
+
+    def __setstate__(self, state):
+        """
+        Method to be called when loading and deserializing a previously
+        serialized furthest point subsampling pre-processor.
+
+        :param state: The state's dictionary of the saved furthest point
+            subsampling post-processor.
+        :type state: dict
+        :return: Nothing, but modifies the internal state of the object.
+        """
+        # Assign member attributes from state
+        self.num_points = state['num_points']
+        self.num_encoding_neighbors = state['num_encoding_neighbors']
+        self.fast = state['fast']
+        self.neighborhood_spec = state['neighborhood_spec']
+        self.nthreads = state['nthreads']
+        self.receptive_fields_dir = None
+        self.last_call_neighborhoods = None
+        self.last_call_neighborhoods = None

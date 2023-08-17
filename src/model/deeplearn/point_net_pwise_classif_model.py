@@ -217,7 +217,7 @@ class PointNetPwiseClassifModel(ClassificationModel):
         # Prepare model to compute activations
         remodel = tf.keras.Model(
             inputs=self.model.compiled.inputs,
-            outputs=self.model.compiled.get_layer("pwise_feats_relu").output
+            outputs=self.model.compiled.get_layer(index=-2).output
         )
         remodel.compile(
             **SimpleDLModelHandler.build_compilation_args(

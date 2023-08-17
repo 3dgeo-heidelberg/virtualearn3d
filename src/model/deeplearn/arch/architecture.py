@@ -247,6 +247,7 @@ class Architecture:
 
         :param state: The state's dictionary of the saved deep learning
             architecture.
+        :type state: dict
         :return: Nothing, but modifies the internal state of the object.
         """
         # Must rebuild the architecture (it was not serialized)

@@ -77,9 +77,13 @@ class PointNetPwiseClassif(PointNet):
             [x]
         )
         # Convolve point-wise features
-        x = PointNet.build_conv_block(
-            x, filters=self.num_pwise_feats, name='pwise_feats'
-        )
+        if self.num_pwise_feats > 0:
+            x = PointNet.build_conv_block(
+                x,
+                filters=self.num_pwise_feats,
+                kernel_initializer=self.kernel_initializer,
+                name='pwise_feats'
+            )
         return x
 
     def build_output(self, x, **kwargs):
@@ -100,6 +104,7 @@ class PointNetPwiseClassif(PointNet):
                 1,
                 kernel_size=1,
                 activation='sigmoid',
+                kernel_initializer=self.kernel_initializer,
                 name='pwise_out'
             )(x)
         # Handle output layer for the general case
@@ -107,5 +112,6 @@ class PointNetPwiseClassif(PointNet):
             self.num_classes,
             kernel_size=1,
             activation='softmax',
+            kernel_initializer=self.kernel_initializer,
             name='pwise_out'
         )(x)

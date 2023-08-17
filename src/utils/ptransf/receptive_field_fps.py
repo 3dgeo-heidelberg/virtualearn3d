@@ -138,6 +138,16 @@ class ReceptiveFieldFPS(ReceptiveField):
             step = X.shape[0] // self.num_points
             o3d_cloud = o3d_cloud.uniform_down_sample(step)
         o3d_cloud = o3d_cloud.farthest_point_down_sample(self.num_points)
+        if len(o3d_cloud.points) != self.num_points:
+            raise ValueError(
+                f'ReceptiveFieldFPS failed to sample {self.num_points}. Only '
+                f'{len(o3d_cloud.points)} samples were taken for a given '
+                f'input of {X.shape[0]} points.' +(
+                    '' if len(o3d_cloud.points) >= X.shape[0] else
+                    '\nFarthest point down sample might discard points under '
+                    'some circumstances, e.g., repeated points.'
+                )
+            )
         self.Y = np.asarray(o3d_cloud.points)
         # Find the indexing matrix N
         kdt = KDT(X)
@@ -145,6 +155,8 @@ class ReceptiveFieldFPS(ReceptiveField):
         # Find the indexing matrix M
         kdt = KDT(self.Y)
         self.M = kdt.query(X, k=self.num_encoding_neighbors)[1]
+        if len(self.M.shape) < 2:
+            self.M = [self.M]
         # Return self for fluent programming
         return self
 

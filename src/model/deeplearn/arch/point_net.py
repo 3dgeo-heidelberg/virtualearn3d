@@ -40,6 +40,10 @@ class PointNet(Architecture, ABC):
         # The number of points is the number of cells in the receptive fields
         self.num_points = self.pre_runnable.get_num_input_points()
         # Neural network architecture specifications
+        self.kernel_initializer = kwargs.get(
+            "kernel_initializer", "glorot_normal"
+        )
+        print(f'Kernel initializer: {self.kernel_initializer}')  # TODO Remove
         self.pretransf_feats_spec = kwargs['pretransf_feats_spec']
         self.postransf_feats_spec = kwargs['postransf_feats_spec']
         self.tnet_pre_filters_spec = kwargs['tnet_pre_filters_spec']
@@ -85,6 +89,9 @@ class PointNet(Architecture, ABC):
             ),
             'tnet_post_filters': kwargs.get(
                 'tnet_post_filters', self.tnet_post_filters_spec
+            ),
+            'kernel_initializer': kwargs.get(
+                'kernel_initializer', self.kernel_initializer
             )
         }
         # Remove None from dictionary to prevent overriding defaults
@@ -107,7 +114,8 @@ class PointNet(Architecture, ABC):
         pretransf_feats,
         postransf_feats,
         tnet_pre_filters,
-        tnet_post_filters
+        tnet_post_filters,
+        kernel_initializer
     ):
         """
         Build the PointNet block of the architecture on the given input.
@@ -128,18 +136,22 @@ class PointNet(Architecture, ABC):
         :param tnet_post_filters: The list of nubmer of filters (integer)
             defining each MLP block after the global pooling.
         :type tnet_post_filters: list
+        :param kernel_initializer: The name of the kernel initializer
+        :type kernel_initializer: str
         :return: Last layer of the built PointNet, the list of
             pre-transformations, the layer of transformed features, and the
             list of post-transformations.
         :rtype: :class:`tf.Tensor` and list and :class:`tf.keras.Layer` and list
         """
         # First transformation block
+        print(f'Building PointNet with kernel_initializer: "{kernel_initializer}"')  # TODO Remove
         x = PointNet.build_transformation_block(
             x,
             num_features=3,
             name='input_transf',
             tnet_pre_filters=tnet_pre_filters,
-            tnet_post_filters=tnet_post_filters
+            tnet_post_filters=tnet_post_filters,
+            kernel_initializer=kernel_initializer
         )
         # Features before the second transformation block
         pretransf_feat_layers = []
@@ -147,6 +159,7 @@ class PointNet(Architecture, ABC):
             x = PointNet.build_conv_block(
                 x,
                 filters=pretransf_feat_spec['filters'],
+                kernel_initializer=kernel_initializer,
                 name=pretransf_feat_spec['name']
             )
             pretransf_feat_layers.append(x)
@@ -156,7 +169,8 @@ class PointNet(Architecture, ABC):
             num_features=pretransf_feats[-1]['filters'],
             name='hidden_transf',
             tnet_pre_filters=tnet_pre_filters,
-            tnet_post_filters=tnet_post_filters
+            tnet_post_filters=tnet_post_filters,
+            kernel_initializer=kernel_initializer
         )
         transf_feats = x
         # Features after the second transformation block
@@ -165,6 +179,7 @@ class PointNet(Architecture, ABC):
             x = PointNet.build_conv_block(
                 x,
                 filters=postransf_feat_spec['filters'],
+                kernel_initializer=kernel_initializer,
                 name=postransf_feat_spec['name']
             )
             postransf_feat_layers.append(x)
@@ -176,7 +191,8 @@ class PointNet(Architecture, ABC):
         num_features,
         name,
         tnet_pre_filters,
-        tnet_post_filters
+        tnet_post_filters,
+        kernel_initializer
     ):
         """
         Build a transformation block.
@@ -193,6 +209,8 @@ class PointNet(Architecture, ABC):
         :param tnet_post_filters: The list of nubmer of filters (integer)
             defining each MLP block after the global pooling.
         :type tnet_post_filters: list
+        :param kernel_initializer: The name of the kernel initializer
+        :type kernel_initializer: str
         :return: The last layer of the transformation block
         """
         transf = PointNet.build_transformation_net(
@@ -200,7 +218,8 @@ class PointNet(Architecture, ABC):
             num_features,
             name=name,
             tnet_pre_filters=tnet_pre_filters,
-            tnet_post_filters=tnet_post_filters
+            tnet_post_filters=tnet_post_filters,
+            kernel_initializer=kernel_initializer
         )
         transf = tf.keras.layers.Reshape((num_features, num_features))(transf)
         return tf.keras.layers.Dot(axes=(2, 1), name=f'{name}_mm')([
@@ -213,7 +232,8 @@ class PointNet(Architecture, ABC):
         num_features,
         name,
         tnet_pre_filters,
-        tnet_post_filters
+        tnet_post_filters,
+        kernel_initializer
     ):
         """
         Assists the :func:`point_net.PointNet.build_transformation_block`
@@ -225,6 +245,7 @@ class PointNet(Architecture, ABC):
             x = PointNet.build_conv_block(
                 x,
                 filters=filters,
+                kernel_initializer=kernel_initializer,
                 name=f'{name}_pre{i+1}_f{filters}'
             )
         # Global pooling
@@ -234,6 +255,7 @@ class PointNet(Architecture, ABC):
             x = PointNet.build_mlp_block(
                 x,
                 filters=filters,
+                kernel_initializer=kernel_initializer,
                 name=f'{name}_post{i+1}_f{filters}'
             )
         return tf.keras.layers.Dense(
@@ -249,7 +271,7 @@ class PointNet(Architecture, ABC):
         )(x)
 
     @staticmethod
-    def build_conv_block(x, filters, name):
+    def build_conv_block(x, filters, name, kernel_initializer):
         """
         Build a convolutional block.
 
@@ -259,11 +281,14 @@ class PointNet(Architecture, ABC):
         :type filters: int
         :param name: The name of the block
         :type name: str
+        :param kernel_initializer: The name of the kernel initializer
+        :type kernel_initializer: str
         """
         x = tf.keras.layers.Conv1D(
             filters,
             kernel_size=1,
             padding="valid",
+            kernel_initializer=kernel_initializer,
             name=f'{name}_conv1D'
         )(x)
         x = tf.keras.layers.BatchNormalization(
@@ -272,7 +297,7 @@ class PointNet(Architecture, ABC):
         return tf.keras.layers.Activation("relu", name=f'{name}_relu')(x)
 
     @staticmethod
-    def build_mlp_block(x, filters, name):
+    def build_mlp_block(x, filters, name, kernel_initializer):
         """
         Build an MLP block.
 
@@ -280,10 +305,16 @@ class PointNet(Architecture, ABC):
         :type x: :class:`tf.Tensor`
         :param filters: The dimensionality of the output.
         :type filters: int
+        :param kernel_initializer: The name of the kernel initializer
+        :type kernel_initializer: str
         :param name: The name of the block.
         :type name: str
         """
-        x = tf.keras.layers.Dense(filters, name=f'{name}_dense')(x)
+        x = tf.keras.layers.Dense(
+            filters,
+            kernel_initializer=kernel_initializer,
+            name=f'{name}_dense'
+        )(x)
         x = tf.keras.layers.BatchNormalization(
             momentum=0.0, name=f'{name}_bn'
         )(x)
