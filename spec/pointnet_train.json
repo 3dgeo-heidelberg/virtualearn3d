@@ -8,61 +8,61 @@
 	"model_args": {
 		"num_classes": 2,
 		"class_names": ["wood", "leaf"],
-		"num_pwise_feats": 8,
+		"num_pwise_feats": 16,
 		"pre_processing": {
 			"pre_processor": "furthest_point_subsampling",
-			"num_points": 256,
+			"num_points": 512,
 			"num_encoding_neighbors": 1,
-			"fast": false,
+			"fast": true,
 			"neighborhood": {	
 				"type": "sphere",
 				"radius": 0.4,
-				"separation_factor": 0.5
+				"separation_factor": 0.4
 			},
 			"nthreads": 6,
-			"receptive_fields_dir": "out/PointnetPwiseClassifier/training_eval/receptive_fields/"
+			"_receptive_fields_dir": "out/PointnetPwiseClassifier/training_eval/receptive_fields/"
 		},
 		"kernel_initializer": "he_normal",
 		"pretransf_feats_spec": [
 			{
-				"filters": 8,
-				"name": "prefeats8_A"
-			},
-			{
-				"filters": 8,
-				"name": "prefeats_8B"
-			},
-			{
-				"filters": 16,
-				"name": "prefeats_16"
+				"filters": 32,
+				"name": "prefeats32_A"
 			},
 			{
 				"filters": 32,
+				"name": "prefeats_32B"
+			},
+			{
+				"filters": 64,
 				"name": "prefeats_32"
+			},
+			{
+				"filters": 128,
+				"name": "prefeats_128"
 			}
 		],
 		"postransf_feats_spec": [
 			{
-				"filters": 32,
-				"name": "posfeats_32"
+				"filters": 128,
+				"name": "posfeats_128"
+			},
+			{
+				"filters": 256,
+				"name": "posfeats_256"
 			},
 			{
 				"filters": 64,
-				"name": "posfeats_64"
-			},
-			{
-				"filters": 16,
-				"name": "posfeats_end_16"
+				"name": "posfeats_end_64"
 			}
 		],
-		"tnet_pre_filters_spec": [8, 16, 32],
-		"tnet_post_filters_spec": [32, 16, 8],
+		"tnet_pre_filters_spec": [32, 64, 128],
+		"tnet_post_filters_spec": [128, 64, 32],
 		"model_handling": {
 			"summary_report_path": "out/PointnetPwiseClassifier/model_summary.log",
 			"training_history_dir": "out/PointnetPwiseClassifier/training_eval/history",
 			"class_weight": "auto",
 			"training_epochs": 200,
-			"batch_size": 64,
+			"batch_size": 128,
 			"checkpoint_path": "out/PointnetPwiseClassifier/checkpoint.model",
 			"checkpoint_monitor": "loss",
 			"learning_rate_on_plateau": {
