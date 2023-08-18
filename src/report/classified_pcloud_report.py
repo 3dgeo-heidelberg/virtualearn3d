@@ -98,7 +98,7 @@ class ClassifiedPcloudReport(Report):
             feats = np.hstack([
                 feats,
                 self.zhat if len(self.zhat.shape) > 1
-                    else self.zhat.reshape(-1, 1)
+                else self.zhat.reshape(-1, 1)
             ])
         PointCloudIO.write(
             PointCloudFactoryFacade.make_from_arrays(

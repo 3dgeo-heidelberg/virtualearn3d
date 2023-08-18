@@ -21,6 +21,11 @@
 	  "out_preds": "*predictions.lbl"
 	},
 	{
+	  "eval": "DLModelEvaluator",
+	  "pointwise_model_output_path": "*pwise_out.laz",
+	  "pointwise_model_activations_path": "*pwise_activations.laz"
+	},
+	{
 	  "eval": "ClassificationEvaluator",
 	  "class_names": ["wood", "leaf"],
 	  "metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],

@@ -133,6 +133,9 @@ class PipelineExecutor:
             else:  # Otherwise
                 self.pre_fnames = state.fnames  # Cache fnames before update
                 state.fnames = fnames_comp.fnames  # Set the state
+        # Handle lazy preparation
+        if hasattr(comp, 'lazy_prepare'):
+            comp.lazy_prepare(state)
 
     def process(self, state, comp, comp_id, comps):
         """
@@ -174,6 +177,7 @@ class PipelineExecutor:
                 # Handle predict
                 state.update(
                     comp,
+                    new_model=comp.model,
                     new_preds=comp(state.pcloud, out_prefix=self.out_prefix)
                 )
                 state.pcloud.add_features(
@@ -197,11 +201,18 @@ class PipelineExecutor:
             )
         elif isinstance(comp, Evaluator):
             # Handle evaluation
-            comp(
-                state.preds,
-                y=state.pcloud.get_classes_vector(),
-                out_prefix=self.out_prefix
-            )
+            if hasattr(comp, 'eval_args_from_state'):
+                comp(
+                    **comp.eval_args_from_state(state),
+                    y=state.pcloud.get_classes_vector(),
+                    out_prefix=self.out_prefix
+                )
+            else:
+                comp(
+                    state.preds,
+                    y=state.pcloud.get_classes_vector(),
+                    out_prefix=self.out_prefix
+                )
         elif isinstance(comp, Writer):  # Handle writer
             if comp.needs_prefix():
                 if self.out_prefix is None:

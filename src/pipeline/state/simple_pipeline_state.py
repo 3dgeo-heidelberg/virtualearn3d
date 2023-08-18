@@ -62,8 +62,9 @@ class SimplePipelineState(PipelineState):
         elif isinstance(comp, FeatureTransformer):
             self.update_pcloud(comp, new_pcloud)  # Transform gen. feats.
         elif isinstance(comp, ModelOp):
+            self.update_model(comp, new_model)
             if comp.op == ModelOp.OP.TRAIN:
-                self.update_model(comp, new_model)
+                pass
             elif comp.op == ModelOp.OP.PREDICT:
                 self.update_preds(comp, new_preds)
             else:

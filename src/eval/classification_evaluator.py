@@ -199,7 +199,6 @@ class ClassificationEvaluator(Evaluator):
 
         See :meth:`evaluator.Evaluator.eval`.
         """
-
         # Obtain evaluation
         ev = self.eval(x, **kwargs)
         out_prefix = kwargs.get('out_prefix', None)
@@ -333,7 +332,6 @@ class ClassificationEvaluator(Evaluator):
         if "Kappa" in names:
             metrics.append(cohen_kappa_score)
         return metrics
-
 
     @staticmethod
     def class_metrics_from_names(names):
