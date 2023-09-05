@@ -3,6 +3,8 @@
 from src.model.classification_model import ClassificationModel
 from src.model.deeplearn.arch.point_net_pwise_classif import \
     PointNetPwiseClassif
+from src.model.deeplearn.handle.dl_model_handler import \
+    DLModelHandler
 from src.model.deeplearn.handle.simple_dl_model_handler import \
     SimpleDLModelHandler
 from src.model.deeplearn.dlrun.grid_subsampling_post_processor import \
@@ -10,6 +12,7 @@ from src.model.deeplearn.dlrun.grid_subsampling_post_processor import \
 from src.report.classified_pcloud_report import ClassifiedPcloudReport
 from src.report.pwise_activations_report import PwiseActivationsReport
 from src.utils.dict_utils import DictUtils
+from src.model.deeplearn.deep_learning_exception import DeepLearningException
 import src.main.main_logger as LOGGING
 import tensorflow as tf
 import numpy as np
@@ -104,6 +107,24 @@ class PointNetPwiseClassifModel(ClassificationModel):
             **self.model_args.get('model_handling', None)
         )
         return self.model
+
+    def overwrite_pretrained_model(self, spec):
+        """
+        See :meth:`model.Model.overwrite_pretrained_model`.
+        """
+        super().overwrite_pretrained_model(spec)
+        # Overwrite training activations attributes
+        spec_keys = spec.keys()
+        if 'training_activations_path' in spec_keys:
+            self.training_activations_path = spec['training_activations_path']
+        # Overwrite model handler
+        if 'model_args' in spec_keys:
+            if not isinstance(self.model, DLModelHandler):
+                raise DeepLearningException(
+                    'PointNetPwiseClassifModel cannot overwrite model handler '
+                    'because it is not a DLModelHandler.'
+                )
+            self.model.overwrite_pretrained_model(spec['model_args'])
 
     def predict(self, pcloud, X=None, F=None):
         """

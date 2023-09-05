@@ -143,23 +143,8 @@ class Architecture:
             outputs=outlayer,
             name='PointNet'
         )
-        # Plot model graph
-        if self.architecture_graph_path is not None:
-            IOUtils.validate_path_to_directory(
-                os.path.dirname(self.architecture_graph_path),
-                'Deep learning Architecture received a path that does not '
-                'point to an accessible directory:',
-                True
-            )
-            tf.keras.utils.plot_model(
-                self.nn,
-                to_file=self.architecture_graph_path,
-                **self.architecture_graph_args
-            )
-            LOGGING.LOGGER.info(
-                'Deep learning architecture graph exported to '
-                f'"{self.architecture_graph_path}"'
-            )
+        # Plot the architecture's graph
+        self.plot()
 
     def is_built(self):
         """
@@ -212,12 +197,62 @@ class Architecture:
         """
         pass
 
+    def plot(self):
+        """
+        Plot the model's architecture as a graph if requested, i.e.,
+        a path for the architecture's graph is available as member attribute.
+
+        :return: Nothing, but the plot is written to a file.
+        """
+        # Plot model graph
+        if self.architecture_graph_path is not None:
+            IOUtils.validate_path_to_directory(
+                os.path.dirname(self.architecture_graph_path),
+                'Deep learning Architecture received a path that does not '
+                'point to an accessible directory:',
+                True
+            )
+            tf.keras.utils.plot_model(
+                self.nn,
+                to_file=self.architecture_graph_path,
+                **self.architecture_graph_args
+            )
+            LOGGING.LOGGER.info(
+                'Deep learning architecture graph exported to '
+                f'"{self.architecture_graph_path}"'
+            )
+
+
+    def overwrite_pretrained_model(self, spec):
+        """
+        Assist the :meth:`model.Model.overwrite_pretrained_model` method
+        through assisting the
+        :meth:`dl_model_handler.DLModelHandler.overwrite_pretrained_model`
+        method.
+
+        :param spec: The key-word specification containing the model's
+            arguments.
+        :type spec: dict
+        """
+        spec_keys = spec.keys()
+        # Overwrite architecture's attributes
+        if 'architecture_graph_args' in spec_keys:
+            self.architecture_graph_args = spec['architecture_graph_args']
+        if 'architecture_graph_path' in spec_keys:
+            self.architecture_graph_path = spec['architecture_graph_path']
+            self.plot()
+        # Overwrite the attributes of the pre-processor
+        if self.pre_runnable is not None:
+            if hasattr(self.pre_runnable, 'overwrite_pretrained_model'):
+                self.pre_runnable.overwrite_pretrained_model(spec)
+
     # ---   SERIALIZATION   --- #
     # ------------------------- #
     def __getstate__(self):
         """
         Method to be called when saving the serialized deep learning
-            architecture.
+        architecture.
+
         :return: The state's dictionary of the object.
         :rtype: dict
         """

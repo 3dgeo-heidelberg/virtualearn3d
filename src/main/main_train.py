@@ -42,6 +42,10 @@ class MainTrain:
         )
         if model is None:  # Initialize model if no pretrained model is given
             model = model_class(**model_class.extract_model_args(spec))
+        else:
+            model.overwrite_pretrained_model(
+                model_class.extract_model_args(spec)
+            )
         model = model.train(pcloud)
         ModelIO.write(model, MainTrain.extract_output_path(spec))
         end = time.perf_counter()

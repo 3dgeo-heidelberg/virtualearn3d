@@ -232,6 +232,24 @@ class SimpleDLModelHandler(DLModelHandler):
         )
         return self
 
+    def overwrite_pretrained_model(self, spec):
+        """
+        See :meth:`dl_model_handler.DLModelHandler.overwrite_pretrained_model`.
+        """
+        # Call parent's method
+        super().overwrite_pretrained_model(spec)
+        # Overwrite attributes of simple deep learning model handler
+        spec_keys = spec.keys()
+        if 'model_handling' in spec_keys:
+            spec_handling = spec['model_handling']
+            spec_handling_keys = spec_handling.keys()
+            if 'summary_report_path' in spec_handling_keys:
+                self.summary_report_path = spec_handling['summary_report_path']
+            if 'training_history_dir' in spec_handling_keys:
+                self.training_history_dir = spec_handling['training_history_dir']
+            if 'checkpoint_path' in spec_handling_keys:
+                self.checkpoint_path = spec_handling['checkpoint_path']
+
     # ---  UTIL METHODS  --- #
     # ---------------------- #
     @staticmethod

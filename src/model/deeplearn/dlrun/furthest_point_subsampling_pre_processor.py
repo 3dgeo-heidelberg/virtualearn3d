@@ -278,6 +278,19 @@ class FurthestPointSubsamplingPreProcessor:
         # Return found neighborhood
         return sup_X, I
 
+    # ---   OTHER METHODS   --- #
+    # ------------------------- #
+    def overwrite_pretrained_model(self, spec):
+        """
+        See
+        :meth:`point_net_pre_processor.PointNetPreProcessor.overwrite_pretrained_model`
+        method.
+        """
+        spec_keys = spec.keys()
+        # Overwrite the attributes of the grid subsampling pre-processor
+        if 'receptive_fields_dir' in spec_keys:
+            self.receptive_fields_dir = spec['receptive_fields_dir']
+
     # ---   SERIALIZATION   --- #
     # ------------------------- #
     def __getstate__(self):

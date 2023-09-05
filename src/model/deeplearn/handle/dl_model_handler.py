@@ -7,9 +7,9 @@ from abc import abstractmethod
 # ----------------- #
 class DLModelHandler:
     """
-    Class to handle deep learning models. Typically, fitting, predicting, and
-    compiling are the main operations supported by deep learning model
-    handlers.
+    Abstract class to handle deep learning models. Typically, fitting,
+    predicting, and compiling are the main operations supported by deep
+    learning model handlers.
 
     :ivar arch: The model's architecture.
     :vartype arch: :class:`.Architecture`
@@ -137,7 +137,39 @@ class DLModelHandler:
         pass
 
     def is_compiled(self):
+        """
+        Check whether the handled model has been compiled (True) or not
+        (False).
+
+        :return: True if the handled model has been compiled, False otherwise.
+        :rtype: bool
+        """
         return self.compiled is not None
+
+    def overwrite_pretrained_model(self, spec):
+        """
+        Assist the :meth:`model.Model.overwrite_pretrained_model` method for
+        deep learning models.
+
+        :param spec: The key-word specification containing the model's
+            arguments.
+        :type spec: dict
+        """
+        spec_keys = spec.keys()
+        # Overwrite baseline attributes of the deep learning model handler
+        if 'model_handling' in spec_keys:
+            spec_handling = spec['model_handling']
+            spec_handling_keys = spec_handling.keys()
+            if 'class_weight' in spec_handling_keys:
+                self.class_weight = spec_handling['class_weight']
+            if 'class_names' in spec_handling_keys:
+                self.class_names = spec_handling['class_names']
+        # Overwrite compilation arguments
+        if 'compilation_args' in spec_keys:
+            self.compilation_args = spec['compilation_args']
+        # Overwrite the attributes of the model's architecture
+        if self.arch is not None:
+            self.arch.overwrite_pretrained_model(spec)
 
     # ---   SERIALIZATION   --- #
     # ------------------------- #

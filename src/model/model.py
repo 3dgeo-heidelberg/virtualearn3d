@@ -194,6 +194,34 @@ class Model:
         """
         pass
 
+    def overwrite_pretrained_model(self, spec):
+        """
+        This method must be called when preparing a pretrained model to
+        overwrite any attribute that must be overriding depending on the model
+        and the given training specification.
+
+        :param spec: The key-word training specification to continue the
+            training of the pretrained model.
+        :type spec: dict
+        :return: Nothing, but the model object internal state is updated.
+        """
+        spec_keys = spec.keys()
+        # Overwrite autoval attributes
+        if 'autoval_metrics' in spec_keys:
+            self.autoval_metrics_names = spec['autoval_metrics']
+        # Overwrite stratified kfolding attributes
+        if 'stratkfold_report_path' in spec_keys:
+            self.stratkfold_report_path = spec['stratkfold_report_path']
+        if 'stratkfold_plot_path' in spec_keys:
+            self.stratkfold_plot_path = spec['stratkfold_plot_path']
+        # Overwrite hyperparameter tuning attributes
+        if 'hyperparameter_tuning' in spec_keys:
+            ht_spec = spec['hyperparameter_tuning']
+            hypertuner_class = TunerUtils.extract_tuner_class(ht_spec)
+            self.hypertuner = hypertuner_class(
+                **hypertuner_class.extract_tuner_args(ht_spec)
+            )
+
     def get_input_from_pcloud(self, pcloud):
         """
         Obtain the model-ready input from the given point cloud.

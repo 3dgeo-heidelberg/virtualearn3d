@@ -79,3 +79,19 @@ class PointNetPreProcessor:
         :rtype: int
         """
         return self.pre_processor.get_num_input_points()
+
+    # ---   OTHER METHODS   --- #
+    # ------------------------- #
+    def overwrite_pretrained_model(self, spec):
+        """
+        Assist the :meth:`model.Model.overwrite_pretrained_model` method
+        through assisting the
+        :meth:`architecture.Architecture.overwrite_pretrained_model` method.
+
+        :param spec: The key-word specification containing the model's
+            arguments.
+        :type spec: dict
+        """
+        # Overwrite the attributes of the pre-processor
+        if hasattr(self.pre_processor, 'overwrite_pretrained_model'):
+            self.pre_processor.overwrite_pretrained_model(spec)

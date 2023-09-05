@@ -112,6 +112,47 @@ class ClassificationModel(Model, ABC):
             'training_classified_point_cloud_path', None
         )
 
+    # ---   MODEL METHODS   --- #
+    # ------------------------- #
+    def overwrite_pretrained_model(self, spec):
+        """
+        See :meth:`model.Model.overwrite_pretrained_model`.
+        """
+        # Call parent's method
+        super().overwrite_pretrained_model(spec)
+        # Overwrite class names
+        spec_keys = spec.keys()
+        if 'class_names' in spec_keys:
+            self.class_names = spec['class_names']
+        # Overwrite training attributes for classification model
+        if 'training_evaluation_metrics' in spec_keys:
+            self.training_evaluation_metrics = \
+                spec['training_evaluation_metrics']
+        if 'training_evaluation_report_path' in spec_keys:
+            self.training_evaluation_report_path = \
+                spec['training_evaluation_report_path']
+        if 'training_class_evaluation_metrics' in spec_keys:
+            self.training_class_evaluation_metrics = \
+                spec['training_class_evaluation_metrics']
+        if 'training_class_evaluation_report_path' in spec_keys:
+            self.training_class_evaluation_report_path = \
+                spec['training_class_evaluation_report_path']
+        if 'training_confusion_matrix_report_path' in spec_keys:
+            self.training_confusion_matrix_report_path = \
+                spec['training_confusion_matrix_report_path']
+        if 'training_confusion_matrix_plot_path' in spec_keys:
+            self.training_confusion_matrix_plot_path = \
+                spec['training_confusion_matrix_plot_path']
+        if 'training_class_distribution_report_path' in spec_keys:
+            self.training_class_distribution_report_path = \
+                spec['training_class_distribution_report_path']
+        if 'training_class_distribution_plot_path' in spec_keys:
+            self.training_class_distribution_plot_path = \
+                spec['training_class_distribution_plot_path']
+        if 'training_classified_point_cloud_path' in spec_keys:
+            self.training_classified_point_cloud_path = \
+                spec['training_classified_point_cloud_path']
+
     # ---   TRAINING METHODS   --- #
     # ---------------------------- #
     def autoval(self, y, yhat, info=True):
