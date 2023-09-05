@@ -83,13 +83,19 @@ class PointNetPwiseClassifModel(ClassificationModel):
         :rtype: :class:`.PointNetPwiseClassif`
         """
         # Instantiate model
-        if self.model_args is not None:
-            self.model = PointNetPwiseClassif(**self.model_args)
+        if self.model is None:
+            if self.model_args is not None:
+                self.model = PointNetPwiseClassif(**self.model_args)
+            else:
+                LOGGING.LOGGER.debug(
+                    'Preparing a PointNetPwiseClassifModel with no model_args.'
+                )
+                self.model = PointNetPwiseClassif()
         else:
             LOGGING.LOGGER.debug(
-                'Preparing a PointNetPwiseClassifModel with no model_args'
+                'Preparing a pretrained PointNetPwiseClassifModel.'
             )
-            self.model = PointNetPwiseClassif()
+            return self.model
         # Wrap model with handler
         self.model = SimpleDLModelHandler(
             self.model,

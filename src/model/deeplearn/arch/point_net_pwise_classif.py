@@ -115,3 +115,39 @@ class PointNetPwiseClassif(PointNet):
             kernel_initializer=self.kernel_initializer,
             name='pwise_out'
         )(x)
+
+    # ---   SERIALIZATION   --- #
+    # ------------------------- #
+    def __getstate__(self):
+        """
+        Method to be called when saving the serialized PointNetPwiseClassif
+        architecture.
+
+        :return: The state's dictionary of the object.
+        :rtype: dict
+        """
+        # Call parent's method
+        state = super().__getstate__()
+        # Add PointNetPwiseClassif's attributes to state dictionary
+        state['num_classes'] = self.num_classes
+        state['num_pwise_feats'] = self.num_pwise_feats
+        state['binary_crossentropy'] = self.binary_crossentropy
+        # Return
+        return state
+
+    def __setstate__(self, state):
+        """
+        Method to be called when loading and deserializing a previously
+        serialized PointNetPwiseClassif architecture.
+
+        :param state: The state's dictionary of the saved PointNetPwiseClassif
+            architecture.
+        :type state: dict
+        :return: Nothing, but modifies the internal state of the object.
+        """
+        # Call parent's set state
+        super().__setstate__(state)
+        # Assign PointNetPwiseClassif's attributes from state dictionary
+        self.num_classes = state['num_classes']
+        self.num_pwise_feats = state['num_pwise_feats']
+        self.binary_crossentropy = state['binary_crossentropy']

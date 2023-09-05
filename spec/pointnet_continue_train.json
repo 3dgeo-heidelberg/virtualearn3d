@@ -1,7 +1,8 @@
 {
 	"train": "PointNetPwiseClassifier",
-	"in_pcloud": "https://3dweb.geog.uni-heidelberg.de/trees_leafwood/PinSyl_KA09_T048_2019-08-20_q1_TLS-on_c_t.laz",
-	"out_model": "out/PointnetPwiseClassifier/pnet_pwise_classif.model",
+	"in_pcloud": "https://3dweb.geog.uni-heidelberg.de/trees_leafwood/PinSyl_KA10_03_2019-07-30_q2_TLS-on_c_t.laz",
+	"pretrained_model": "out/PointnetPwiseClassifier/pnet_pwise_classif.model",
+	"out_model": "out/PointnetPwiseClassifier_T2/pnet_pwise_classif.model",
 	"fnames": ["AUTO"],
 	"training_type": "base",
 	"random_seed": null,
@@ -20,7 +21,7 @@
 				"separation_factor": 0.4
 			},
 			"nthreads": 6,
-			"_receptive_fields_dir": "out/PointnetPwiseClassifier/training_eval/receptive_fields/"
+			"_receptive_fields_dir": "out/PointnetPwiseClassifier_T2/training_eval/receptive_fields/"
 		},
 		"kernel_initializer": "he_normal",
 		"pretransf_feats_spec": [
@@ -58,13 +59,13 @@
 		"tnet_pre_filters_spec": [32, 64, 128],
 		"tnet_post_filters_spec": [128, 64, 32],
 		"model_handling": {
-			"summary_report_path": "out/PointnetPwiseClassifier/model_summary.log",
-			"training_history_dir": "out/PointnetPwiseClassifier/training_eval/history",
+			"summary_report_path": "out/PointnetPwiseClassifier_T2/model_summary.log",
+			"training_history_dir": "out/PointnetPwiseClassifier_T2/training_eval/history",
 			"class_weight": "auto",
 			"training_epochs": 10,
 			"_training_epochs": 200,
 			"batch_size": 128,
-			"checkpoint_path": "out/PointnetPwiseClassifier/checkpoint.model",
+			"checkpoint_path": "out/PointnetPwiseClassifier_T2/checkpoint.model",
 			"checkpoint_monitor": "loss",
 			"learning_rate_on_plateau": {
 				"monitor": "loss",
@@ -97,7 +98,7 @@
 				"recall"
 			]
 		},
-		"architecture_graph_path": "out/PointnetPwiseClassifier/model_graph.png",
+		"architecture_graph_path": "out/PointnetPwiseClassifier_T2/model_graph.png",
 		"architecture_graph_args": {
 			"show_shapes": true,
 			"show_dtype": true,
@@ -111,12 +112,12 @@
 	"autoval_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
 	"training_evaluation_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
   	"training_class_evaluation_metrics": ["P", "R", "F1", "IoU"],
-	"training_evaluation_report_path": "out/PointnetPwiseClassifier/training_eval/evaluation.log",
-	"training_class_evaluation_report_path": "out/PointnetPwiseClassifier/training_eval/class_evaluation.log",
-	"training_confusion_matrix_report_path": "out/PointnetPwiseClassifier/training_eval/confusion.log",
-	"training_confusion_matrix_plot_path": "out/PointnetPwiseClassifier/training_eval/confusion.svg",
-	"training_class_distribution_report_path": "out/PointnetPwiseClassifier/training_eval/class_distribution.log",
-	"training_class_distribution_plot_path": "out/PointnetPwiseClassifier/training_eval/class_distribution.svg",
-	"training_classified_point_cloud_path": "out/PointnetPwiseClassifier/training_eval/classified_point_cloud.laz",
-	"training_activations_path": "out/PointnetPwiseClassifier/training_eval/activations.laz"
+	"training_evaluation_report_path": "out/PointnetPwiseClassifier_T2/training_eval/evaluation.log",
+	"training_class_evaluation_report_path": "out/PointnetPwiseClassifier_T2/training_eval/class_evaluation.log",
+	"training_confusion_matrix_report_path": "out/PointnetPwiseClassifier_T2/training_eval/confusion.log",
+	"training_confusion_matrix_plot_path": "out/PointnetPwiseClassifier_T2/training_eval/confusion.svg",
+	"training_class_distribution_report_path": "out/PointnetPwiseClassifier_T2/training_eval/class_distribution.log",
+	"training_class_distribution_plot_path": "out/PointnetPwiseClassifier_T2/training_eval/class_distribution.svg",
+	"training_classified_point_cloud_path": "out/PointnetPwiseClassifier_T2/training_eval/classified_point_cloud.laz",
+	"training_activations_path": "out/PointnetPwiseClassifier_T2/training_eval/activations.laz"
 }

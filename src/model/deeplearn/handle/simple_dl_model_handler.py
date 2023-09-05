@@ -293,6 +293,8 @@ class SimpleDLModelHandler(DLModelHandler):
             metric_class = None
             if metric_name == 'sparse_categorical_accuracy':
                 metric_class = tf.keras.metrics.sparse_categorical_accuracy
+            if metric_name == 'categorical_accuracy':
+                metric_class = tf.keras.metrics.categorical_accuracy
             if metric_name == 'binary_accuracy':
                 metric_class = tf.keras.metrics.binary_accuracy
             if metric_name == 'precision':

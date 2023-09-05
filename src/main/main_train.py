@@ -36,7 +36,12 @@ class MainTrain:
             MainTrain.extract_input_path(spec)
         )
         model_class = MainTrain.extract_model_class(spec)
-        model = model_class(**model_class.extract_model_args(spec))
+        model = MainTrain.extract_pretrained_model(
+            spec,
+            expected_class=model_class
+        )
+        if model is None:  # Initialize model if no pretrained model is given
+            model = model_class(**model_class.extract_model_args(spec))
         model = model.train(pcloud)
         ModelIO.write(model, MainTrain.extract_output_path(spec))
         end = time.perf_counter()
@@ -85,7 +90,7 @@ class MainTrain:
         Extract the model's class from the key-word specification.
 
         :param spec: The key-word specification.
-        :return:
+        :return: Model's class.
         """
         model = spec.get('train', None)
         if model is None:
@@ -100,3 +105,34 @@ class MainTrain:
             return PointNetPwiseClassifModel
         # An unknown model was specified
         raise ValueError(f'There is no known model "{model}"')
+
+    @staticmethod
+    def extract_pretrained_model(spec, expected_class=None):
+        """
+        Extract the path to the pretrained model and load it.
+
+        :param spec: The key-word specification.
+        :param expected_class: The expected model class. It can be None, but
+            then no model class check will be computed.
+        :return: The pretrained model or None if there is no pretrained model
+            specification.
+        :rtype: :class:`.Model` or None
+        """
+        model_path = spec.get('pretrained_model', None)
+        if model_path is None:  # No pretrained model
+            return None
+        # Load pretrained model
+        model = ModelIO.read(model_path)
+        if model is None:  # Failed to load pretrained model
+            raise IOError(
+                f'Failed to load pretrained model at path "{model_path}".'
+            )
+        # Check expected class
+        model_class = model.__class__
+        if model_class != expected_class:
+            raise TypeError(
+                f'The pretrained model is "{model_class}" but '
+                f'"{expected_class}" was expected.'
+            )
+        # Return pretrained model
+        return model

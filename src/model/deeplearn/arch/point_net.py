@@ -319,3 +319,44 @@ class PointNet(Architecture, ABC):
             momentum=0.0, name=f'{name}_bn'
         )(x)
         return tf.keras.layers.Activation("relu", name=f'{name}_relu')(x)
+
+    # ---   SERIALIZATION   --- #
+    # ------------------------- #
+    def __getstate__(self):
+        """
+        Method to be called when saving the serialized PointNet architecture.
+
+        :return: The state's dictionary of the object.
+        :rtype: dict
+        """
+        # Call parent's method
+        state = super().__getstate__()
+        # Add PointNet's attributes to state dictionary
+        state['num_points'] = self.num_points
+        state['kernel_initializer'] = self.kernel_initializer
+        state['pretransf_feats_spec'] = self.pretransf_feats_spec
+        state['postransf_feats_spec'] = self.postransf_feats_spec
+        state['tnet_pre_filters_spec'] = self.tnet_pre_filters_spec
+        state['tnet_post_filters_spec'] = self.tnet_post_filters_spec
+        # Return
+        return state
+
+    def __setstate__(self, state):
+        """
+        Method to be called when loading and deserializing a previously
+        serialized PointNet architecture.
+
+        :param state: The state's dictionary of the saved PointNet
+            architecture.
+        :type state: dict
+        :return: Nothing, but modifies the internal state of the object.
+        """
+        # Call parent's set state
+        super().__setstate__(state)
+        # Assign PointNet's attributes from state dictionary
+        self.num_points = state['num_points']
+        self.kernel_initializer = state['kernel_initializer']
+        self.pretransf_feats_spec = state['pretransf_feats_spec']
+        self.postransf_feats_spec = state['postransf_feats_spec']
+        self.tnet_pre_filters_spec = state['tnet_pre_filters_spec']
+        self.tnet_post_filters_spec = state['tnet_post_filters_spec']
