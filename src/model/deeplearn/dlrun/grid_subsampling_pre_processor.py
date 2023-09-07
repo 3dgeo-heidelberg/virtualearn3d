@@ -49,9 +49,16 @@ class GridSubsamplingPreProcessor:
         :class:`.ReceptiveFieldGS`.
     :vartype cell_size: :class:`np.ndarray`
     :ivar receptive_fields_dir: Directory where the point clouds representing
-        the many receptive fields will be exported (OPTIONAL). If given, it
-        will be used by the post-processor.
+        the many receptive fields will be exported (OPTIONAL).
     :vartype receptive_fields_dir: str or None
+    :ivar receptive_fields_distribution_report_path: Path where the text-like
+        report on the class distribution of the receptive fields will be
+        exported (OPTIONAL).
+    :vartype receptive_fields_distribution_report_path: str or None
+    :ivar receptive_fields_distribution_plot_path: Path where the plot
+        representing the class distribution of the receptive fields will be
+        exported (OPTIONAL).
+    :vartype receptive_fields_distribution_plot_path: str or None
     :ivar last_call_receptive_fields: List of the receptive fields used the
         last time that the pre-processing logic was executed.
     :vartype last_call_receptive_fields: list
@@ -75,6 +82,12 @@ class GridSubsamplingPreProcessor:
         self.cell_size = np.array(kwargs.get('cell_size', [0.1, 0.1, 0.1]))
         self.interpolate = kwargs.get('interpolate', True)
         self.nthreads = kwargs.get('nthreads', 1)
+        self.receptive_fields_distribution_report_path = kwargs.get(
+            'receptive_fields_distribution_report_path', None
+        )
+        self.receptive_fields_distribution_plot_path = kwargs.get(
+            'receptive_fields_distribution_plot_path', None
+        )
         self.receptive_fields_dir = kwargs.get('receptive_fields_dir', None)
         # Initialize last call cache
         self.last_call_receptive_fields = None
@@ -297,6 +310,14 @@ class GridSubsamplingPreProcessor:
         # Overwrite the attributes of the grid subsampling pre-processor
         if 'receptive_fields_dir' in spec_keys:
             self.receptive_fields_dir = spec['receptive_fields_dir']
+        if 'receptive_fields_distribution_report_path' in spec_keys:
+            self.receptive_fields_distribution_report_path = spec[
+                'receptive_fields_distribution_report_path'
+            ]
+        if 'receptive_fields_distribution_plot_path' in spec_keys:
+            self.receptive_fields_distribution_plot_path = spec[
+                'receptive_fields_distribution_plot_path'
+            ]
 
     # ---   SERIALIZATION   --- #
     # ------------------------- #

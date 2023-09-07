@@ -2,7 +2,6 @@
 # ------------------- #
 from src.plot.mpl_plot import MplPlot
 import src.main.main_logger as LOGGING
-import matplotlib as mpl
 from matplotlib import pyplot as plt
 from matplotlib import patheffects
 from sklearn.metrics import ConfusionMatrixDisplay
@@ -125,11 +124,11 @@ class ClassificationPlot(MplPlot):
 
     def plot_class_distribution(self, **kwargs):
         """
-        Plot the class distribution
+        Plot the class distribution.
         """
         # Build figure
         fig = plt.figure(figsize=(14, 5))
-        # Determine bar position on x axis
+        # Determine bar position on x-axis
         x = np.arange(len(self.yhat_count))
         # Plot predictions distribution
         ax = fig.add_subplot(1, 2, 1)

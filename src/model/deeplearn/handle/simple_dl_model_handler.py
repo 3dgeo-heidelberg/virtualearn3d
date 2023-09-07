@@ -6,6 +6,10 @@ from src.model.deeplearn.loss.class_weighted_binary_crossentropy import \
 from src.report.deep_learning_model_summary_report import \
     DeepLearningModelSummaryReport
 from src.report.receptive_fields_report import ReceptiveFieldsReport
+from src.report.receptive_fields_distribution_report import \
+    ReceptiveFieldsDistributionReport
+from src.plot.receptive_fields_distribution_plot import \
+    ReceptiveFieldsDistributionPlot
 from src.report.training_history_report import TrainingHistoryReport
 from src.plot.training_history_plot import TrainingHistoryPlot
 from src.utils.dict_utils import DictUtils
@@ -144,7 +148,7 @@ class SimpleDLModelHandler(DLModelHandler):
         )
         end = time.perf_counter()
         LOGGING.LOGGER.info(
-            f'Deep learning model trained on {X.shape[0]} points during '
+            f'Deep learning model trained on {X.shape[0]} cases during '
             f'{self.training_epochs} epochs in {end-start:.3f} seconds.'
         )
         # Take best model from checkpoint
@@ -189,30 +193,12 @@ class SimpleDLModelHandler(DLModelHandler):
         # Final predictions
         yhat = np.argmax(zhat, axis=1) if len(zhat.shape) > 1 \
             else np.round(zhat)
-        # Report receptive fields, if requested
-        rf_dir = getattr(
-            self.arch.pre_runnable.pre_processor,
-            'receptive_fields_dir',
-            None
-        ) if getattr(
-            self.arch.pre_runnable, 'pre_processor', None
-        ) is not None else None
-        if rf_dir is not None:
-            ReceptiveFieldsReport(
-                X_rf=X_rf,  # X (for each receptive field)
-                zhat_rf=zhat_rf,  # Softmax scores (for each receptive field)
-                yhat_rf=np.array([  # Predictions (for each receptive field)
-                    np.argmax(zhat_rf_i, axis=1)
-                    if len(zhat_rf_i.shape) > 1 and zhat_rf_i.shape[-1] != 1
-                    else np.round(np.squeeze(zhat_rf_i))
-                    for zhat_rf_i in zhat_rf
-                ]),
-                y_rf=self.arch.pre_runnable.pre_processor.reduce_labels(
-                    # Reduced expected classes (for each receptive field)
-                    X_rf, y
-                ) if y is not None else None,
-                class_names=self.class_names
-            ).to_file(rf_dir, self.out_prefix)
+        # Do plots and reports
+        self.handle_receptive_fields_plots_and_reports(
+            X_rf=X_rf,
+            zhat_rf=zhat_rf,
+            y=y
+        )
         # Return
         return yhat
 
@@ -249,6 +235,17 @@ class SimpleDLModelHandler(DLModelHandler):
                 self.training_history_dir = spec_handling['training_history_dir']
             if 'checkpoint_path' in spec_handling_keys:
                 self.checkpoint_path = spec_handling['checkpoint_path']
+            if 'checkpoint_monitor' in spec_handling_keys:
+                self.checkpoint_monitor = spec_handling['checkpoint_monitor']
+            if 'batch_size' in spec_handling_keys:
+                self.batch_size = spec_handling['batch_size']
+            if 'training_epochs' in spec_handling_keys:
+                self.training_epochs = spec_handling['training_epochs']
+            if 'learning_rate_on_plateau' in spec_handling_keys:
+                self.learning_rate_on_plateau = \
+                    spec_handling['learning_rate_on_plateau']
+            if 'early_stopping' in spec_handling_keys:
+                self.early_stopping = spec_handling['early_stopping']
 
     # ---  UTIL METHODS  --- #
     # ---------------------- #
@@ -276,9 +273,23 @@ class SimpleDLModelHandler(DLModelHandler):
                 'SimpleDLModelHandler cannot compile a model without an '
                 'optimizer. None was given.'
             )
+        # Build optimizer : Handle learning rate
+        if isinstance(opt_lr, dict):  # Learning schedule
+            lr_sched_type = opt_lr['schedule']
+            if lr_sched_type == 'exponential_decay':
+                opt_lr = tf.keras.optimizers.schedules.ExponentialDecay(
+                    **opt_lr['schedule_args']
+                )
+                print(f'expo_lr_decay:\n{opt_lr}\n{opt_lr.__dict__}')  # TODO Remove
+
+            else:
+                raise DeepLearningException(
+                    'SimpleDLModelHandler received an unexpected learning '
+                    f'rate schedule: "{lr_sched_type}".'
+                )
         # Build optimizer
         optimizer = optimizer(**DictUtils.delete_by_val({
-            'learning_rate': opt_lr
+            'learning_rate': opt_lr,
         }, None))
         # Build loss : Extract args
         loss_args = comp_args['loss']
@@ -436,6 +447,87 @@ class SimpleDLModelHandler(DLModelHandler):
             )
         # By default, labels can be used straight forward
         return y
+
+    def handle_receptive_fields_plots_and_reports(self, X_rf, zhat_rf, y=None):
+        """
+        Handle any plot and reports related to the receptive fields.
+
+        :param X_rf: The receptive fields such that X_rf[i] is the matrix
+            of coordinates representing the points in the i-th receptive field.
+        :type X_rf: :class:`np.ndarray`
+        :param zhat_rf: The output from the neural network for each receptive
+            field.
+        :type zhat_rf: :class:`np.ndarray`
+        :param y: The expected class for each point (considering original
+            points, i.e., not the receptive fields).
+        :type y: :class:`np.ndarray`
+        :return: Nothing at all but the plots and reports are exported to
+            the corresponding files.
+        """
+        # Extract output paths (either pointing to files or directories)
+        rf_dir = getattr(
+            self.arch.pre_runnable.pre_processor,
+            'receptive_fields_dir',
+            None
+        ) if getattr(
+            self.arch.pre_runnable, 'pre_processor', None
+        ) is not None else None
+        rf_dist_report_path = getattr(
+            self.arch.pre_runnable.pre_processor,
+            'receptive_fields_distribution_report_path',
+            None
+        ) if getattr(
+            self.arch.pre_runnable, 'pre_processor', None
+        ) is not None else None
+        rf_dist_plot_path = getattr(
+            self.arch.pre_runnable.pre_processor,
+            'receptive_fields_distribution_plot_path',
+            None
+        ) if getattr(
+            self.arch.pre_runnable, 'pre_processor', None
+        ) is not None else None
+        # Check at least one plot or report is requested
+        if (
+            rf_dir is None and
+            rf_dist_report_path is None and
+            rf_dist_plot_path is None
+        ):
+            return
+        # Compute the predicted and expected classes for each receptive field
+        yhat_rf = np.array([  # Predictions (for each receptive field)
+            np.argmax(zhat_rf_i, axis=1)
+            if len(zhat_rf_i.shape) > 1 and zhat_rf_i.shape[-1] != 1
+            else np.round(np.squeeze(zhat_rf_i))
+            for zhat_rf_i in zhat_rf
+        ])
+        y_rf = self.arch.pre_runnable.pre_processor.reduce_labels(
+            # Reduced expected classes (for each receptive field)
+            X_rf, y
+        ) if y is not None else None
+        # Report receptive fields, if requested
+        if rf_dir is not None:
+            ReceptiveFieldsReport(
+                X_rf=X_rf,  # X (for each receptive field)
+                zhat_rf=zhat_rf,  # Softmax scores (for each receptive field)
+                yhat_rf=yhat_rf,  # Predictions (for each receptive field)
+                y_rf=y_rf,  # Expected (for each receptive field, can be None)
+                class_names=self.class_names
+            ).to_file(rf_dir, self.out_prefix)
+        # Report receptive fields distribution, if requested
+        if rf_dist_report_path:
+            ReceptiveFieldsDistributionReport(
+                yhat_rf=yhat_rf,  # Predictions (for each receptive field)
+                y_rf=y_rf,  # Expected (for each receptive field, can be None)
+                class_names=self.class_names
+            ).to_file(rf_dist_report_path, self.out_prefix)
+        # Plot receptive fields distribution, if requested
+        if rf_dist_plot_path:
+            ReceptiveFieldsDistributionPlot(
+                yhat_rf=yhat_rf,  # Predictions (for each receptive field)
+                y_rf=y_rf,  # Expected (for each receptive field, can be None)
+                class_names=self.class_names,
+                path=rf_dist_plot_path
+            ).plot(out_prefix=self.out_prefix)
 
     # ---   SERIALIZATION   --- #
     # ------------------------- #

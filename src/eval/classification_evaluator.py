@@ -150,10 +150,15 @@ class ClassificationEvaluator(Evaluator):
                 'ClassificationEvaluator cannot evaluate without the expected '
                 'or reference labels.'
             )
-        # Automatically determine class_names
-        class_nums = np.unique(np.concatenate([yhat, y]))
-        if self.class_names is None:
+        # Determine classes (names and numbers)
+        if self.class_names is None:  # Automatically determine class_names
+            class_nums = np.unique(np.concatenate([yhat, y]))
             self.class_names = [f'C{i}' for i in class_nums]
+        else:  # Determine class_nums from given class_names
+            class_nums = np.array(
+                [i for i in range(len(self.class_names))],
+                dtype=int
+            )
         # Evaluate : class distribution
         yhat_count, yhat_bin = np.histogram(
             yhat,

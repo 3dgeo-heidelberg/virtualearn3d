@@ -1,6 +1,7 @@
 {
 	"train": "PointNetPwiseClassifier",
-	"in_pcloud": "https://3dweb.geog.uni-heidelberg.de/trees_leafwood/PinSyl_KA10_03_2019-07-30_q2_TLS-on_c_t.laz",
+	"in_pcloud": "/hei/lidar_data/vl3d_framework/PinSyl_KA09_T048_2019-08-20_q1_TLS-on_c_t.laz",
+	"_in_pcloud": "https://3dweb.geog.uni-heidelberg.de/trees_leafwood/PinSyl_KA10_03_2019-07-30_q2_TLS-on_c_t.laz",
 	"pretrained_model": "out/PointnetPwiseClassifier/pnet_pwise_classif.model",
 	"out_model": "out/PointnetPwiseClassifier_T2/pnet_pwise_classif.model",
 	"fnames": ["AUTO"],
@@ -12,7 +13,7 @@
 		"num_pwise_feats": 16,
 		"pre_processing": {
 			"pre_processor": "furthest_point_subsampling",
-			"num_points": 512,
+			"num_points": 256,
 			"num_encoding_neighbors": 1,
 			"fast": true,
 			"neighborhood": {	
@@ -62,15 +63,17 @@
 			"summary_report_path": "out/PointnetPwiseClassifier_T2/model_summary.log",
 			"training_history_dir": "out/PointnetPwiseClassifier_T2/training_eval/history",
 			"class_weight": "auto",
-			"training_epochs": 200,
+			"training_epochs": 5,
 			"batch_size": 128,
-			"checkpoint_path": "out/PointnetPwiseClassifier_T2/checkpoint.model",
-			"checkpoint_monitor": "loss",
+			"_checkpoint_path": "out/PointnetPwiseClassifier_T2/checkpoint.model",
+			"_checkpoint_monitor": "loss",
 			"learning_rate_on_plateau": {
 				"monitor": "loss",
 				"mode": "min",
 				"factor": 0.1,
-				"patience": 10,
+				"_patience": 10,
+				"_patience_FOR_EARLY_STOPPING": 20,
+				"patience": 30,
 				"cooldown": 5,
 				"min_delta": 0.01,
 				"min_lr": 1e-6
@@ -79,14 +82,22 @@
 				"monitor": "loss",
 				"mode": "min",
 				"min_delta": 0.01,
-				"patience": 20
+				"patience": 50
 			}
-
 		},
 		"compilation_args": {
 			"optimizer": {
 				"algorithm": "Adam",
-				"learning_rate": 1e-2
+				"_learning_rate": 1e-3,
+				"learning_rate": {
+					"schedule": "exponential_decay",
+					"schedule_args": {
+						"initial_learning_rate": 1e-4,
+						"decay_steps": 539,
+						"decay_rate": 0.98,
+						"staircase": false
+					}
+				}
 			},
 			"loss": {
 				"function": "class_weighted_binary_crossentropy"
