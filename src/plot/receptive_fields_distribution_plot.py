@@ -106,7 +106,10 @@ class ReceptiveFieldsDistributionPlot(MplPlot):
         )
         fig.tight_layout()
         # Make the plot effective
-        self.save_show_and_clear(out_prefix=kwargs.get('out_prefix', None))
+        self.save_show_and_clear(
+            out_prefix=kwargs.get('out_prefix', None),
+            logging=kwargs.get('logging', False)
+        )
 
     # ---   UTIL METHODS   --- #
     # ------------------------ #
@@ -137,7 +140,8 @@ class ReceptiveFieldsDistributionPlot(MplPlot):
         # Count how many receptive fields contain at least one class case
         rf_count = np.array([
             np.count_nonzero([np.any(rf_i == cidx) for rf_i in y])
-        for cidx in class_nums])
+            for cidx in class_nums
+        ])
         # Return
         return count, rf_count
 

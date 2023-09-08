@@ -24,6 +24,12 @@ class FurthestPointSubsamplingPreProcessor:
 
     See :class:`.ReceptiveFieldFPS`.
 
+    :ivar training_class_distribution: The target class distribution to
+        consider when building the support points. The element i of this
+        vector (or list) specifies how many neighborhoods centered on a point
+        of class i must be considered. If None, then the point-wise classes
+        will not be considered when building the neighborhoods.
+    :vartype training_class_distribution: list or tuple or :class:`np.ndarray`
     :ivar num_points: The number of points any point cloud must be reduced to
         through furthest point subsampling.
     :vartype num_points: int
@@ -75,6 +81,9 @@ class FurthestPointSubsamplingPreProcessor:
             FurthestPointSubsamplingPreProcessor.
         """
         # Assign attributes
+        self.training_class_distribution = kwargs.get(
+            'training_class_distribution', None
+        )
         self.num_points = kwargs.get('num_points', 8000)
         self.num_encoding_neighbors = kwargs.get('num_encoding_neighbors', 3)
         self.fast = kwargs.get('fast', False)
@@ -119,13 +128,16 @@ class FurthestPointSubsamplingPreProcessor:
         start = time.perf_counter()
         X, y = inputs['X'], inputs.get('y', None)
         # Extract neighborhoods
-        sup_X, I = self.find_neighborhood(X)
+        sup_X, I = self.find_neighborhood(X, y=y)
         # Remove empty neighborhoods and corresponding support points
         I, sup_X = FurthestPointSubsamplingPreProcessor\
             .clean_support_neighborhoods(
                 sup_X, I, self.num_points
             )
         self.last_call_neighborhoods = I
+        # TODO Remove section ---
+        np.savetxt('/tmp/sup_X.xyz', sup_X, fmt='%.4f')
+        # --- TODO Remove section
         # Prepare receptive field
         self.last_call_receptive_fields = [
             ReceptiveFieldFPS(
@@ -242,12 +254,17 @@ class FurthestPointSubsamplingPreProcessor:
             ) for i, Ii in enumerate(I)
         ))
 
-    def find_neighborhood(self, X):
+    def find_neighborhood(self, X, y=None):
         r"""
         Find the requested neighborhoods in the given input point cloud
-        represented by the matrix of coordinates :math:`\pmb{X}`
+        represented by the matrix of coordinates :math:`\pmb{X}`.
 
         :param X: The matrix of coordinates.
+        :type X: :class:`np.ndarray`
+        :param y: The vector of expected values (generally, class labels).
+            It is an OPTIONAL argument that is only necessary when the
+            neighborhoods must be found following a given class distribution.
+        :type y: :class:`np.ndarray`
         :return: A tuple which first element are the support points
             representing the centers of the neighborhoods and which second
             element is a list of neighborhoods, where each neighborhood is
@@ -259,6 +276,8 @@ class FurthestPointSubsamplingPreProcessor:
         sup_X, I = None, None
         ngbhd_type = self.neighborhood_spec['type']
         ngbhd_type_low = ngbhd_type.lower()
+        class_distr = self.training_class_distribution if y is not None\
+            else None
         if self.neighborhood_spec['radius'] == 0:
             # The sphere/cylinder of radius 0 is said to be the entire point cloud
             I = [np.arange(len(X), dtype=int).tolist()]
@@ -268,7 +287,9 @@ class FurthestPointSubsamplingPreProcessor:
             sup_X = GridSubsamplingPreProcessor.build_support_points(
                 X2D,
                 self.neighborhood_spec['separation_factor'],
-                self.neighborhood_spec['radius']
+                self.neighborhood_spec['radius'],
+                y=y,
+                class_distr=class_distr
             )
             kdt = KDT(X2D)
             kdt_sup = KDT(sup_X)
@@ -279,7 +300,9 @@ class FurthestPointSubsamplingPreProcessor:
             sup_X = GridSubsamplingPreProcessor.build_support_points(
                 X,
                 self.neighborhood_spec['separation_factor'],
-                self.neighborhood_spec['radius']
+                self.neighborhood_spec['radius'],
+                y=y,
+                class_distr=class_distr
             )
             kdt = KDT(X)
             kdt_sup = KDT(sup_X)

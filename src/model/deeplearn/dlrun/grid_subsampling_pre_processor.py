@@ -22,6 +22,12 @@ class GridSubsamplingPreProcessor:
 
     See :class:`.ReceptiveFieldGS`.
 
+    :ivar training_class_distribution: The target class distribution to
+        consider when building the support points. The element i of this
+        vector (or list) specifies how many neighborhoods centered on a point
+        of class i must be considered. If None, then the point-wise classes
+        will not be considered when building the neighborhoods.
+    :vartype training_class_distribution: list or tuple or :class:`np.ndarray`
     :ivar sphere_radius: The radius of the sphere that bounds a neighborhood.
         For an arbitrary set of 3D points it can be found as follows:
 
@@ -77,6 +83,9 @@ class GridSubsamplingPreProcessor:
             GridSubSamplingPreProcessor.
         """
         # Assign attributes
+        self.training_class_distribution = kwargs.get(
+            'training_class_distribution', None
+        )
         self.sphere_radius = kwargs.get('sphere_radius', 1.0)
         self.separation_factor = kwargs.get('separation_factor', np.sqrt(3)/4)
         self.cell_size = np.array(kwargs.get('cell_size', [0.1, 0.1, 0.1]))
@@ -137,14 +146,7 @@ class GridSubsamplingPreProcessor:
         start = time.perf_counter()
         X, y = inputs['X'], inputs.get('y', None)
         # Extract neighborhoods
-        sup_X = GridSubsamplingPreProcessor.build_support_points(
-            X,
-            self.separation_factor,
-            self.sphere_radius
-        )
-        kdt = KDT(X)
-        kdt_sup = KDT(sup_X)
-        I = kdt_sup.query_ball_tree(kdt, self.sphere_radius)  # Neigh. indices
+        sup_X, I = self.find_neighborhood(X, y=y)
         # Remove empty neighborhoods and corresponding support points
         I, sup_X = GridSubsamplingPreProcessor.clean_support_neighborhoods(
             sup_X, I
@@ -211,20 +213,57 @@ class GridSubsamplingPreProcessor:
     # ---   UTIL METHODS   --- #
     # ------------------------ #
     @staticmethod
-    def build_support_points(X, separation_factor, sphere_radius):
+    def build_support_points(
+        X, separation_factor, sphere_radius,
+        y=None, class_distr=None
+    ):
         r"""
         Compute the support points separated :math:`k` times the radius
         :math:`r` distributed along the bounding box defining the boundaries
         of :math:`\pmb{X}`.
 
+        Alternatively, if the labels :class:`\pmb{y}` are passed and a given
+        class distribution is requested, the support points are selected to
+        match this distribution.
+
         :param X: `\pmb{X}`, i.e., the matrix of coordinates representing the
             input points.
         :param separation_factor: :math:`k`
         :param sphere_radius: :math:`r`
+        :param y: The vector of point-wise labels (OPTIONAL).
+        :param class_distr: The vector of class-wise distribution (OPTIONAL).
         :return: The support points as a matrix where rows are support points
             and columns are coordinates.
         :rtype: :class:`np.ndarray`
         """
+        # Validate y and class_distr are consistent
+        if y is None and class_distr is not None:
+            raise DeepLearningException(
+                'Support points cannot be built from a given class '
+                'distribution when class labels are not available.'
+            )
+        # Build support points considering point-wise classes
+        if y is not None and class_distr is not None:
+            LOGGING.LOGGER.debug(
+                'Support points are built from a given class distribution.'
+            )
+            idx_by_class = [  # Obtain indices by classes
+                np.flatnonzero(y == cidx) for cidx in range(len(class_distr))
+            ]
+            for i in range(len(idx_by_class)):  # Shuffle and truncate
+                np.random.shuffle(idx_by_class[i])  # Random shuffle
+                idx_by_class[i] = idx_by_class[i][:class_distr[i]]  # Truncate
+            # Extract and shuffle support points
+            sup_X = np.vstack([
+                X[idx_by_class[i]] for i in range(len(idx_by_class))
+            ])
+            np.random.shuffle(sup_X)
+            # Return support points from point-wise classes
+            return sup_X
+        # Build support points without considering point-wise classes
+        LOGGING.LOGGER.debug(
+            'Support points are built without considering point-wise classes.'
+        )
         xmin, xmax = np.min(X, axis=0), np.max(X, axis=0)
         l = separation_factor * sphere_radius  # Cell size
         G = np.meshgrid(
@@ -297,6 +336,40 @@ class GridSubsamplingPreProcessor:
                 fill_nan=True
             ) for i, Ii in enumerate(I)
         ))
+
+    def find_neighborhood(self, X, y=None):
+        r"""
+        Find the requested neighborhoods in the given input point cloud
+        represented by the matrix of coordinates :math:`\pmb{X}`.
+
+        :param X: The matrix of coordinates.
+        :type X: :class:`np.ndarray`
+        :param y: The vector of expected values (generally, class labels).
+            It is an OPTIONAL argument that is only necessary when the
+            neighborhoods must be found following a given class distribution.
+        :type y: :class:`np.ndarray`
+        :return: A tuple which first element are the support points
+            representing the centers of the neighborhoods and which second
+            element is a list of neighborhoods, where each neighborhood is
+            represented by a list of indices corresponding to the rows (points)
+            in :math:`\pmb{X}` that compose the neighborhood.
+        :rtype: tuple
+        """
+        # Handle neighborhood finding
+        class_distr = self.training_class_distribution if y is not None \
+            else None
+        sup_X = GridSubsamplingPreProcessor.build_support_points(
+            X,
+            self.separation_factor,
+            self.sphere_radius,
+            y=y,
+            class_distr=class_distr
+        )
+        kdt = KDT(X)
+        kdt_sup = KDT(sup_X)
+        I = kdt_sup.query_ball_tree(kdt, self.sphere_radius)  # Neigh. indices
+        # Return found neighborhood
+        return sup_X, I
 
     # ---   OTHER METHODS   --- #
     # ------------------------- #

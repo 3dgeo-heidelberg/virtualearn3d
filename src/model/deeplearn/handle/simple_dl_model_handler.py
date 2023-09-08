@@ -527,7 +527,7 @@ class SimpleDLModelHandler(DLModelHandler):
                 y_rf=y_rf,  # Expected (for each receptive field, can be None)
                 class_names=self.class_names,
                 path=rf_dist_plot_path
-            ).plot(out_prefix=self.out_prefix)
+            ).plot(out_prefix=self.out_prefix, logging=True)
 
     # ---   SERIALIZATION   --- #
     # ------------------------- #

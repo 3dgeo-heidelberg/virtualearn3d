@@ -13,7 +13,8 @@
 		"num_pwise_feats": 16,
 		"pre_processing": {
 			"pre_processor": "furthest_point_subsampling",
-			"num_points": 256,
+			"training_class_distribution": [30000, 20000],
+			"num_points": 512,
 			"num_encoding_neighbors": 1,
 			"fast": false,
 			"neighborhood": {	

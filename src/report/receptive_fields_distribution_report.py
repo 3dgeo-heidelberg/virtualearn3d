@@ -79,6 +79,9 @@ class ReceptiveFieldsDistributionReport(Report):
         num_yhat_rf = len(self.yhat_rf) if self.yhat_rf is not None else 0
         num_y = np.prod(self.y_rf.shape) if self.y_rf is not None else 0
         num_y_rf = len(self.y_rf) if self.y_rf is not None else 0
+        yhat_count_sum, yhat_freq_sum, yhat_rf_count_sum, yhat_rf_freq_sum, \
+        y_count_sum, y_freq_sum, y_rf_count_sum, y_rf_freq_sum = [0]*8
+
         for cidx, cname in enumerate(self.class_names):
             # Start the row with the class name
             s += f'{cname:24.24}'
@@ -89,6 +92,10 @@ class ReceptiveFieldsDistributionReport(Report):
                     ReceptiveFieldsDistributionReport.count(
                         self.yhat_rf, cidx, num_yhat, num_yhat_rf
                     )
+                yhat_count_sum += yhat_count
+                yhat_freq_sum += yhat_freq
+                yhat_rf_count_sum += yhat_rf_count
+                yhat_rf_freq_sum += yhat_rf_freq
                 # Add absolute and relative frequencies to row
                 s += f', {yhat_count:16d}, {100*yhat_freq:16.4f}, '\
                     f'{yhat_rf_count:16d}, {100*yhat_rf_freq:16.4f}'
@@ -99,20 +106,24 @@ class ReceptiveFieldsDistributionReport(Report):
                     ReceptiveFieldsDistributionReport.count(
                         self.y_rf, cidx, num_y, num_y_rf
                     )
+                y_count_sum += y_count
+                y_freq_sum += y_freq
+                y_rf_count_sum += y_rf_count
+                y_rf_freq_sum += y_rf_freq
                 # Add absolute and relative frequencies to row
                 s += f', {y_count:16d}, {100*y_freq:16.4f}, ' \
                      f'{y_rf_count:16d}, {100*y_rf_freq:16.4f}'
             s += '\n'  # End of line for current row
         # ---  Table: foot  --- #
-        s += '\nTOTAL:                  '
+        s += '\nSUM                     :'
         if self.yhat_rf is not None:
-            s += f'{num_yhat:16d},              100, '\
-                f'{num_yhat_rf:16d},             100'
+            s += f'  {yhat_count_sum:16d}, {100*yhat_freq_sum:16.4f}, '\
+                f'{yhat_rf_count_sum:16d}, {100*yhat_rf_freq_sum:16.4f}'
         if self.y_rf is not None:
             if self.yhat_rf is not None:
                 s += ', '
-            s += f'{num_y:16d},              100, ' \
-                 f'{num_y_rf:16d},             100'
+            s += f'{y_count_sum:16d}, {100*y_freq_sum:16.4f}, ' \
+                 f'{y_rf_count_sum:16d}, {100*y_rf_freq_sum:16.4f}'
         # Return
         return s
 
