@@ -28,6 +28,13 @@ class GridSubsamplingPreProcessor:
         of class i must be considered. If None, then the point-wise classes
         will not be considered when building the neighborhoods.
     :vartype training_class_distribution: list or tuple or :class:`np.ndarray`
+    :ivar center_on_pcloud: When True, the support points defining the
+        receptive field will be transformed to be a point from the input
+        point cloud. Consequently, the generated neighborhoods are centered on
+        points that belong to the point cloud instead of arbitrary support
+        points. When False, support points do not necessarily match points
+        from the point cloud.
+    :vartype center_on_pcloud: bool
     :ivar sphere_radius: The radius of the sphere that bounds a neighborhood.
         For an arbitrary set of 3D points it can be found as follows:
 
@@ -65,6 +72,14 @@ class GridSubsamplingPreProcessor:
         representing the class distribution of the receptive fields will be
         exported (OPTIONAL).
     :vartype receptive_fields_distribution_plot_path: str or None
+    :ivar training_receptive_fields_dir: Like receptive_fields_dir but for
+        the receptive fields at training.
+    :ivar training_receptive_fields_distribution_report_path: Like
+        receptive_fields_distribution_report_path but for the receptive fields
+        at training.
+    :ivar training_receptive_fields_distribution_plot_path: Like
+        receptive_fields_distribution_plot_path but for the receptive fields
+        at training.
     :ivar last_call_receptive_fields: List of the receptive fields used the
         last time that the pre-processing logic was executed.
     :vartype last_call_receptive_fields: list
@@ -86,6 +101,7 @@ class GridSubsamplingPreProcessor:
         self.training_class_distribution = kwargs.get(
             'training_class_distribution', None
         )
+        self.center_on_pcloud = kwargs.get('center_on_pcloud', False)
         self.sphere_radius = kwargs.get('sphere_radius', 1.0)
         self.separation_factor = kwargs.get('separation_factor', np.sqrt(3)/4)
         self.cell_size = np.array(kwargs.get('cell_size', [0.1, 0.1, 0.1]))
@@ -98,6 +114,15 @@ class GridSubsamplingPreProcessor:
             'receptive_fields_distribution_plot_path', None
         )
         self.receptive_fields_dir = kwargs.get('receptive_fields_dir', None)
+        self.training_receptive_fields_dir = kwargs.get(
+            'training_receptive_fields_dir', None
+        )
+        self.training_receptive_fields_distribution_report_path = kwargs.get(
+            'training_receptive_fields_distribution_report_path', None
+        )
+        self.training_receptive_fields_distribution_plot_path = kwargs.get(
+            'training_receptive_fields_distribution_plot_path', None
+        )
         # Initialize last call cache
         self.last_call_receptive_fields = None
         self.last_call_neighborhoods = None
@@ -105,7 +130,7 @@ class GridSubsamplingPreProcessor:
     # ---   RUN/CALL   --- #
     # -------------------- #
     def __call__(self, inputs):
-        """
+        r"""
         Executes the pre-processing logic. It also updates the cache-like
         variables of the preprocessor.
 
@@ -215,7 +240,8 @@ class GridSubsamplingPreProcessor:
     @staticmethod
     def build_support_points(
         X, separation_factor, sphere_radius,
-        y=None, class_distr=None
+        y=None, class_distr=None, center_on_X=False,
+        nthreads=1
     ):
         r"""
         Compute the support points separated :math:`k` times the radius
@@ -232,6 +258,12 @@ class GridSubsamplingPreProcessor:
         :param sphere_radius: :math:`r`
         :param y: The vector of point-wise labels (OPTIONAL).
         :param class_distr: The vector of class-wise distribution (OPTIONAL).
+        :param center_on_X: When True, the support points will be points taken
+            from X (as the nereast neighbors of the initial support points).
+            Otherwise, they will be automatically computed such that they
+            do not necessarily correspond to points in X.
+        :param nthreads: How many threads use for parallel computations, if
+            any.
         :return: The support points as a matrix where rows are support points
             and columns are coordinates.
         :rtype: :class:`np.ndarray`
@@ -274,6 +306,15 @@ class GridSubsamplingPreProcessor:
                 for j in range(X.shape[1])
             ]
         )
+        if center_on_X:  # Support points must correspond to points in X
+            LOGGING.LOGGER.debug(
+                'Support points are centered on the point cloud.'
+            )
+            sup_X = np.array([Gi.flatten() for Gi in G]).T
+            kdt = KDT(X)
+            nn_indices = np.unique(kdt.query(sup_X, k=1, workers=nthreads)[1])
+            return X[nn_indices]
+        # Return original support points (dont need to match points in X)
         return np.array([Gi.flatten() for Gi in G]).T
 
     @staticmethod
@@ -363,7 +404,9 @@ class GridSubsamplingPreProcessor:
             self.separation_factor,
             self.sphere_radius,
             y=y,
-            class_distr=class_distr
+            class_distr=class_distr,
+            center_on_X=self.center_on_pcloud,
+            nthreads=self.nthreads
         )
         kdt = KDT(X)
         kdt_sup = KDT(sup_X)
@@ -391,6 +434,18 @@ class GridSubsamplingPreProcessor:
             self.receptive_fields_distribution_plot_path = spec[
                 'receptive_fields_distribution_plot_path'
             ]
+        if 'training_receptive_fields_dir' in spec_keys:
+            self.training_receptive_fields_dir = spec[
+                'training_receptive_fields_dir'
+            ]
+        if 'training_receptive_fields_distribution_report_path' in spec_keys:
+            self.training_receptive_fields_distribution_report_path = spec[
+                'training_receptive_fields_distribution_report_path'
+            ]
+        if 'training_receptive_fields_distribution_plot_path' in spec_keys:
+            self.training_receptive_fields_distribution_plot_path = spec[
+                'training_receptive_fields_distribution_plot_path'
+            ]
 
     # ---   SERIALIZATION   --- #
     # ------------------------- #
@@ -404,12 +459,19 @@ class GridSubsamplingPreProcessor:
         """
         # Return pre-processor state (cache to None)
         return {
+            'training_class_distribution': self.training_class_distribution,
+            'center_on_pcloud': self.center_on_pcloud,
             'sphere_radius': self.sphere_radius,
             'separation_factor': self.separation_factor,
             'cell_size': self.cell_size,
             'interpolate': self.interpolate,
             'nthreads': self.nthreads,
             'receptive_fields_dir': None,
+            'receptive_fields_distribution_report_path': None,
+            'receptive_fields_distribution_plot_path': None,
+            'training_receptive_fields_dir': None,
+            'training_receptive_fields_distribution_report_path': None,
+            'training_receptive_fields_distribution_plot_path': None,
             # Cache attributes below
             'last_call_receptive_fields': None,
             'last_call_neighborhoods': None
@@ -426,11 +488,19 @@ class GridSubsamplingPreProcessor:
         :return: Nothing, but modifies the internal state of the object.
         """
         # Assign member attributes from state
+        self.training_class_distribution = state['training_class_distribution']
+        self.center_on_pcloud = state['center_on_pcloud']
         self.sphere_radius = state['sphere_radius']
         self.separation_factor = state['separation_factor']
         self.cell_size = state['cell_size']
         self.interpolate = state['interpolate']
         self.nthreads = state['nthreads']
         self.receptive_fields_dir = None
+        self.receptive_fields_distribution_report_path = None
+        self.receptive_fields_distribution_plot_path = None
+        self.training_receptive_fields_dir = None
+        self.training_receptive_fields_distribution_report_path = None
+        self.training_receptive_fields_distribution_plot_path = None
+        # Assign cache attributes from state
         self.last_call_neighborhoods = None
         self.last_call_receptive_fields = None

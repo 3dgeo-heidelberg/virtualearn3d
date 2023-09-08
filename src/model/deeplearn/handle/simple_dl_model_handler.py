@@ -131,9 +131,9 @@ class SimpleDLModelHandler(DLModelHandler):
             ))
         # Fit the model
         start = time.perf_counter()
-        X, y = self.arch.run_pre({'X': X, 'y': y})
-        class_weight = self.handle_class_weight(y)
-        y = self.handle_labels_format(y)
+        X, y_rf = self.arch.run_pre({'X': X, 'y': y})
+        class_weight = self.handle_class_weight(y_rf)
+        y_rf = self.handle_labels_format(y_rf)
         if class_weight is not None:  # Recompile for custom class weight loss
             comp_args = SimpleDLModelHandler.build_compilation_args(
                 self.compilation_args
@@ -141,7 +141,7 @@ class SimpleDLModelHandler(DLModelHandler):
             comp_args['loss'] = comp_args['loss'](class_weight)
             self.compiled.compile(**comp_args)
         self.history = self.compiled.fit(
-            X, y,
+            X, y_rf,
             epochs=self.training_epochs,
             callbacks=callbacks,
             batch_size=self.batch_size
@@ -176,10 +176,32 @@ class SimpleDLModelHandler(DLModelHandler):
                 'Deep learning training history plots exported to '
                 f'"{self.training_history_dir}"'
             )
+        # Predictions on the training receptive fields for plots and reports
+        if getattr(self.arch.pre_runnable, 'pre_processor', None) is not None:
+            if getattr(
+                self.arch.pre_runnable.pre_processor,
+                'training_receptive_fields_dir',
+                None
+            ) is not None or getattr(
+                self.arch.pre_runnable.pre_processor,
+                'training_receptive_fields_distribution_report_path',
+                None
+            ) is not None or getattr(
+                self.arch.pre_runnable.pre_processor,
+                'training_receptive_fields_distribution_plot_path',
+                None
+            ):
+                zhat = self.compiled.predict(X, batch_size=self.batch_size)
+                self.handle_receptive_fields_plots_and_reports(
+                    X_rf=X,
+                    zhat_rf=zhat,
+                    y=y,
+                    training=True
+                )
         # Return
         return self
 
-    def _predict(self, X, F=None, y=None, zout=None):
+    def _predict(self, X, F=None, y=None, training=False, zout=None):
         """
         See :class:`.DLModelHandler` and
         :meth:`dl_model_handler.DLModelHandler._predict`.
@@ -197,7 +219,8 @@ class SimpleDLModelHandler(DLModelHandler):
         self.handle_receptive_fields_plots_and_reports(
             X_rf=X_rf,
             zhat_rf=zhat_rf,
-            y=y
+            y=y,
+            training=training
         )
         # Return
         return yhat
@@ -448,7 +471,9 @@ class SimpleDLModelHandler(DLModelHandler):
         # By default, labels can be used straight forward
         return y
 
-    def handle_receptive_fields_plots_and_reports(self, X_rf, zhat_rf, y=None):
+    def handle_receptive_fields_plots_and_reports(
+        self, X_rf, zhat_rf, y=None, training=False
+    ):
         """
         Handle any plot and reports related to the receptive fields.
 
@@ -461,31 +486,42 @@ class SimpleDLModelHandler(DLModelHandler):
         :param y: The expected class for each point (considering original
             points, i.e., not the receptive fields).
         :type y: :class:`np.ndarray`
+        :param training: Whether the considered receptive fields are those
+            used for training (True) or not (False).
+        :type training: bool
         :return: Nothing at all but the plots and reports are exported to
             the corresponding files.
         """
         # Extract output paths (either pointing to files or directories)
-        rf_dir = getattr(
-            self.arch.pre_runnable.pre_processor,
-            'receptive_fields_dir',
-            None
-        ) if getattr(
-            self.arch.pre_runnable, 'pre_processor', None
-        ) is not None else None
-        rf_dist_report_path = getattr(
-            self.arch.pre_runnable.pre_processor,
-            'receptive_fields_distribution_report_path',
-            None
-        ) if getattr(
-            self.arch.pre_runnable, 'pre_processor', None
-        ) is not None else None
-        rf_dist_plot_path = getattr(
-            self.arch.pre_runnable.pre_processor,
-            'receptive_fields_distribution_plot_path',
-            None
-        ) if getattr(
-            self.arch.pre_runnable, 'pre_processor', None
-        ) is not None else None
+        rf_dir, rf_dist_report_path, rf_dist_plot_path = None, None, None
+        if getattr(self.arch.pre_runnable, 'pre_processor', None) is not None:
+            rf_dir = getattr(
+                self.arch.pre_runnable.pre_processor,
+                'receptive_fields_dir',
+                None
+            ) if not training else getattr(
+                self.arch.pre_runnable.pre_processor,
+                'training_receptive_fields_dir',
+                None
+            )
+            rf_dist_report_path = getattr(
+                self.arch.pre_runnable.pre_processor,
+                'receptive_fields_distribution_report_path',
+                None
+            ) if not training else getattr(
+                self.arch.pre_runnable.pre_processor,
+                'training_receptive_fields_distribution_report_path',
+                None
+            )
+            rf_dist_plot_path = getattr(
+                self.arch.pre_runnable.pre_processor,
+                'receptive_fields_distribution_plot_path',
+                None
+            ) if not training else getattr(
+                self.arch.pre_runnable.pre_processor,
+                'training_receptive_fields_distribution_plot_path',
+                None
+            )
         # Check at least one plot or report is requested
         if (
             rf_dir is None and

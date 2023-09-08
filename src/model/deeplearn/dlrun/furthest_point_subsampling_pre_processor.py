@@ -30,6 +30,13 @@ class FurthestPointSubsamplingPreProcessor:
         of class i must be considered. If None, then the point-wise classes
         will not be considered when building the neighborhoods.
     :vartype training_class_distribution: list or tuple or :class:`np.ndarray`
+    :ivar center_on_pcloud: When True, the support points defining the
+        receptive field will be transformed to be a point from the input
+        point cloud. Consequently, the generated neighborhoods are centered on
+        points that belong to the point cloud instead of arbitrary support
+        points. When False, support points do not necessarily match points
+        from the point cloud.
+    :vartype center_on_pcloud: bool
     :ivar num_points: The number of points any point cloud must be reduced to
         through furthest point subsampling.
     :vartype num_points: int
@@ -62,6 +69,14 @@ class FurthestPointSubsamplingPreProcessor:
         representing the class distribution of the receptive fields will be
         exported (OPTIONAL).
     :vartype receptive_fields_distribution_plot_path: str or None
+    :ivar training_receptive_fields_dir: Like receptive_fields_dir but for
+        the receptive fields at training.
+    :ivar training_receptive_fields_distribution_report_path: Like
+        receptive_fields_distribution_report_path but for the receptive fields
+        at training.
+    :ivar training_receptive_fields_distribution_plot_path: Like
+        receptive_fields_distribution_plot_path but for the receptive fields
+        at training.
     :ivar last_call_receptive_fields: List of the receptive fields used the
         last time that the pre-processing logic was executed.
     :vartype last_call_receptive_fields: list
@@ -84,6 +99,7 @@ class FurthestPointSubsamplingPreProcessor:
         self.training_class_distribution = kwargs.get(
             'training_class_distribution', None
         )
+        self.center_on_pcloud = kwargs.get('center_on_pcloud', False)
         self.num_points = kwargs.get('num_points', 8000)
         self.num_encoding_neighbors = kwargs.get('num_encoding_neighbors', 3)
         self.fast = kwargs.get('fast', False)
@@ -100,6 +116,15 @@ class FurthestPointSubsamplingPreProcessor:
         )
         self.receptive_fields_distribution_plot_path = kwargs.get(
             'receptive_fields_distribution_plot_path', None
+        )
+        self.training_receptive_fields_dir = kwargs.get(
+            'training_receptive_fields_dir', None
+        )
+        self.training_receptive_fields_distribution_report_path = kwargs.get(
+            'training_receptive_fields_distribution_report_path', None
+        )
+        self.training_receptive_fields_distribution_plot_path = kwargs.get(
+            'training_receptive_fields_distribution_plot_path', None
         )
         # Initialize last call cache
         self.last_call_receptive_fields = None
@@ -289,7 +314,9 @@ class FurthestPointSubsamplingPreProcessor:
                 self.neighborhood_spec['separation_factor'],
                 self.neighborhood_spec['radius'],
                 y=y,
-                class_distr=class_distr
+                class_distr=class_distr,
+                center_on_X=self.center_on_pcloud,
+                nthreads=self.nthreads
             )
             kdt = KDT(X2D)
             kdt_sup = KDT(sup_X)
@@ -302,7 +329,9 @@ class FurthestPointSubsamplingPreProcessor:
                 self.neighborhood_spec['separation_factor'],
                 self.neighborhood_spec['radius'],
                 y=y,
-                class_distr=class_distr
+                class_distr=class_distr,
+                center_on_X=self.center_on_pcloud,
+                nthreads=self.nthreads
             )
             kdt = KDT(X)
             kdt_sup = KDT(sup_X)
@@ -323,6 +352,7 @@ class FurthestPointSubsamplingPreProcessor:
         :meth:`point_net_pre_processor.PointNetPreProcessor.overwrite_pretrained_model`
         method.
         """
+        # TODO Rethink : training_class_distribution, center_on_pcloud, etc.
         spec_keys = spec.keys()
         # Overwrite the attributes of the grid subsampling pre-processor
         if 'receptive_fields_dir' in spec_keys:
@@ -334,6 +364,18 @@ class FurthestPointSubsamplingPreProcessor:
         if 'receptive_fields_distribution_plot_path' in spec_keys:
             self.receptive_fields_distribution_plot_path = spec[
                 'receptive_fields_distribution_plot_path'
+            ]
+        if 'training_receptive_fields_dir' in spec_keys:
+            self.training_receptive_fields_dir = spec[
+                'training_receptive_fields_dir'
+            ]
+        if 'training_receptive_fields_distribution_report_path' in spec_keys:
+            self.training_receptive_fields_distribution_report_path = spec[
+                'training_receptive_fields_distribution_report_path'
+            ]
+        if 'training_receptive_fields_distribution_plot_path' in spec_keys:
+            self.training_receptive_fields_distribution_plot_path = spec[
+                'training_receptive_fields_distribution_plot_path'
             ]
 
     # ---   SERIALIZATION   --- #
@@ -348,12 +390,19 @@ class FurthestPointSubsamplingPreProcessor:
         """
         # Return pre-processor state (cache to None)
         return {
+            'training_class_distribution': self.training_class_distribution,
+            'center_on_pcloud': self.center_on_pcloud,
             'num_points': self.num_points,
             'num_encoding_neighbors': self.num_encoding_neighbors,
             'fast': self.fast,
             'neighborhood_spec': self.neighborhood_spec,
             'nthreads': self.nthreads,
             'receptive_fields_dir': None,
+            'receptive_fields_distribution_report_path': None,
+            'receptive_fields_distribution_plot_path': None,
+            'training_receptive_fields_dir': None,
+            'training_receptive_fields_distribution_report_path': None,
+            'training_receptive_fields_distribution_plot_path': None,
             # Cache attributes below
             'last_call_receptive_fields': None,
             'last_call_neighborhoods': None
@@ -370,6 +419,8 @@ class FurthestPointSubsamplingPreProcessor:
         :return: Nothing, but modifies the internal state of the object.
         """
         # Assign member attributes from state
+        self.training_class_distribution = state['training_class_distribution']
+        self.center_on_pcloud = state['center_on_pcloud']
         self.num_points = state['num_points']
         self.num_encoding_neighbors = state['num_encoding_neighbors']
         self.fast = state['fast']
