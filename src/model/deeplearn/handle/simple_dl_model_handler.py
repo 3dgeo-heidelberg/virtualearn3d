@@ -131,7 +131,11 @@ class SimpleDLModelHandler(DLModelHandler):
             ))
         # Fit the model
         start = time.perf_counter()
-        X, y_rf = self.arch.run_pre({'X': X, 'y': y})
+        X, y_rf = self.arch.run_pre({
+            'X': X,
+            'y': y,
+            'training_support_points': True
+        })
         class_weight = self.handle_class_weight(y_rf)
         y_rf = self.handle_labels_format(y_rf)
         if class_weight is not None:  # Recompile for custom class weight loss
@@ -207,7 +211,7 @@ class SimpleDLModelHandler(DLModelHandler):
         :meth:`dl_model_handler.DLModelHandler._predict`.
         """
         # Softmax scores
-        X_rf = self.arch.run_pre({'X': X})
+        X_rf = self.arch.run_pre({'X': X, 'support_points': True})
         zhat_rf = self.compiled.predict(X_rf, batch_size=self.batch_size)
         zhat = self.arch.run_post({'X': X, 'z': zhat_rf})
         if zout is not None:  # When z is not None it must be a list
@@ -219,8 +223,7 @@ class SimpleDLModelHandler(DLModelHandler):
         self.handle_receptive_fields_plots_and_reports(
             X_rf=X_rf,
             zhat_rf=zhat_rf,
-            y=y,
-            training=training
+            y=y
         )
         # Return
         return yhat

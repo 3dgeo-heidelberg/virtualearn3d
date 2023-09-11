@@ -242,9 +242,11 @@ class Architecture:
             self.architecture_graph_path = spec['architecture_graph_path']
             self.plot()
         # Overwrite the attributes of the pre-processor
-        if self.pre_runnable is not None:
+        if self.pre_runnable is not None and 'pre_processing' in spec_keys:
             if hasattr(self.pre_runnable, 'overwrite_pretrained_model'):
-                self.pre_runnable.overwrite_pretrained_model(spec)
+                self.pre_runnable.overwrite_pretrained_model(
+                    spec['pre_processing']
+                )
 
     # ---   SERIALIZATION   --- #
     # ------------------------- #

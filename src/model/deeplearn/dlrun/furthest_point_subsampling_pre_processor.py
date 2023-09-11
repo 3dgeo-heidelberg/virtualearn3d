@@ -126,6 +126,12 @@ class FurthestPointSubsamplingPreProcessor:
         self.training_receptive_fields_distribution_plot_path = kwargs.get(
             'training_receptive_fields_distribution_plot_path', None
         )
+        self.training_support_points_report_path = kwargs.get(
+            'training_support_points_report_path', None
+        )
+        self.support_points_report_path = kwargs.get(
+            'support_points_report_path', None
+        )
         # Initialize last call cache
         self.last_call_receptive_fields = None
         self.last_call_neighborhoods = None
@@ -160,9 +166,23 @@ class FurthestPointSubsamplingPreProcessor:
                 sup_X, I, self.num_points
             )
         self.last_call_neighborhoods = I
-        # TODO Remove section ---
-        np.savetxt('/tmp/sup_X.xyz', sup_X, fmt='%.4f')
-        # --- TODO Remove section
+        # Export support points if requested
+        if(
+            inputs.get('training_support_points', False) and
+            self.training_support_points_report_path is not None
+        ):
+            GridSubsamplingPreProcessor.support_points_to_file(
+                sup_X,
+                self.training_support_points_report_path
+            )
+        if(
+            inputs.get('support_points', False) and
+            self.support_points_report_path
+        ):
+            GridSubsamplingPreProcessor.support_points_to_file(
+                sup_X,
+                self.support_points_report_path
+            )
         # Prepare receptive field
         self.last_call_receptive_fields = [
             ReceptiveFieldFPS(
@@ -377,6 +397,14 @@ class FurthestPointSubsamplingPreProcessor:
             self.training_receptive_fields_distribution_plot_path = spec[
                 'training_receptive_fields_distribution_plot_path'
             ]
+        if 'training_support_points_report_path' in spec_keys:
+            self.training_support_points_report_path = spec[
+                'training_support_points_report_path'
+            ]
+        if 'support_points_report_path' in spec_keys:
+            self.support_points_report_path = spec[
+                'support_points_report_path'
+            ]
 
     # ---   SERIALIZATION   --- #
     # ------------------------- #
@@ -403,6 +431,8 @@ class FurthestPointSubsamplingPreProcessor:
             'training_receptive_fields_dir': None,
             'training_receptive_fields_distribution_report_path': None,
             'training_receptive_fields_distribution_plot_path': None,
+            'training_support_points_report_path': None,
+            'support_points_report_path': None,
             # Cache attributes below
             'last_call_receptive_fields': None,
             'last_call_neighborhoods': None
@@ -427,5 +457,12 @@ class FurthestPointSubsamplingPreProcessor:
         self.neighborhood_spec = state['neighborhood_spec']
         self.nthreads = state['nthreads']
         self.receptive_fields_dir = None
+        self.receptive_fields_distribution_report_path = None
+        self.receptive_fields_distribution_plot_path = None
+        self.training_receptive_fields_dir = None
+        self.training_receptive_fields_distribution_report_path = None
+        self.training_receptive_fields_distribution_plot_path = None
+        self.training_support_points_report_path = None
+        self.support_points_report_path = None
         self.last_call_neighborhoods = None
         self.last_call_neighborhoods = None

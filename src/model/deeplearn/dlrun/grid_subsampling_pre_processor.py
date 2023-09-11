@@ -2,6 +2,8 @@
 # ------------------- #
 from src.utils.ptransf.receptive_field_gs import ReceptiveFieldGS
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
+from src.pcloud.point_cloud_factory_facade import PointCloudFactoryFacade
+from src.inout.point_cloud_io import PointCloudIO
 import src.main.main_logger as LOGGING
 from scipy.spatial import KDTree as KDT
 import scipy.stats
@@ -123,6 +125,12 @@ class GridSubsamplingPreProcessor:
         self.training_receptive_fields_distribution_plot_path = kwargs.get(
             'training_receptive_fields_distribution_plot_path', None
         )
+        self.training_support_points_report_path = kwargs.get(
+            'training_support_points_report_path', None
+        )
+        self.support_points_report_path = kwargs.get(
+            'support_points_report_path', None
+        )
         # Initialize last call cache
         self.last_call_receptive_fields = None
         self.last_call_neighborhoods = None
@@ -176,6 +184,23 @@ class GridSubsamplingPreProcessor:
         I, sup_X = GridSubsamplingPreProcessor.clean_support_neighborhoods(
             sup_X, I
         )
+        # Export support points if requested
+        if(
+            inputs.get('training_support_points', False) and
+            self.training_support_points_report_path is not None
+        ):
+            GridSubsamplingPreProcessor.support_points_to_file(
+                sup_X,
+                self.training_support_points_report_path
+            )
+        if(
+            inputs.get('support_points', False) and
+            self.support_points_report_path
+        ):
+            GridSubsamplingPreProcessor.support_points_to_file(
+                sup_X,
+                self.support_points_report_path
+            )
         self.last_call_neighborhoods = I
         # Prepare receptive field
         self.last_call_receptive_fields = [
@@ -338,6 +363,20 @@ class GridSubsamplingPreProcessor:
         sup_X = sup_X[non_empty_mask]
         return I, sup_X
 
+    @staticmethod
+    def support_points_to_file(sup_X, path):
+        """
+        Export the given support points to a LAS/LAZ point cloud at the given
+        path.
+
+        :param sup_X: The support points to be exported.
+        :param path: The path where the LAS/LAZ file must be written.
+        :return: Nothing at all, but an output file is generated.
+        """
+        sup_pcloud = PointCloudFactoryFacade.make_from_arrays(sup_X, None)
+        PointCloudIO.write(sup_pcloud, path)
+        LOGGING.LOGGER.info(f'Support points exported to "{path}".')
+
     def reduce_labels(self, X_rf, y, I=None):
         r"""
         Reduce the given labels :math:`\pmb{y} \in \mathbb{Z}_{\geq 0}^{m}`
@@ -446,6 +485,14 @@ class GridSubsamplingPreProcessor:
             self.training_receptive_fields_distribution_plot_path = spec[
                 'training_receptive_fields_distribution_plot_path'
             ]
+        if 'training_support_points_report_path' in spec_keys:
+            self.training_support_points_report_path = spec[
+                'training_support_points_report_path'
+            ]
+        if 'support_points_report_path' in spec_keys:
+            self.support_points_report_path = spec[
+                'support_points_report_path'
+            ]
 
     # ---   SERIALIZATION   --- #
     # ------------------------- #
@@ -472,6 +519,8 @@ class GridSubsamplingPreProcessor:
             'training_receptive_fields_dir': None,
             'training_receptive_fields_distribution_report_path': None,
             'training_receptive_fields_distribution_plot_path': None,
+            'training_support_points_report_path': None,
+            'support_points_report_path': None,
             # Cache attributes below
             'last_call_receptive_fields': None,
             'last_call_neighborhoods': None
@@ -501,6 +550,8 @@ class GridSubsamplingPreProcessor:
         self.training_receptive_fields_dir = None
         self.training_receptive_fields_distribution_report_path = None
         self.training_receptive_fields_distribution_plot_path = None
+        self.training_support_points_report_path = None
+        self.support_points_report_path = None
         # Assign cache attributes from state
         self.last_call_neighborhoods = None
         self.last_call_receptive_fields = None

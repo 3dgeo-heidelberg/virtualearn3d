@@ -29,7 +29,9 @@
 			"_training_receptive_fields_dir": "out/PointnetPwiseClassifier_T2/training_eval/training_receptive_fields/",			
 			"receptive_fields_distribution_report_path": "out/PointnetPwiseClassifier_T2/training_eval/receptive_fields_distribution.log",
 			"receptive_fields_distribution_plot_path": "out/PointnetPwiseClassifier_T2/training_eval/receptive_fields_distribution.svg",
-			"_receptive_fields_dir": "out/PointnetPwiseClassifier_T2/training_eval/receptive_fields/"
+			"_receptive_fields_dir": "out/PointnetPwiseClassifier_T2/training_eval/receptive_fields/",
+			"training_support_points_report_path": "out/PointnetPwiseClassifier_T2/training_eval/training_support_points.laz",
+			"support_points_report_path": "out/PointnetPwiseClassifier_T2/training_eval/support_points.laz"
 		},
 		"kernel_initializer": "he_normal",
 		"pretransf_feats_spec": [
