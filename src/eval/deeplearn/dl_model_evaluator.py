@@ -59,6 +59,9 @@ class DLModelEvaluator(Evaluator):
         self.pwise_activations_path = kwargs.get(
             'pointwise_model_activations_path', None
         )
+        self.accept_pipeline_state_predictions = kwargs.get(
+            'accept_pipeline_state_predictions', False
+        )
 
     # ---  EVALUATOR METHODS   --- #
     # ---------------------------- #

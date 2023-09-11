@@ -74,7 +74,7 @@ class DLModelHandler:
         """
         pass
 
-    def predict(self, X, F=None, y=None, training=False, zout=None):
+    def predict(self, X, F=None, y=None, zout=None):
         """
         Compute predictions for the given input data.
 
@@ -89,12 +89,6 @@ class DLModelHandler:
             compute predictions, when available it can be given because some
             models can use it for evaluation and analysis purposes.
         :type y: :class:`np.ndarray`
-        :param training: Flag to specify whether the predictions are requested
-            on the same data that was used for training (True) or not (False).
-            It can be used internally to change the behavior of some methods.
-            For instance, to decide whether to do reports and plots related to
-            the receptive fields or the training receptive fields.
-        :type training: bool
         :param zout: It can be given as an empty list in which case its last
             element after the call will contain the output from the last layer
             of the neural network, e.g., the softmax scores for a point-wise
@@ -111,7 +105,7 @@ class DLModelHandler:
         return self._predict(X, F=F, y=y, zout=zout)
 
     @abstractmethod
-    def _predict(self, X, F=None, y=None, training=False, zout=None):
+    def _predict(self, X, F=None, y=None, zout=None):
         """
         This method must be overriden by any concrete derived class to provide
         the predictive logic assuming the model has been compiled. It

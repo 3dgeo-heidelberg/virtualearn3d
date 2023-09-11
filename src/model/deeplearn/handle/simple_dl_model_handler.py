@@ -201,7 +201,7 @@ class SimpleDLModelHandler(DLModelHandler):
         # Return
         return self
 
-    def _predict(self, X, F=None, y=None, training=False, zout=None):
+    def _predict(self, X, F=None, y=None, zout=None):
         """
         See :class:`.DLModelHandler` and
         :meth:`dl_model_handler.DLModelHandler._predict`.
