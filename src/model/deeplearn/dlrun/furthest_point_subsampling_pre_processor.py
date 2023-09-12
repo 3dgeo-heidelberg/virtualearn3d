@@ -1,9 +1,11 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.utils.ptransf.receptive_field_fps import ReceptiveFieldFPS
-from src.model.deeplearn.deep_learning_exception import DeepLearningException
+from src.model.deeplearn.dlrun.receptive_field_pre_processor import \
+    ReceptiveFieldPreProcessor
 from src.model.deeplearn.dlrun.grid_subsampling_pre_processor import \
     GridSubsamplingPreProcessor
+from src.model.deeplearn.deep_learning_exception import DeepLearningException
 import src.main.main_logger as LOGGING
 from scipy.spatial import KDTree as KDT
 import scipy.stats
@@ -14,7 +16,7 @@ import time
 
 # ---   CLASS   --- #
 # ----------------- #
-class FurthestPointSubsamplingPreProcessor:
+class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
     """
     :author: Alberto M. Esmoris Pena
 
@@ -23,20 +25,8 @@ class FurthestPointSubsamplingPreProcessor:
     PointNet.
 
     See :class:`.ReceptiveFieldFPS`.
+    See :class:`.ReceptiveFieldPreProcessor`.
 
-    :ivar training_class_distribution: The target class distribution to
-        consider when building the support points. The element i of this
-        vector (or list) specifies how many neighborhoods centered on a point
-        of class i must be considered. If None, then the point-wise classes
-        will not be considered when building the neighborhoods.
-    :vartype training_class_distribution: list or tuple or :class:`np.ndarray`
-    :ivar center_on_pcloud: When True, the support points defining the
-        receptive field will be transformed to be a point from the input
-        point cloud. Consequently, the generated neighborhoods are centered on
-        points that belong to the point cloud instead of arbitrary support
-        points. When False, support points do not necessarily match points
-        from the point cloud.
-    :vartype center_on_pcloud: bool
     :ivar num_points: The number of points any point cloud must be reduced to
         through furthest point subsampling.
     :vartype num_points: int
@@ -58,32 +48,6 @@ class FurthestPointSubsamplingPreProcessor:
             }
 
     :vartype neighborhood_spec: dict
-    :ivar receptive_fields_dir: Directory where the point clouds representing
-        the many receptive fields will be exported (OPTIONAL).
-    :vartype receptive_fields_dir: str or None
-    :ivar receptive_fields_distribution_report_path: Path where the text-like
-        report on the class distribution of the receptive fields will be
-        exported (OPTIONAL).
-    :vartype receptive_fields_distribution_report_path: str or None
-    :ivar receptive_fields_distribution_plot_path: Path where the plot
-        representing the class distribution of the receptive fields will be
-        exported (OPTIONAL).
-    :vartype receptive_fields_distribution_plot_path: str or None
-    :ivar training_receptive_fields_dir: Like receptive_fields_dir but for
-        the receptive fields at training.
-    :ivar training_receptive_fields_distribution_report_path: Like
-        receptive_fields_distribution_report_path but for the receptive fields
-        at training.
-    :ivar training_receptive_fields_distribution_plot_path: Like
-        receptive_fields_distribution_plot_path but for the receptive fields
-        at training.
-    :ivar last_call_receptive_fields: List of the receptive fields used the
-        last time that the pre-processing logic was executed.
-    :vartype last_call_receptive_fields: list
-    :ivar last_call_neighborhoods: List of neighborhoods (represented by
-        indices) used the last time that the pre-processing logic was
-        executed.
-    :vartype last_call_neighborhoods: list
     """
     # ---   INIT   --- #
     # ---------------- #
@@ -95,11 +59,9 @@ class FurthestPointSubsamplingPreProcessor:
         :param kwargs: The key-word arguments for the
             FurthestPointSubsamplingPreProcessor.
         """
+        # Call parent's init
+        super().__init__(**kwargs)
         # Assign attributes
-        self.training_class_distribution = kwargs.get(
-            'training_class_distribution', None
-        )
-        self.center_on_pcloud = kwargs.get('center_on_pcloud', False)
         self.num_points = kwargs.get('num_points', 8000)
         self.num_encoding_neighbors = kwargs.get('num_encoding_neighbors', 3)
         self.fast = kwargs.get('fast', False)
@@ -109,32 +71,6 @@ class FurthestPointSubsamplingPreProcessor:
                 'The FurthestPointSubsamplingPreProcessor did not receive '
                 'any neighborhood specification.'
             )
-        self.nthreads = kwargs.get('nthreads', 1)
-        self.receptive_fields_dir = kwargs.get('receptive_fields_dir', None)
-        self.receptive_fields_distribution_report_path = kwargs.get(
-            'receptive_fields_distribution_report_path', None
-        )
-        self.receptive_fields_distribution_plot_path = kwargs.get(
-            'receptive_fields_distribution_plot_path', None
-        )
-        self.training_receptive_fields_dir = kwargs.get(
-            'training_receptive_fields_dir', None
-        )
-        self.training_receptive_fields_distribution_report_path = kwargs.get(
-            'training_receptive_fields_distribution_report_path', None
-        )
-        self.training_receptive_fields_distribution_plot_path = kwargs.get(
-            'training_receptive_fields_distribution_plot_path', None
-        )
-        self.training_support_points_report_path = kwargs.get(
-            'training_support_points_report_path', None
-        )
-        self.support_points_report_path = kwargs.get(
-            'support_points_report_path', None
-        )
-        # Initialize last call cache
-        self.last_call_receptive_fields = None
-        self.last_call_neighborhoods = None
 
     # ---   RUN/CALL   --- #
     # -------------------- #
@@ -372,39 +308,18 @@ class FurthestPointSubsamplingPreProcessor:
         :meth:`point_net_pre_processor.PointNetPreProcessor.overwrite_pretrained_model`
         method.
         """
-        # TODO Rethink : training_class_distribution, center_on_pcloud, etc.
+        # Overwrite from parent
+        super().overwrite_pretrained_model(spec)
         spec_keys = spec.keys()
-        # Overwrite the attributes of the grid subsampling pre-processor
-        if 'receptive_fields_dir' in spec_keys:
-            self.receptive_fields_dir = spec['receptive_fields_dir']
-        if 'receptive_fields_distribution_report_path' in spec_keys:
-            self.receptive_fields_distribution_report_path = spec[
-                'receptive_fields_distribution_report_path'
-            ]
-        if 'receptive_fields_distribution_plot_path' in spec_keys:
-            self.receptive_fields_distribution_plot_path = spec[
-                'receptive_fields_distribution_plot_path'
-            ]
-        if 'training_receptive_fields_dir' in spec_keys:
-            self.training_receptive_fields_dir = spec[
-                'training_receptive_fields_dir'
-            ]
-        if 'training_receptive_fields_distribution_report_path' in spec_keys:
-            self.training_receptive_fields_distribution_report_path = spec[
-                'training_receptive_fields_distribution_report_path'
-            ]
-        if 'training_receptive_fields_distribution_plot_path' in spec_keys:
-            self.training_receptive_fields_distribution_plot_path = spec[
-                'training_receptive_fields_distribution_plot_path'
-            ]
-        if 'training_support_points_report_path' in spec_keys:
-            self.training_support_points_report_path = spec[
-                'training_support_points_report_path'
-            ]
-        if 'support_points_report_path' in spec_keys:
-            self.support_points_report_path = spec[
-                'support_points_report_path'
-            ]
+        # Overwrite the attributes of the furth. pt. subsampling pre-processor
+        if 'num_points' in spec_keys:
+            self.num_points = spec['num_points']
+        if 'num_encoding_neighbors' in spec_keys:
+            self.num_encoding_neighbors = spec['num_encoding_neighbors']
+        if 'fast' in spec_keys:
+            self.fast = spec['fast']
+        if 'neighborhood_spec' in spec_keys:
+            self.neighborhood_spec = spec['neighborhood_spec']
 
     # ---   SERIALIZATION   --- #
     # ------------------------- #
@@ -413,56 +328,37 @@ class FurthestPointSubsamplingPreProcessor:
         Method to be called when saving the serialized furthest point
         subsampling pre-processor.
 
+        See :meth:`ReceptiveFieldPreProcessor.__getstate__`.
+
         :return: The state's dictionary of the object.
         :rtype: dict
         """
-        # Return pre-processor state (cache to None)
-        return {
-            'training_class_distribution': self.training_class_distribution,
-            'center_on_pcloud': self.center_on_pcloud,
-            'num_points': self.num_points,
-            'num_encoding_neighbors': self.num_encoding_neighbors,
-            'fast': self.fast,
-            'neighborhood_spec': self.neighborhood_spec,
-            'nthreads': self.nthreads,
-            'receptive_fields_dir': None,
-            'receptive_fields_distribution_report_path': None,
-            'receptive_fields_distribution_plot_path': None,
-            'training_receptive_fields_dir': None,
-            'training_receptive_fields_distribution_report_path': None,
-            'training_receptive_fields_distribution_plot_path': None,
-            'training_support_points_report_path': None,
-            'support_points_report_path': None,
-            # Cache attributes below
-            'last_call_receptive_fields': None,
-            'last_call_neighborhoods': None
-        }
+        # Obtain parent's state
+        state = super().__getstate__()
+        # Update state
+        state['num_points'] = self.num_points
+        state['num_encoding_neighbors'] = self.num_encoding_neighbors
+        state['fast'] = self.fast
+        state['neighborhood_spec'] = self.neighborhood_spec
+        # Return state
+        return state
 
     def __setstate__(self, state):
         """
         Method to be called when loading and deserializing a previously
         serialized furthest point subsampling pre-processor.
 
+        See :meth:`ReceptiveFieldPreProcessor.__setstate__`.
+
         :param state: The state's dictionary of the saved furthest point
-            subsampling post-processor.
+            subsampling pre-processor.
         :type state: dict
         :return: Nothing, but modifies the internal state of the object.
         """
+        # Call parent
+        super().__setstate__(state)
         # Assign member attributes from state
-        self.training_class_distribution = state['training_class_distribution']
-        self.center_on_pcloud = state['center_on_pcloud']
         self.num_points = state['num_points']
         self.num_encoding_neighbors = state['num_encoding_neighbors']
         self.fast = state['fast']
         self.neighborhood_spec = state['neighborhood_spec']
-        self.nthreads = state['nthreads']
-        self.receptive_fields_dir = None
-        self.receptive_fields_distribution_report_path = None
-        self.receptive_fields_distribution_plot_path = None
-        self.training_receptive_fields_dir = None
-        self.training_receptive_fields_distribution_report_path = None
-        self.training_receptive_fields_distribution_plot_path = None
-        self.training_support_points_report_path = None
-        self.support_points_report_path = None
-        self.last_call_neighborhoods = None
-        self.last_call_neighborhoods = None

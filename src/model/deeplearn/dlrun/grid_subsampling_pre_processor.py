@@ -1,6 +1,8 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.utils.ptransf.receptive_field_gs import ReceptiveFieldGS
+from src.model.deeplearn.dlrun.receptive_field_pre_processor import \
+    ReceptiveFieldPreProcessor
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
 from src.pcloud.point_cloud_factory_facade import PointCloudFactoryFacade
 from src.inout.point_cloud_io import PointCloudIO
@@ -14,7 +16,7 @@ import time
 
 # ---   CLASS   --- #
 # ----------------- #
-class GridSubsamplingPreProcessor:
+class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
     r"""
     :author: Alberto M. Esmoris Pena
 
@@ -23,20 +25,8 @@ class GridSubsamplingPreProcessor:
     PointNet.
 
     See :class:`.ReceptiveFieldGS`.
+    See :class:`.ReceptiveFieldPreProcessor`.
 
-    :ivar training_class_distribution: The target class distribution to
-        consider when building the support points. The element i of this
-        vector (or list) specifies how many neighborhoods centered on a point
-        of class i must be considered. If None, then the point-wise classes
-        will not be considered when building the neighborhoods.
-    :vartype training_class_distribution: list or tuple or :class:`np.ndarray`
-    :ivar center_on_pcloud: When True, the support points defining the
-        receptive field will be transformed to be a point from the input
-        point cloud. Consequently, the generated neighborhoods are centered on
-        points that belong to the point cloud instead of arbitrary support
-        points. When False, support points do not necessarily match points
-        from the point cloud.
-    :vartype center_on_pcloud: bool
     :ivar sphere_radius: The radius of the sphere that bounds a neighborhood.
         For an arbitrary set of 3D points it can be found as follows:
 
@@ -63,32 +53,12 @@ class GridSubsamplingPreProcessor:
     :ivar cell_size: The cell size defining the receptive field. See
         :class:`.ReceptiveFieldGS`.
     :vartype cell_size: :class:`np.ndarray`
-    :ivar receptive_fields_dir: Directory where the point clouds representing
-        the many receptive fields will be exported (OPTIONAL).
-    :vartype receptive_fields_dir: str or None
-    :ivar receptive_fields_distribution_report_path: Path where the text-like
-        report on the class distribution of the receptive fields will be
-        exported (OPTIONAL).
-    :vartype receptive_fields_distribution_report_path: str or None
-    :ivar receptive_fields_distribution_plot_path: Path where the plot
-        representing the class distribution of the receptive fields will be
-        exported (OPTIONAL).
-    :vartype receptive_fields_distribution_plot_path: str or None
-    :ivar training_receptive_fields_dir: Like receptive_fields_dir but for
-        the receptive fields at training.
-    :ivar training_receptive_fields_distribution_report_path: Like
-        receptive_fields_distribution_report_path but for the receptive fields
-        at training.
-    :ivar training_receptive_fields_distribution_plot_path: Like
-        receptive_fields_distribution_plot_path but for the receptive fields
-        at training.
-    :ivar last_call_receptive_fields: List of the receptive fields used the
-        last time that the pre-processing logic was executed.
-    :vartype last_call_receptive_fields: list
-    :ivar last_call_neighborhoods: List of neighborhoods (represented by
-        indices) used the last time that the pre-processing logic was
-        executed.
-    :vartype last_call_neighborhoods: list
+    :ivar interpolate: Flag to control whether to interpolate the missing
+        centroids of the receptive fields (True) or not (False). When
+        interpolating, centroids will be computed from missing centroids.
+        Otherwise, all missing centroids will be replaced by the point
+        obtained as the coordinate-wise mean.
+    :vartype interpolate: bool
     """
     # ---   INIT   --- #
     # ---------------- #
@@ -99,41 +69,13 @@ class GridSubsamplingPreProcessor:
         :param kwargs: The key-word arguments for the
             GridSubSamplingPreProcessor.
         """
+        # Call parent's init
+        super().__init__(**kwargs)
         # Assign attributes
-        self.training_class_distribution = kwargs.get(
-            'training_class_distribution', None
-        )
-        self.center_on_pcloud = kwargs.get('center_on_pcloud', False)
         self.sphere_radius = kwargs.get('sphere_radius', 1.0)
         self.separation_factor = kwargs.get('separation_factor', np.sqrt(3)/4)
         self.cell_size = np.array(kwargs.get('cell_size', [0.1, 0.1, 0.1]))
         self.interpolate = kwargs.get('interpolate', True)
-        self.nthreads = kwargs.get('nthreads', 1)
-        self.receptive_fields_distribution_report_path = kwargs.get(
-            'receptive_fields_distribution_report_path', None
-        )
-        self.receptive_fields_distribution_plot_path = kwargs.get(
-            'receptive_fields_distribution_plot_path', None
-        )
-        self.receptive_fields_dir = kwargs.get('receptive_fields_dir', None)
-        self.training_receptive_fields_dir = kwargs.get(
-            'training_receptive_fields_dir', None
-        )
-        self.training_receptive_fields_distribution_report_path = kwargs.get(
-            'training_receptive_fields_distribution_report_path', None
-        )
-        self.training_receptive_fields_distribution_plot_path = kwargs.get(
-            'training_receptive_fields_distribution_plot_path', None
-        )
-        self.training_support_points_report_path = kwargs.get(
-            'training_support_points_report_path', None
-        )
-        self.support_points_report_path = kwargs.get(
-            'support_points_report_path', None
-        )
-        # Initialize last call cache
-        self.last_call_receptive_fields = None
-        self.last_call_neighborhoods = None
 
     # ---   RUN/CALL   --- #
     # -------------------- #
@@ -461,38 +403,18 @@ class GridSubsamplingPreProcessor:
         :meth:`point_net_pre_processor.PointNetPreProcessor.overwrite_pretrained_model`
         method.
         """
+        # Overwrite from parent
+        super().overwrite_pretrained_model(spec)
         spec_keys = spec.keys()
         # Overwrite the attributes of the grid subsampling pre-processor
-        if 'receptive_fields_dir' in spec_keys:
-            self.receptive_fields_dir = spec['receptive_fields_dir']
-        if 'receptive_fields_distribution_report_path' in spec_keys:
-            self.receptive_fields_distribution_report_path = spec[
-                'receptive_fields_distribution_report_path'
-            ]
-        if 'receptive_fields_distribution_plot_path' in spec_keys:
-            self.receptive_fields_distribution_plot_path = spec[
-                'receptive_fields_distribution_plot_path'
-            ]
-        if 'training_receptive_fields_dir' in spec_keys:
-            self.training_receptive_fields_dir = spec[
-                'training_receptive_fields_dir'
-            ]
-        if 'training_receptive_fields_distribution_report_path' in spec_keys:
-            self.training_receptive_fields_distribution_report_path = spec[
-                'training_receptive_fields_distribution_report_path'
-            ]
-        if 'training_receptive_fields_distribution_plot_path' in spec_keys:
-            self.training_receptive_fields_distribution_plot_path = spec[
-                'training_receptive_fields_distribution_plot_path'
-            ]
-        if 'training_support_points_report_path' in spec_keys:
-            self.training_support_points_report_path = spec[
-                'training_support_points_report_path'
-            ]
-        if 'support_points_report_path' in spec_keys:
-            self.support_points_report_path = spec[
-                'support_points_report_path'
-            ]
+        if 'sphere_radius' in spec_keys:
+            self.sphere_radius = spec['sphere_radius']
+        if 'separation_factor' in spec_keys:
+            self.separation_factor = spec['separation_factor']
+        if 'cell_size' in spec_keys:
+            self.cell_size = spec['cell_size']
+        if 'interpolate' in spec_keys:
+            self.interpolate = spec['interpolate']
 
     # ---   SERIALIZATION   --- #
     # ------------------------- #
@@ -501,57 +423,37 @@ class GridSubsamplingPreProcessor:
         Method to be called when saving the serialized grid subsampling
         pre-processor.
 
+        See :meth:`ReceptiveFieldPreProcessor.__getstate__`.
+
         :return: The state's dictionary of the object.
         :rtype: dict
         """
-        # Return pre-processor state (cache to None)
-        return {
-            'training_class_distribution': self.training_class_distribution,
-            'center_on_pcloud': self.center_on_pcloud,
-            'sphere_radius': self.sphere_radius,
-            'separation_factor': self.separation_factor,
-            'cell_size': self.cell_size,
-            'interpolate': self.interpolate,
-            'nthreads': self.nthreads,
-            'receptive_fields_dir': None,
-            'receptive_fields_distribution_report_path': None,
-            'receptive_fields_distribution_plot_path': None,
-            'training_receptive_fields_dir': None,
-            'training_receptive_fields_distribution_report_path': None,
-            'training_receptive_fields_distribution_plot_path': None,
-            'training_support_points_report_path': None,
-            'support_points_report_path': None,
-            # Cache attributes below
-            'last_call_receptive_fields': None,
-            'last_call_neighborhoods': None
-        }
+        # Obtain parent's state
+        state = super().__getstate__()
+        # Update state
+        state['sphere_radius'] = self.sphere_radius
+        state['separation_factor'] = self.separation_factor
+        state['cell_size'] = self.cell_size
+        state['interpolate'] = self.interpolate
+        # Return state
+        return state
 
     def __setstate__(self, state):
         """
         Method to be called when loading and deserializing a previously
         serialized grid subsampling pre-processor.
 
+        See :meth:`ReceptiveFieldPreProcessor.__setstate__`.
+
         :param state: The state's dictionary of the saved grid subsampling
-            post-procesor.
+            pre-procesor.
         :type state: dict
         :return: Nothing, but modifies the internal state of the object.
         """
+        # Call parent
+        super().__setstate__(state)
         # Assign member attributes from state
-        self.training_class_distribution = state['training_class_distribution']
-        self.center_on_pcloud = state['center_on_pcloud']
         self.sphere_radius = state['sphere_radius']
         self.separation_factor = state['separation_factor']
         self.cell_size = state['cell_size']
         self.interpolate = state['interpolate']
-        self.nthreads = state['nthreads']
-        self.receptive_fields_dir = None
-        self.receptive_fields_distribution_report_path = None
-        self.receptive_fields_distribution_plot_path = None
-        self.training_receptive_fields_dir = None
-        self.training_receptive_fields_distribution_report_path = None
-        self.training_receptive_fields_distribution_plot_path = None
-        self.training_support_points_report_path = None
-        self.support_points_report_path = None
-        # Assign cache attributes from state
-        self.last_call_neighborhoods = None
-        self.last_call_receptive_fields = None

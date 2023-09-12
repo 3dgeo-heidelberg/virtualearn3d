@@ -99,7 +99,7 @@
 				"learning_rate": {
 					"schedule": "exponential_decay",
 					"schedule_args": {
-						"initial_learning_rate": 1e-2,
+						"initial_learning_rate": 1e-3,
 						"decay_steps": 430,
 						"decay_rate": 0.96,
 						"staircase": false
