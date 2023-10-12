@@ -260,10 +260,11 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
         class_distr = self.training_class_distribution if y is not None\
             else None
         if self.neighborhood_spec['radius'] == 0:
-            # The sphere/cylinder of radius 0 is said to be the entire point cloud
+            # The neighborhood of radius 0 is said to be the entire point cloud
             I = [np.arange(len(X), dtype=int).tolist()]
             sup_X = np.mean(X, axis=0).reshape(1, -1)
         elif ngbhd_type_low == 'cylinder':
+            # Circumference boundary on xy, infinite on z
             X2D = X[:, :2]
             sup_X = GridSubsamplingPreProcessor.build_support_points(
                 X2D,
@@ -292,6 +293,70 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             kdt = KDT(X)
             kdt_sup = KDT(sup_X)
             I = kdt_sup.query_ball_tree(kdt, self.neighborhood_spec['radius'])
+        elif ngbhd_type_low == 'rectangular2d':
+            # 2D rectangular boundary on xy, infinite on z
+            X2D = X[:, :2]
+            radius = self.neighborhood_spec['radius']
+            if not isinstance(radius, list):
+                radius = [radius, radius]
+            sup_X = GridSubsamplingPreProcessor.build_support_points(
+                X2D,
+                self.neighborhood_spec['separation_factor'],
+                np.max(radius),
+                y=y,
+                class_distr=class_distr,
+                center_on_X=self.center_on_pcloud,
+                nthreads=self.nthreads
+            )
+            # Compute the min radius cylindrical neighborhood that contains the
+            # rectangular prism with infinite height
+            boundary_radius = np.sqrt(
+                radius[0]*radius[0]+radius[1]*radius[1]
+            )
+            kdt = KDT(X2D)
+            kdt_sup = KDT(sup_X)
+            I = kdt_sup.query_ball_tree(kdt, boundary_radius)
+            # Discard points outside 2D rectangular boundary
+            XY = [X2D[Ii][:, 0:2] - kdt_sup[i] for i, Ii in enumerate(I)]
+            mask = [
+                (XYi[:, 0] >= -radius[0]) * (XYi[:, 0] <= radius[0]) *
+                (XYi[:, 1] >= -radius[1]) * (XYi[:, 1] <= radius[1])
+                for XYi in XY
+            ]
+            I = [Ii[mask[i]] for i, Ii in enumerate(I)]
+            # Fill missing 3D coordinate (z) with zero
+            sup_X = np.hstack([sup_X, np.zeros((sup_X.shape[0], 1))])
+        elif ngbhd_type_low == 'rectangular3d':
+            # 3D rectangular boundary (voxel if all axis share the same length)
+            radius = self.neighborhood_spec['radius']
+            if not isinstance(radius, list):
+                radius = [radius, radius, radius]
+            sup_X = GridSubsamplingPreProcessor.build_support_points(
+                X,
+                self.neighborhood_spec['separation_factor'],
+                np.max(radius),
+                y=y,
+                class_distr=class_distr,
+                center_on_X=self.center_on_pcloud,
+                nthreads=self.nthreads
+            )
+            # Compute the min radius spherical neighborhood that contains the
+            # rectangular prism
+            boundary_radius = np.sqrt(
+                radius[0]*radius[0]+radius[1]*radius[1]+radius[2]*radius[2]
+            )
+            kdt = KDT(X)
+            kdt_sup = KDT(sup_X)
+            I = kdt_sup.query_ball_tree(kdt, boundary_radius)
+            # Discard points outside 3D rectangular boundary
+            XYZ = [X[Ii] - kdt_sup[i] for i, Ii in enumerate(I)]
+            mask = [
+                (XYZi[:, 0] >= -radius[0]) * (XYZi[:, 0] <= radius[0]) *
+                (XYZi[:, 1] >= -radius[1]) * (XYZi[:, 1] <= radius[1]) *
+                (XYZi[:, 2] >= -radius[2]) * (XYZi[:, 2] <= radius[2])
+                for XYZi in XYZ
+            ]
+            I = [Ii[mask[i]] for i, Ii in enumerate(I)]
         else:
             raise DeepLearningException(
                 'FurthestPointSubsamplingPreProcessor does not expect a '
