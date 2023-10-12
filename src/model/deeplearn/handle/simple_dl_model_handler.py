@@ -3,6 +3,8 @@
 from src.model.deeplearn.handle.dl_model_handler import DLModelHandler
 from src.model.deeplearn.loss.class_weighted_binary_crossentropy import \
     vl3d_class_weighted_binary_crossentropy
+from src.model.deeplearn.loss.class_weighted_categorical_crossentropy import \
+    vl3d_class_weighted_categorical_crossentropy
 from src.report.deep_learning_model_summary_report import \
     DeepLearningModelSummaryReport
 from src.report.receptive_fields_report import ReceptiveFieldsReport
@@ -142,7 +144,9 @@ class SimpleDLModelHandler(DLModelHandler):
             comp_args = SimpleDLModelHandler.build_compilation_args(
                 self.compilation_args
             )
-            comp_args['loss'] = comp_args['loss'](class_weight)
+            comp_args['loss'] = comp_args['loss'](
+                np.array(list(class_weight.values()), dtype=np.float32)
+            )
             self.compiled.compile(**comp_args)
         self.history = self.compiled.fit(
             X, y_rf,
@@ -306,8 +310,6 @@ class SimpleDLModelHandler(DLModelHandler):
                 opt_lr = tf.keras.optimizers.schedules.ExponentialDecay(
                     **opt_lr['schedule_args']
                 )
-                print(f'expo_lr_decay:\n{opt_lr}\n{opt_lr.__dict__}')  # TODO Remove
-
             else:
                 raise DeepLearningException(
                     'SimpleDLModelHandler received an unexpected learning '
@@ -332,6 +334,9 @@ class SimpleDLModelHandler(DLModelHandler):
             instantiate_loss = False  # Instantiate later with class weights
         if loss_fun == 'categorical_crossentropy':
             loss = tf.keras.losses.CategoricalCrossentropy
+        if loss_fun == 'class_weighted_categorical_crossentropy':
+            loss = vl3d_class_weighted_categorical_crossentropy
+            instantiate_loss = False  # Instantiate later with class weights
         if loss is None:
             raise DeepLearningException(
                 'SimpleDLModelHandler cannot compile a model without a loss '
@@ -446,7 +451,7 @@ class SimpleDLModelHandler(DLModelHandler):
         # Handle loss functions that demand one-hot labels
         if (
             loss_low == 'categorical_crossentropy' or
-            loss_low == 'binary_crossentropy'
+            loss_low == 'class_weighted_categorical_crossentropy'
         ):  # Handle one hot encoding for labels
             num_classes = getattr(self.arch, "num_classes", None)
             if num_classes is None:
@@ -470,6 +475,16 @@ class SimpleDLModelHandler(DLModelHandler):
                 'SimpleDLModelHandler detected that class weight is requested '
                 'for a sparse categorical crossentropy loss. Currently, this '
                 'is not supported.'
+            )
+        if(
+            loss_low == 'binary_crossentropy' and
+            self.class_weight is not None
+        ):
+            raise DeepLearningException(
+                'SimpleDLModelHandler detected that class weight is requested '
+                'for a binary crossentropy loss. This is not supported. '
+                'Please, use "class_weighted_binary_crossentropy" loss '
+                'function instead.'
             )
         # By default, labels can be used straight forward
         return y

@@ -43,7 +43,6 @@ class PointNet(Architecture, ABC):
         self.kernel_initializer = kwargs.get(
             "kernel_initializer", "glorot_normal"
         )
-        print(f'Kernel initializer: {self.kernel_initializer}')  # TODO Remove
         self.pretransf_feats_spec = kwargs['pretransf_feats_spec']
         self.postransf_feats_spec = kwargs['postransf_feats_spec']
         self.tnet_pre_filters_spec = kwargs['tnet_pre_filters_spec']
@@ -144,7 +143,6 @@ class PointNet(Architecture, ABC):
         :rtype: :class:`tf.Tensor` and list and :class:`tf.keras.Layer` and list
         """
         # First transformation block
-        print(f'Building PointNet with kernel_initializer: "{kernel_initializer}"')  # TODO Remove
         x = PointNet.build_transformation_block(
             x,
             num_features=3,

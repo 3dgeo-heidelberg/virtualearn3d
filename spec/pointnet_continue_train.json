@@ -45,7 +45,7 @@
 			},
 			{
 				"filters": 64,
-				"name": "prefeats_32"
+				"name": "prefeats_64"
 			},
 			{
 				"filters": 128,

@@ -3,7 +3,7 @@ import tensorflow as tf
 
 def vl3d_class_weighted_binary_crossentropy(class_weight):
     r"""
-    Function to compute a weighted binary crossentropy loss.
+    Function to compute a weighted binary cross-entropy loss.
 
     Let :math:`\mathcal{L}(\pmb{y}, \pmb{\hat{y}}) \in \mathbb{R}^{m}` be a
     binary crossentropy loss on :math:`m` samples. Now, let
@@ -35,5 +35,3 @@ def vl3d_class_weighted_binary_crossentropy(class_weight):
         return tf.keras.backend.mean(wbce)
 
     return _vl3d_class_weighted_binary_crossentropy
-
-
