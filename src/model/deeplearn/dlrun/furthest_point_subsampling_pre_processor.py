@@ -302,7 +302,7 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             sup_X = GridSubsamplingPreProcessor.build_support_points(
                 X2D,
                 self.neighborhood_spec['separation_factor'],
-                np.max(radius),
+                np.min(radius),
                 y=y,
                 class_distr=class_distr,
                 center_on_X=self.center_on_pcloud,
@@ -317,13 +317,13 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             kdt_sup = KDT(sup_X)
             I = kdt_sup.query_ball_tree(kdt, boundary_radius)
             # Discard points outside 2D rectangular boundary
-            XY = [X2D[Ii][:, 0:2] - kdt_sup[i] for i, Ii in enumerate(I)]
+            XY = [X2D[Ii][:, 0:2] - sup_X[i] for i, Ii in enumerate(I)]
             mask = [
                 (XYi[:, 0] >= -radius[0]) * (XYi[:, 0] <= radius[0]) *
                 (XYi[:, 1] >= -radius[1]) * (XYi[:, 1] <= radius[1])
                 for XYi in XY
             ]
-            I = [Ii[mask[i]] for i, Ii in enumerate(I)]
+            I = [np.array(Ii)[mask[i]].tolist() for i, Ii in enumerate(I)]
             # Fill missing 3D coordinate (z) with zero
             sup_X = np.hstack([sup_X, np.zeros((sup_X.shape[0], 1))])
         elif ngbhd_type_low == 'rectangular3d':
@@ -334,7 +334,7 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             sup_X = GridSubsamplingPreProcessor.build_support_points(
                 X,
                 self.neighborhood_spec['separation_factor'],
-                np.max(radius),
+                np.min(radius),
                 y=y,
                 class_distr=class_distr,
                 center_on_X=self.center_on_pcloud,
@@ -349,14 +349,14 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             kdt_sup = KDT(sup_X)
             I = kdt_sup.query_ball_tree(kdt, boundary_radius)
             # Discard points outside 3D rectangular boundary
-            XYZ = [X[Ii] - kdt_sup[i] for i, Ii in enumerate(I)]
+            XYZ = [X[Ii] - sup_X[i] for i, Ii in enumerate(I)]
             mask = [
                 (XYZi[:, 0] >= -radius[0]) * (XYZi[:, 0] <= radius[0]) *
                 (XYZi[:, 1] >= -radius[1]) * (XYZi[:, 1] <= radius[1]) *
                 (XYZi[:, 2] >= -radius[2]) * (XYZi[:, 2] <= radius[2])
                 for XYZi in XYZ
             ]
-            I = [Ii[mask[i]] for i, Ii in enumerate(I)]
+            I = [np.array(Ii)[mask[i]].tolist() for i, Ii in enumerate(I)]
         else:
             raise DeepLearningException(
                 'FurthestPointSubsamplingPreProcessor does not expect a '
