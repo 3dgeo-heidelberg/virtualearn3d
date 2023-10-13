@@ -279,8 +279,15 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             )
             sup_X = np.array([Gi.flatten() for Gi in G]).T
             kdt = KDT(X)
-            nn_indices = np.unique(kdt.query(sup_X, k=1, workers=nthreads)[1])
-            return X[nn_indices]
+            D, I = kdt.query(
+                sup_X,
+                k=1,
+                distance_upper_bound=sphere_radius,  # Prune when dnn>r
+                workers=nthreads
+            )
+            mask = I != len(X)  # Filter points further than r wrt nn
+            I = np.unique(I[mask])
+            return X[I]
         # Return original support points (dont need to match points in X)
         return np.array([Gi.flatten() for Gi in G]).T
 
