@@ -77,6 +77,12 @@ class PointNetPwiseClassifModel(ClassificationModel):
 
     # ---   MODEL METHODS   --- #
     # ------------------------- #
+    def is_deep_learning_model(self):
+        """
+        See :class:`.Model` and :meth:`model.Model.is_deep_learning_model`.
+        """
+        return True
+
     def prepare_model(self):
         """
         Prepare a PointNet point-wise classifier with current model arguments.

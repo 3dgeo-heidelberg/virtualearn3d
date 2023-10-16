@@ -231,6 +231,18 @@ class Model:
         """
         return pcloud.get_features_matrix(self.fnames)
 
+    def is_deep_learning_model(self):
+        """
+        Check whether a model is a deep learning model or not.
+
+        By default, models are not deep learning models. Those models which
+        are a deep learning model should explicitly overwrite this method to
+        return True. It is necessary for correct pipelines.
+
+        :return: True if the model is a deep learning model, False otherwise.
+        """
+        return False
+
     # ---   TRAINING METHODS   --- #
     # ---------------------------- #
     @abstractmethod

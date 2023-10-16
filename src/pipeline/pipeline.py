@@ -127,3 +127,28 @@ class Pipeline:
             f'{self.__class__.__name__} cannot be transformed to a predictive '
             'pipeline.'
         )
+
+    def is_using_deep_learning(self):
+        """
+        Check whether the pipeline uses deep learning or not.
+
+        By default, pipelines do not support deep learning. Any pipeline
+        that supports deep learning models must explicitly overload this method
+        to return True.
+
+        :return: True if the pipeline uses deep learning, false otherwise.
+        :rtype: bool
+        """
+        return False
+
+    def write_deep_learning_model(self, path):
+        """
+        Write the deep learning model used in the pipeline to disk.
+
+        :param path: Path where the deep learning model must be written.
+        :type path: str
+        """
+        raise PipelineException(
+            f'{self.__class__.__name__} does not support exporting deep '
+            'learning models.'
+        )

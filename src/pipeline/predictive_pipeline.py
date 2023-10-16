@@ -82,3 +82,17 @@ class PredictivePipeline(Pipeline):
             self.pps.out_path = out_prefix
         # Return the predictions
         return self.pps.predict(self.pipeline, pcloud)
+
+    # ---  PIPELINE METHODS  --- #
+    # -------------------------- #
+    def is_using_deep_learning(self):
+        """
+        See :meth:`pipeline.Pipeline.is_using_deep_learning`.
+        """
+        return self.pipeline.is_using_deep_learning()
+
+    def write_deep_learning_model(self, path):
+        """
+        See :meth:`pipeline.Pipeline.write_deep_learning_model`
+        """
+        return self.pipeline.write_deep_learning_model(path)

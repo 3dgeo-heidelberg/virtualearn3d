@@ -225,3 +225,39 @@ class SequentialPipeline(Pipeline):
         pp.out_pcloud = None
         # Return the predictive pipeline
         return pp
+
+    def is_using_deep_learning(self):
+        """
+        A sequential pipeline is said to use deep learning if it contains at
+        least one ModelOp which is based on a deep learning model.
+
+        See :meth:`pipeline.Pipeline.is_using_deep_learning`.
+        """
+        for comp in self.sequence:
+            if(
+                isinstance(comp, ModelOp) and
+                comp.model.is_deep_learning_model()
+            ):
+                return True
+        return False
+
+    def write_deep_learning_model(self, path):
+        """
+        Write the deep learning models contained in the sequential pipeline.
+
+        See :meth:`pipeline.Pipeline.write_deep_learning_model`.
+        """
+        # Write deep learning models
+        num_model = 1
+        for comp in self.sequence:
+            if(
+                isinstance(comp, ModelOp) and
+                comp.model.is_deep_learning_model()
+            ):
+                _path = path if num_model == 1 else f'{num_model}_{path}'
+                ModelIO.write(comp.model, _path)
+                LOGGING.LOGGER.debug(
+                    f'Deep learning model written to "{_path}"'
+                )
+                num_model += 1
+

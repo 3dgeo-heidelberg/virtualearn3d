@@ -4,6 +4,7 @@ from src.pipeline.predictive_pipeline import PredictivePipeline
 from src.mining.miner import Miner
 from src.utils.imput.imputer import Imputer
 from src.utils.ftransf.feature_transformer import FeatureTransformer
+from src.utils.ctransf.class_transformer import ClassTransformer
 from src.model.model_op import ModelOp
 import src.main.main_logger as LOGGING
 
@@ -61,6 +62,8 @@ class SimplePipelineState(PipelineState):
             self.update_pcloud(comp, new_pcloud)  # Impute generated features
         elif isinstance(comp, FeatureTransformer):
             self.update_pcloud(comp, new_pcloud)  # Transform gen. feats.
+        elif isinstance(comp, ClassTransformer):
+            self.update_pcloud(comp, new_pcloud)  # Transform class (or pred.)
         elif isinstance(comp, ModelOp):
             self.update_model(comp, new_model)
             if comp.op == ModelOp.OP.TRAIN:

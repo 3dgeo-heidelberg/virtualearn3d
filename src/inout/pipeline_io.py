@@ -66,3 +66,8 @@ class PipelineIO:
             )
         # Write output pipeline
         joblib.dump(predictive_pipeline, path, compress=True)
+        # Write external model file for deep learning models
+        if predictive_pipeline.is_using_deep_learning():
+            predictive_pipeline.write_deep_learning_model(
+                f'{path[:path.rfind(".")]}model'
+            )
