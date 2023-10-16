@@ -6,6 +6,7 @@ from src.mining.miner import Miner
 from src.utils.imput.imputer import Imputer
 from src.utils.ftransf.feature_transformer import FeatureTransformer, \
     FeatureTransformerException
+from src.utils.ctransf.class_transformer import ClassTransformer
 from src.model.model_op import ModelOp
 from src.eval.evaluator import Evaluator
 from src.inout.writer import Writer
@@ -159,6 +160,14 @@ class PipelineExecutor:
         elif isinstance(comp, Imputer):  # Handle imputer
             state.update(comp, new_pcloud=comp.impute_pcloud(state.pcloud))
         elif isinstance(comp, FeatureTransformer):  # Handle feat. transf.
+            # Compute component logic and update pipeline state
+            state.update(
+                comp,
+                new_pcloud=comp.transform_pcloud(
+                    state.pcloud, out_prefix=self.out_prefix
+                )
+            )
+        elif isinstance(comp, ClassTransformer):  # Handle class transformer
             # Compute component logic and update pipeline state
             state.update(
                 comp,

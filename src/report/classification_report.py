@@ -57,7 +57,7 @@ class ClassificationReport(Report):
     def __str__(self):
         """
         The string representation of the report about a classification.
-        See :class:`.Report` and also :meth:`report.Report.__str__`
+        See :class:`.Report` and also :meth:`report.Report.__str__`.
         """
         # Initialize
         s = '\n    Classification report\n' \

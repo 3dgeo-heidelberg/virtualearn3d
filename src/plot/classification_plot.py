@@ -15,7 +15,8 @@ class ClassificationPlot(MplPlot):
     :author: Alberto M. Esmoris Pena
 
     Class to plot the evaluation of a classification task.
-    See :class:`.ClassificationPlot`.
+
+    See :class:`.MplPlot` and :class:`.ClassificationEvaluation`.
 
     :ivar class_names: See :class:`.ClassificationEvaluation`.
     :ivar yhat_count: See :class:`.ClassificationEvaluation`.
@@ -29,6 +30,11 @@ class ClassificationPlot(MplPlot):
     # ---   INIT   --- #
     # ---------------- #
     def __init__(self, **kwargs):
+        """
+        Initialize an instance of ClassificationPlot.
+
+        :param kwargs: The key-word arguments defining the plot's attributes.
+        """
         # Call parent's init
         super().__init__(**kwargs)
         # Initialize attributes of ClassificationPlot

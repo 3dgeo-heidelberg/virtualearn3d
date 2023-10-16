@@ -15,7 +15,7 @@ class ClassTransformerException(VL3DException):
     :author: Alberto M. Esmoris Pena
 
     Class for exceptions related to class transformation components.
-    See :class:`.VL3DException`
+    See :class:`.VL3DException`.
     """
     def __init__(self, message=''):
         # Call parent VL3DException
@@ -30,18 +30,24 @@ class ClassTransformer:
 
     Class (code) for class (classification) transformation operations.
 
+    :ivar on_predictions: Flag controlling whether the transformation must
+        be applied to classification or prediction.
+    :vartype on_predictions: bool
     :ivar num_classes: The number of input classes
     :vartype num_classes: int
     :ivar input_class_names: The list of names corresponding to input classes.
         For example [0] is the name of the first class, i.e., that represented
         with index 0.
     :vartype input_class_names: list of str
-    :ivar report_path: The path to write the report file reporting the behavior
-        of the class transformer.
+    :ivar report_path: The path to write the report file reporting the
+        consequences of the class transformation.
     :vartype report_path: str
-    :ivar on_predictions: Flag controlling whether the transformation must
-        be applied to classification or prediction.
-    :vartype on_predictions: bool
+    :ivar plot_path: The path to write the plot file reporting the consequences
+        of the class transformation.
+    :vartype plot_path: str
+    :ivar cti: The dictionary mapping the string-like names of the input
+        classes (keys) to their corresponding integer index (values).
+    :vartype cti: dict
     """
 
     # ---  SPECIFICATION ARGUMENTS  --- #
@@ -57,10 +63,11 @@ class ClassTransformer:
         """
         # Initialize
         kwargs = {
+            'on_predictions': spec.get('on_predictions', None),
             'num_classes': spec.get('num_classes', None),
             'input_class_names': spec.get('input_class_names', None),
             'report_path': spec.get('report_path', None),
-            'on_predictions': spec.get('on_predictions', None)
+            'plot_path': spec.get('plot_path', None)
         }
         # Delete keys with None value
         kwargs = DictUtils.delete_by_val(kwargs, None)
@@ -79,6 +86,7 @@ class ClassTransformer:
         self.num_classes = kwargs.get('num_classes', None)
         self.input_class_names = kwargs.get('input_class_names', None)
         self.report_path = kwargs.get('report_path', None)
+        self.plot_path = kwargs.get('plot_path', None)
         self.on_predictions = kwargs.get('on_predictions', None)
         # Automatically generate input class names from num classes
         if self.num_classes is not None and self.input_class_names is None:
@@ -100,6 +108,10 @@ class ClassTransformer:
                 'ClassTransformer received a different number of classes than '
                 'input class names.'
             )
+        # Build the class-to-index dictionary (cti dict)
+        self.cti = {}  # Class-to-index dictionary
+        for i, in_class_name in enumerate(self.input_class_names):
+            self.cti[in_class_name] = i
 
     # ---  CLASS TRANSFORM METHODS  --- #
     # --------------------------------- #
@@ -169,7 +181,7 @@ class ClassTransformer:
         else:  # With transformed "classification"
             return PointCloudFactoryFacade.make_from_arrays(
                 pcloud.get_coordinates_matrix(),
-                pcloud.get_features_matrix(),
+                pcloud.get_features_matrix(pcloud.get_features_names()),
                 y=y,
                 header=self.build_new_las_header(pcloud),
                 fnames=pcloud.get_features_names()

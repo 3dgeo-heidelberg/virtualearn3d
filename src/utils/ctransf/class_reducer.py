@@ -2,6 +2,8 @@
 # ------------------- #
 from src.utils.ctransf.class_transformer import ClassTransformer, \
     ClassTransformerException
+from src.report.class_reduction_report import ClassReductionReport
+from src.plot.class_reduction_plot import ClassReductionPlot
 from src.utils.dict_utils import DictUtils
 import src.main.main_logger as LOGGING
 import numpy as np
@@ -103,16 +105,38 @@ class ClassReducer(ClassTransformer):
             # Compute a mask of true iff classified as inclass in group
             mask = np.zeros(y.shape, dtype=bool)  # False by default
             for inclass in class_group:  # For each input class in the group
-                mask = mask + (y == inclass)  # mask OR points of inclass
+                mask = mask + (y == self.cti[inclass])  # mask OR inclass
             yout[mask] = i
+        end = time.perf_counter()
         # Log transformation
         LOGGING.LOGGER.info(
             'ClassReducer transformed {m} points from {nin} classes to '
-            '{nout} classes.'.format(
+            '{nout} classes in {t:.3f} seconds.'.format(
                 m=len(y),
                 nin=self.num_classes,
-                nout=len(self.class_groups)
+                nout=len(self.class_groups),
+                t=end-start
             )
         )
+        # Report class reduction
+        self.report(
+            ClassReductionReport(
+                original_class_names=self.input_class_names,
+                yo=y,
+                reduced_class_names=self.output_class_names,
+                yr=yout,
+                class_groups=self.class_groups
+            ),
+            out_prefix=out_prefix
+        )
+        # Plot class reduction
+        if self.plot_path is not None:
+            ClassReductionPlot(
+                original_class_names=self.input_class_names,
+                yo=y,
+                reduced_class_names=self.output_class_names,
+                yr=yout,
+                path=self.plot_path
+            ).plot(out_prefix=out_prefix)
         # Return
         return yout
