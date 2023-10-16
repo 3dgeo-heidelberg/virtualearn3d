@@ -84,12 +84,26 @@ class PointCloud:
         """
         return np.array([self.las[fname] for fname in fnames]).T
 
-    def get_classes_vector(self):
+    def get_features_names(self):
         """
+        Obtain a list of strings representing the name for each feature in
+            the point cloud.
+
+        :return: A list with the name for each feature.
+        :rtype: list
+        """
+        return [
+            x
+            for x in self.las.point_format.dimension_names
+            if x not in ['X', 'Y', 'Z']
+        ]
+
+    def get_classes_vector(self):
+        r"""
         Obtain a vector which components represent the point-wise classes of
         the point cloud.
 
-        :return: The vector of classes.
+        :return: The vector of classes (:math:`\pmb{y}`).
         :rtype: :class:`np.ndarray`
         """
         return np.array(self.las.classification)
@@ -98,11 +112,31 @@ class PointCloud:
         """
         Check whether there are available classes for the point cloud.
 
-        :return: True if classes are available, false otherwise
+        :return: True if classes are available, false otherwise.
         :rtype: bool
         """
         return self.las.classification is not None and \
             len(self.las.classification) > 0
+
+    def get_predictions_vector(self):
+        r"""
+        Obtain a vector which components represent the point-wise classes
+        of a classification model computed on the point cloud.
+
+        :return: The vector of predicted classes (:math:`\hat{\pmb{y}}`)
+        :rtype: :class:`np.ndarray`
+        """
+        return np.array(self.las['prediction'])
+
+    def has_predictions(self):
+        """
+        Check whether there are available predictions for the point cloud.
+
+        :return: True if predictions are available, false otherwise.
+        :rtype: bool
+        """
+        return self.las['prediction'] is not None and \
+            len(self.las.prediction) > 0
 
     # ---  UPDATE METHODS  --- #
     # ------------------------ #
