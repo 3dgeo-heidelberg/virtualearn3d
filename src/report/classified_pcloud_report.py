@@ -85,9 +85,15 @@ class ClassifiedPcloudReport(Report):
             os.path.dirname(path),
             'Cannot find the directory to write the classified point cloud:'
         )
-        # Write
+        # Build output features
         fnames = ['Prediction']
         feats = self.yhat.reshape(-1, 1)
+        # Build output features : success mask
+        if self.y is not None:
+            fnames.append('Success')
+            success = (self.y == self.yhat).astype(int).reshape(-1, 1)
+            feats = np.hstack([feats, success])
+        # Build output features : class-wise scores
         if self.zhat is not None:
             if len(self.zhat.shape) == 1:  # Handle binary classif case
                 fnames = fnames + [
@@ -100,6 +106,7 @@ class ClassifiedPcloudReport(Report):
                 self.zhat if len(self.zhat.shape) > 1
                 else self.zhat.reshape(-1, 1)
             ])
+        # Write
         PointCloudIO.write(
             PointCloudFactoryFacade.make_from_arrays(
                 self.X,
