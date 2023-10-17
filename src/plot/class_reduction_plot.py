@@ -99,7 +99,9 @@ class ClassReductionPlot(MplPlot):
         # Determine bar position on x-axis
         x = np.arange(len(class_names))
         # Count points per classes
-        y_count, y_bin = np.histogram(y, bins=len(class_names))
+        y_count, y_bin = np.histogram(
+            y, bins=len(class_names), range=(0, len(class_names))
+        )
         # Plot the bars
         ax.bar(
             x, y_count, tick_label=class_names,

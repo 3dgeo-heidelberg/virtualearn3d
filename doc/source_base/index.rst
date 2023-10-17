@@ -14,6 +14,7 @@ Welcome to VirtuaLearn3D's documentation!
    page_machine_learning
    page_deep_learning
    page_transformers
+   page_imputers
    page_pipelines
    page_examples
    modules

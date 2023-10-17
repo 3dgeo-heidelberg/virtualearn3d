@@ -136,7 +136,9 @@ class ReceptiveFieldsDistributionPlot(MplPlot):
             dtype=int
         )
         # Count class distribution
-        count, bins = np.histogram(y, bins=len(class_nums))
+        count, bins = np.histogram(
+            y, bins=len(class_nums), range=(0, len(class_nums))
+        )
         # Count how many receptive fields contain at least one class case
         rf_count = np.array([
             np.count_nonzero([np.any(rf_i == cidx) for rf_i in y])

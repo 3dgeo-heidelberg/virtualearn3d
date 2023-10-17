@@ -164,7 +164,9 @@ class ClassificationEvaluator(Evaluator):
             yhat,
             bins=np.linspace(0, len(class_nums)-1, len(class_nums)+1)
         )
-        y_count, y_bin = np.histogram(y, bins=len(class_nums))
+        y_count, y_bin = np.histogram(
+            y, bins=len(class_nums), range=(0, len(class_nums))
+        )
         # Evaluate : confusion matrix
         conf_mat = confusion_matrix(y, yhat)
         # Evaluate : metrics

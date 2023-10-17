@@ -165,6 +165,7 @@ cython_debug/
 tags
 
 # Output files
+doc/build
 out/
 *.log.*
 
