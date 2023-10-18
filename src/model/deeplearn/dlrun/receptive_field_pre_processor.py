@@ -21,6 +21,11 @@ class ReceptiveFieldPreProcessor:
     See :class:`.GridSubsamplingPreProcessor`
     See :class:`.FurthestPointSubsamplingPreProcessor`
 
+    :ivar support_chunk_size: The number of supports per chunk :math:`n`.
+        If zero, all support points are considered at once.
+        If greater than zero, the support points will be considered in chunks
+        of :math:`n` points.
+    :vartype support_chunk_size: int
     :ivar training_class_distribution: The target class distribution to
         consider when building the support points. The element i of this
         vector (or list) specifies how many neighborhoods centered on a point
@@ -69,6 +74,7 @@ class ReceptiveFieldPreProcessor:
             ReceptiveFieldPreProcessor.
         """
         # Assign attributes
+        self.support_chunk_size = kwargs.get('support_chunk_size', 0)
         self.training_class_distribution = kwargs.get(
             'training_class_distribution', None
         )
@@ -120,6 +126,8 @@ class ReceptiveFieldPreProcessor:
         """
         spec_keys = spec.keys()
         # Overwrite the attributes of the furth. pt. subsampling pre-processor
+        if 'support_chunk_size' in spec_keys:
+            self.support_chunk_size = spec['support_chunk_size']
         if 'training_class_distribution' in spec_keys:
             self.training_class_distribution = spec[
                 'training_class_distribution'
@@ -171,6 +179,7 @@ class ReceptiveFieldPreProcessor:
         """
         # Return pre-processor state (cache to None)
         return {
+            'support_chunk_size': self.support_chunk_size,
             'training_class_distribution': self.training_class_distribution,
             'center_on_pcloud': self.center_on_pcloud,
             'nthreads': self.nthreads,
@@ -198,6 +207,7 @@ class ReceptiveFieldPreProcessor:
         :return: Nothing, but modifies the internal state of the object.
         """
         # Assign member attributes from state
+        self.support_chunk_size = state.get('support_chunk_size', 0)
         self.training_class_distribution = state['training_class_distribution']
         self.center_on_pcloud = state['center_on_pcloud']
         self.nthreads = state['nthreads']

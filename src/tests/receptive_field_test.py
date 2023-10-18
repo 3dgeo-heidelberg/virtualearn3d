@@ -1,7 +1,7 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.tests.vl3d_test import VL3DTest
-from src.utils.ptransf.receptive_field import ReceptiveField
+from src.utils.ptransf.receptive_field_gs import ReceptiveFieldGS
 import numpy as np
 
 
@@ -429,7 +429,7 @@ class ReceptiveFieldTest(VL3DTest):
             otherwise.
         """
         # Instantiate and fit receptive field
-        rf = ReceptiveField(
+        rf = ReceptiveFieldGS(
             cell_size=cell_size,
             bounding_radii=bounding_radii
         )

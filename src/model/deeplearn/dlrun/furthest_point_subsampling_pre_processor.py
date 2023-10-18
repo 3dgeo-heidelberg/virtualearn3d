@@ -346,17 +346,36 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
                 radius[0]*radius[0]+radius[1]*radius[1]+radius[2]*radius[2]
             )
             kdt = KDT(X)
-            kdt_sup = KDT(sup_X)
-            I = kdt_sup.query_ball_tree(kdt, boundary_radius)
-            # Discard points outside 3D rectangular boundary
-            XYZ = [X[Ii] - sup_X[i] for i, Ii in enumerate(I)]
-            mask = [
-                (XYZi[:, 0] >= -radius[0]) * (XYZi[:, 0] <= radius[0]) *
-                (XYZi[:, 1] >= -radius[1]) * (XYZi[:, 1] <= radius[1]) *
-                (XYZi[:, 2] >= -radius[2]) * (XYZi[:, 2] <= radius[2])
-                for XYZi in XYZ
-            ]
-            I = [np.array(Ii)[mask[i]].tolist() for i, Ii in enumerate(I)]
+            Iout = []
+            num_chunks, chunk_size = 1,  len(sup_X)
+            if self.support_chunk_size > 0:
+                chunk_size = self.support_chunk_size
+                num_chunks = int(np.ceil(len(sup_X)/chunk_size))
+            for chunk_idx in range(num_chunks):
+                # Extract chunk
+                sup_idx_a = chunk_idx*chunk_size
+                sup_idx_b = min(
+                    (chunk_idx+1)*chunk_size,
+                    len(sup_X)
+                )
+                chunk_sup_X = sup_X[sup_idx_a:sup_idx_b]
+                # Operate on chunk
+                kdt_sup = KDT(chunk_sup_X)
+                chunk_I = kdt_sup.query_ball_tree(kdt, boundary_radius)
+                # Discard points outside 3D rectangular boundary
+                XYZ = [X[Ii] - chunk_sup_X[i] for i, Ii in enumerate(chunk_I)]
+                mask = [
+                    (XYZi[:, 0] >= -radius[0]) * (XYZi[:, 0] <= radius[0]) *
+                    (XYZi[:, 1] >= -radius[1]) * (XYZi[:, 1] <= radius[1]) *
+                    (XYZi[:, 2] >= -radius[2]) * (XYZi[:, 2] <= radius[2])
+                    for XYZi in XYZ
+                ]
+                chunk_I = [
+                    np.array(Ii)[mask[i]].tolist()
+                    for i, Ii in enumerate(chunk_I)
+                ]
+                Iout = Iout + chunk_I
+            I = Iout
         else:
             raise DeepLearningException(
                 'FurthestPointSubsamplingPreProcessor does not expect a '

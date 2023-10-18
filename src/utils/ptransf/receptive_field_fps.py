@@ -156,7 +156,7 @@ class ReceptiveFieldFPS(ReceptiveField):
         kdt = KDT(self.Y)
         self.M = kdt.query(X, k=self.num_encoding_neighbors)[1]
         if len(self.M.shape) < 2:
-            self.M = [self.M]
+            self.M = self.M.reshape(-1, 1)
         # Return self for fluent programming
         return self
 
