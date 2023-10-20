@@ -2,6 +2,8 @@
 # ------------------- #
 from src.model.deeplearn.arch.point_net import PointNet
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
+from src.model.deeplearn.layer.features_structuring_layer import \
+    FeaturesStructuringLayer  # TODO Rethink : Testing FeaturesStructuringLayer
 import tensorflow as tf
 
 
@@ -84,6 +86,27 @@ class PointNetPwiseClassif(PointNet):
                 kernel_initializer=self.kernel_initializer,
                 name='pwise_feats'
             )
+        # TODO Rethink : Testing FeaturesStructuringLayer ---
+        x = FeaturesStructuringLayer(
+            max_radii=(15.0, 15.0, 15.0),
+            radii_resolution=4,
+            angular_resolutions=(1, 2, 4, 8),
+            concatenation_strategy='FULL',
+            name='FSL'
+        )([self.inlayer, x])
+        """x = tf.keras.layers.BatchNormalization(
+            momentum=0.0, name='FSL_BN'
+        )(x)
+        x = tf.keras.layers.Activation(
+            "relu", name='FSL_RELU'
+        )(x)"""
+        x = self.build_conv_block(
+            x,
+            filters=self.num_pwise_feats,
+            kernel_initializer=self.kernel_initializer,
+            name='pwise_structured_feats'
+        )
+        # --- TODO Rethink : Testing FeaturesStructuringLayer
         return x
 
     def build_output(self, x, **kwargs):

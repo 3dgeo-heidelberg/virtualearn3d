@@ -141,13 +141,12 @@ class FeaturesStructuringLayer(Layer):
         # Call parent's build
         super().build(dim_in)
         # Find the dimensionalities
-        Xshape, Fshape = dim_in[0], dim_in[1]
-        self.num_features = Fshape[-1]
+        Xdim, self.num_features = dim_in[0][-1], dim_in[1][-1]
         # Validate the dimensionalities
-        if Xshape[-1] != self.structure_dimensionality:
+        if Xdim != self.structure_dimensionality:
             raise DeepLearningException(
                 'FeaturesStructuringLayer received an input structure space '
-                f'matrix representing an input point cloud in {Xshape[-1]} '
+                f'matrix representing an input point cloud in {Xdim} '
                 'dimensions when the kernel\'s structure space has '
                 f'{self.structure_dimensionality} dimensions.'
             )
@@ -205,9 +204,9 @@ class FeaturesStructuringLayer(Layer):
         elif cs_up == 'FULL-OPAQUE':
             self.concatf = self.concatf_full_opaque
         elif cs_up == 'KDIM-OPAQUE':
-            self.concatf = self.concatf_full_kdim
+            self.concatf = self.concatf_kdim_opaque
         elif cs_up == 'FDIM-OPAQUE':
-            self.concatf = self.concatf_full_fdim
+            self.concatf = self.concatf_fdim_opaque
         else:
             raise DeepLearningException(
                 'FeaturesStructuringLayer received an unexpected '
@@ -243,20 +242,22 @@ class FeaturesStructuringLayer(Layer):
         X = inputs[0]  # Input structure space matrix
         F = inputs[1]  # Input features matrix
         # Compute the tensor of qx-x diffs for any qx in QX for any x in X
-        SUB = X - tf.transpose(
-            tf.tile(
-                tf.expand_dims(self.QX, 0),
-                [X.shape[0], 1, 1]
-            ),
-            [1, 0, 2]
+        SUBTRAHEND = tf.tile(
+            tf.expand_dims(self.QX, 1),
+            [1, tf.shape(X)[1], 1]
         )
-        tf.reduce_sum(SUB*SUB, axis=2)
+        SUB = tf.subtract(tf.expand_dims(X, 1), SUBTRAHEND)
         # Compute kernel-pcloud distance matrix
         omegaD_squared = self.omegaD * self.omegaD
-        QDunexp = tf.reduce_sum(SUB*SUB, axis=2)
-        QD = tf.exp(tf.transpose(tf.transpose(QDunexp)/omegaD_squared))
+        QDunexp = tf.reduce_sum(SUB*SUB, axis=-1)
+        QD = tf.exp(
+            -tf.transpose(
+                tf.transpose(QDunexp, [0, 2, 1]) / omegaD_squared, [0, 2, 1]
+            )
+        )
+
         # Compute kernel-based features
-        QF = self.omegaF * QD
+        QF = self.omegaF * tf.matmul(QD, F)
         # Return
         return self.concatf(F, QF)
 
@@ -296,47 +297,49 @@ class FeaturesStructuringLayer(Layer):
         r"""
         :return: :math:`[\pmb{F}, \pmb{F}\pmb{Q_F}^\intercal, \pmb{F}\pmb{Q_F}^\intercal\pmb{Q_F}]`
         """
-        QFT = tf.transpose(QF)
+        QFT = tf.transpose(QF, [0, 2, 1])
         FxQFT = tf.matmul(F, QFT)
-        return tf.concat([F, FxQFT, tf.matmul(FxQFT, QF)], axis=1)
+        return tf.concat([F, FxQFT, tf.matmul(FxQFT, QF)], axis=-1)
 
     @staticmethod
-    def concat_kdim(F, QF):
+    def concatf_kdim(F, QF):
         r"""
         :return: :math:`[\pmb{F}, \pmb{F}\pmb{Q_F}^\intercal]`
         """
-        return tf.concat([F, tf.matmul(F, tf.transpose(QF))], axis=1)
+        return tf.concat([
+            F, tf.matmul(F, tf.transpose(QF, [0, 2, 1]))
+        ], axis=-1)
 
     @staticmethod
-    def concat_fdim(F, QF):
+    def concatf_fdim(F, QF):
         r"""
         :return: :math:`[\pmb{F}, \pmb{F}\pmb{Q_F}^\intercal\pmb{Q_F}]`
         """
-        QFT = tf.transpose(QF)
+        QFT = tf.transpose(QF, [0, 2, 1])
         FxQFT = tf.matmul(F, QFT)
-        return tf.concat([F, tf.matmul(FxQFT, QF)], axis=1)
+        return tf.concat([F, tf.matmul(FxQFT, QF)], axis=-1)
 
     @staticmethod
     def concatf_full_opaque(F, QF):
         r"""
         :return: :math:`[\pmb{F}\pmb{Q_F}^\intercal, \pmb{F}\pmb{Q_F}^\intercal\pmb{Q_F}]`
         """
-        QFT = tf.transpose(QF)
+        QFT = tf.transpose(QF, [0, 2, 1])
         FxQFT = tf.matmul(F, QFT)
-        return tf.concat([FxQFT, tf.matmul(FxQFT, QF)], axis=1)
+        return tf.concat([FxQFT, tf.matmul(FxQFT, QF)], axis=-1)
 
     @staticmethod
-    def concat_kdim_opaque(F, QF):
+    def concatf_kdim_opaque(F, QF):
         r"""
         :return: :math:`[\pmb{F}, \pmb{F}\pmb{Q_F}^\intercal]`
         """
-        return tf.concat([tf.matmul(F, tf.transpose(QF))], axis=1)
+        return tf.concat([tf.matmul(F, tf.transpose(QF, [0, 2, 1]))], axis=-1)
 
     @staticmethod
-    def concat_fdim_opaque(F, QF):
+    def concatf_fdim_opaque(F, QF):
         r"""
         :return: :math:`[\pmb{F}, \pmb{F}\pmb{Q_F}^\intercal\pmb{Q_F}]`
         """
-        QFT = tf.transpose(QF)
+        QFT = tf.transpose(QF, [0, 2, 1])
         FxQFT = tf.matmul(F, QFT)
-        return tf.concat([tf.matmul(FxQFT, QF)], axis=1)
+        return tf.concat([tf.matmul(FxQFT, QF)], axis=-1)

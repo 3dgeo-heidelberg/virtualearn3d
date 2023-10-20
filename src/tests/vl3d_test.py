@@ -74,6 +74,7 @@ class VL3DTest:
                 f'{traceback.format_exc()}'
             )
             status = False
+            raise ex  # TODO Remove
         # Report status
         if status:
             LOGGING.LOGGER.info(

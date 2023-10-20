@@ -259,7 +259,20 @@ class PointNetPwiseClassifModel(ClassificationModel):
         )
         # Compute the activations
         X_rf = self.model.arch.run_pre({'X': X})
-        activations = remodel.predict(X_rf, batch_size=self.model.batch_size)
+        print(f'X_rf shape for activations: {X_rf.shape}')  # TODO Remove
+        print(f'Batch size for activations: {self.model.batch_size}')  # TODO Remove
+        with tf.device("cpu:0"):
+            start_cpu_activations = time.perf_counter()
+            activations = remodel.predict(
+                X_rf, batch_size=self.model.batch_size
+            )
+            end_cpu_activations = time.perf_counter()
+            LOGGING.LOGGER.debug(
+                "Activations computed on CPU in {t:.3f} seconds".format(
+                    t=end_cpu_activations-start_cpu_activations
+                )
+            )
+        print(f'Activations shape: {activations.shape}')  # TODO Remove
         # Propagate activations to original dimensionality
         rf = self.model.arch.pre_runnable.pre_processor\
             .last_call_receptive_fields

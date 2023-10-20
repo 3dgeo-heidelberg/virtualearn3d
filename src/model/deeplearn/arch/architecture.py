@@ -86,6 +86,8 @@ class Architecture:
                 "show_layer_activations": True
             }
         )
+        # Internal references
+        self.inlayer = None  # The input layer
 
     # ---  ARCHITECTURE METHODS  --- #
     # ------------------------------ #
@@ -132,14 +134,14 @@ class Architecture:
         # Cache build args
         self.build_args = kwargs
         # Input layer
-        inlayer = self.build_input(**kwargs)
+        self.inlayer = self.build_input(**kwargs)
         # Hidden layers
-        hidlayer = self.build_hidden(inlayer, **kwargs)
+        hidlayer = self.build_hidden(self.inlayer, **kwargs)
         # Output layer
         outlayer = self.build_output(hidlayer, **kwargs)
         # Model
         self.nn = tf.keras.Model(
-            inputs=inlayer,
+            inputs=self.inlayer,
             outputs=outlayer,
             name='PointNet'
         )
