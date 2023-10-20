@@ -87,25 +87,8 @@ class PointNetPwiseClassif(PointNet):
                 name='pwise_feats'
             )
         # TODO Rethink : Testing FeaturesStructuringLayer ---
-        x = FeaturesStructuringLayer(
-            max_radii=(15.0, 15.0, 15.0),
-            radii_resolution=4,
-            angular_resolutions=(1, 2, 4, 8),
-            concatenation_strategy='FULL',
-            name='FSL'
-        )([self.inlayer, x])
-        """x = tf.keras.layers.BatchNormalization(
-            momentum=0.0, name='FSL_BN'
-        )(x)
-        x = tf.keras.layers.Activation(
-            "relu", name='FSL_RELU'
-        )(x)"""
-        x = self.build_conv_block(
-            x,
-            filters=self.num_pwise_feats,
-            kernel_initializer=self.kernel_initializer,
-            name='pwise_structured_feats'
-        )
+        if self.features_structuring_layer is not None:
+            x = self.build_features_structuring_layer(x)
         # --- TODO Rethink : Testing FeaturesStructuringLayer
         return x
 
@@ -138,6 +121,63 @@ class PointNetPwiseClassif(PointNet):
             kernel_initializer=self.kernel_initializer,
             name='pwise_out'
         )(x)
+
+    # ---   FEATURES STRUCTURING LAYER   --- #
+    # -------------------------------------- #
+    def build_features_structuring_layer(self, x):
+        """
+        Build a features structuring layer to be computed on the features
+        at given layer x.
+
+        :param x: Given layer that has features as output.
+        :type x: :class:`tf.Tensor`
+        :return: The built features structuring layer.
+        :rtype: :class:`.FeaturesStructuringLayer`
+        """
+        # Extract arguments to build the features structuring layer
+        fsl = self.features_structuring_layer
+        max_radii = fsl['max_radii']
+        dim_out = fsl['dim_out']
+        if max_radii == "AUTO":
+            # TODO Rethink : Implement
+            raise DeepLearningException(
+                "AUTO max_radii for features structuring layer is not "
+                "supported (yet)."
+            )
+        if dim_out == "AUTO":
+            dim_out = self.num_pwise_feats
+        # The features structuring layer itself
+        x = FeaturesStructuringLayer(
+            max_radii=max_radii,
+            radii_resolution=fsl['radii_resolution'],
+            angular_resolutions=fsl['angular_resolutions'],
+            concatenation_strategy=fsl['concatenation_strategy'],
+            dim_out=dim_out,
+            trainable_QX=fsl['trainable_kernel_structure'],
+            trainable_QW=fsl['trainable_kernel_weights'],
+            trainable_omegaD=fsl['trainable_distance_weights'],
+            trainable_omegaF=fsl['trainable_feature_weights'],
+            name='FSL'
+        )([self.inlayer, x])
+        # Batch normalization
+        if fsl['batch_normalization']:
+            x = tf.keras.layers.BatchNormalization(
+                momentum=0.0, name='FSL_BN'
+            )(x)
+        activation = fsl['activation']
+        # Activation
+        if activation is not None:
+            activation_low = activation.lower()
+            if activation_low == 'relu':
+                x = tf.keras.layers.Activation(
+                    "relu", name='FSL_RELU'
+                )(x)
+            else:
+                raise DeepLearningException(
+                    "Unexpected activation for features structuring layer:"
+                    f" \"{activation}\""
+                )
+        return x
 
     # ---   SERIALIZATION   --- #
     # ------------------------- #

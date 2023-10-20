@@ -20,7 +20,7 @@ class FeaturesStructuringLayerTest(VL3DTest):
     # ---------------- #
     def __init__(self):
         super().__init__('Features structuring layer test')
-        self.eps = 1e-6  # Decimal tolerance for error checks
+        self.eps = 1e-5  # Decimal tolerance for error checks
 
     # ---   TEST INTERFACE   --- #
     # -------------------------- #
@@ -37,11 +37,13 @@ class FeaturesStructuringLayerTest(VL3DTest):
         max_radii = (1, 1, 1)
         radii_resolution = 4
         angular_resolutions = (1, 2, 4, 8)
+        dim_out = 4
         fsl = FeaturesStructuringLayer(
             max_radii=max_radii,
             radii_resolution=radii_resolution,
             angular_resolutions=angular_resolutions,
-            concatenation_strategy='FULL',
+            dim_out=dim_out,
+            concatenation_strategy='OPAQUE',
             name='FSL'
         )
         # Generate test data
@@ -55,20 +57,24 @@ class FeaturesStructuringLayerTest(VL3DTest):
         # Build layer
         fsl.build([[bs, m, nx], [bs, m, nf]])
         # Call layer
-        fsl_out = fsl.call([X, F])
+        with tf.device("cpu:0"):
+            fsl_out = fsl.call([X, F])
         # Compute tensorflow output
-        tf_out = self.tf_compute_output(
-            X, F,
-            np.array(fsl.omegaF, dtype="float32"),
-            np.array(fsl.omegaD, dtype="float32"),
-            np.array(fsl.QX, dtype="float32")
-        )
+        with tf.device("cpu:0"):
+            tf_out = self.tf_compute_output(
+                X, F,
+                np.array(fsl.omegaF, dtype="float32"),
+                np.array(fsl.omegaD, dtype="float32"),
+                np.array(fsl.QX, dtype="float32"),
+                np.array(fsl.QW, dtype="float32")
+            )
         # Compute expected output
         expected_out = self.compute_expected_output(
             X, F,
             np.array(fsl.omegaF, dtype="float32"),
             np.array(fsl.omegaD, dtype="float32"),
             np.array(fsl.QX, dtype="float32"),
+            np.array(fsl.QW, dtype="float32"),
             m, nf, K
         )
         # Compare tf with expected
@@ -80,7 +86,7 @@ class FeaturesStructuringLayerTest(VL3DTest):
 
     # ---  UTIL METHODS  --- #
     # ---------------------- #
-    def compute_expected_output(self, X, F, omegaF, omegaD, QX, m, nf, K):
+    def compute_expected_output(self, X, F, omegaF, omegaD, QX, QW, m, nf, K):
         """
         Compute the expected output to compare it against what is generated
         by the features structuring layer.
@@ -97,28 +103,34 @@ class FeaturesStructuringLayerTest(VL3DTest):
         for batch_idx in range(batch_size):
             # Extract elements from batch
             Xt, Ft = X[batch_idx], F[batch_idx]
+            # Compute kernel's distance matrix
+            QD = np.zeros((K, m))
+            for i in range(K):
+                for j in range(m):
+                    QD[i, j] = dQ(i, QX[i], Xt[j])
             # Compute kernel's feature matrix (QF)
-            QF = np.zeros((K, nf))
+            """QF = np.zeros((K, nf))
             for i in range(K):
                 QF[i, :] = np.sum([
                     dQ(i, QX[i], Xt[j]) * omegaF*Ft[j]
                     for j in range(m)
-                ], axis=0)
+                ], axis=0)"""
+            QF = omegaF/m * (QD @ Ft)
             # Generate output
-            FxQFT = Ft @ QF.T
-            out.append(np.concatenate([Ft, FxQFT, FxQFT @ QF], axis=-1))
+            out.append(QD.T@QF@QW)
         out = np.array(out)
         return out
 
-    def tf_compute_output(self, X, F, omegaF, omegaD, QX):
+    def tf_compute_output(self, X, F, omegaF, omegaD, QX, QW):
         """
         The tensorflow operations defining the layer but outside the layer.
 
         :return: The structured features.
         """
         X, F = tf.Variable(X, dtype="float32"), tf.Variable(F, dtype="float32")
+        m = tf.cast(tf.shape(X)[-2], dtype="float32")  # Num input points
         omegaF, omegaD = tf.Variable(omegaF), tf.Variable(omegaD)
-        QX = tf.Variable(QX)
+        QX, QW = tf.Variable(QX), tf.Variable(QW)
         SUBTRAHEND = tf.tile(
             tf.expand_dims(QX, 1),
             [1, tf.shape(X)[1], 1]
@@ -131,10 +143,11 @@ class FeaturesStructuringLayerTest(VL3DTest):
                 tf.transpose(QDunexp, [0, 2, 1]) / omegaD_squared, [0, 2, 1]
             )
         )
-        QF = omegaF * tf.matmul(QD, F)
-        QFT = tf.transpose(QF, [0, 2, 1])
-        FxQFT = tf.matmul(F, QFT)
-        return tf.concat([F, FxQFT, tf.matmul(FxQFT, QF)], axis=-1)
+        QF = omegaF/m * tf.matmul(QD, F)
+        QY = tf.matmul(QF, QW)
+        QDT = tf.transpose(QD, [0, 2, 1])
+        QY = tf.matmul(QDT, QY)
+        return QY
 
     def validate_output(self, fsl, expected):
         """

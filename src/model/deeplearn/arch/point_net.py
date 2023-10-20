@@ -47,6 +47,9 @@ class PointNet(Architecture, ABC):
         self.postransf_feats_spec = kwargs['postransf_feats_spec']
         self.tnet_pre_filters_spec = kwargs['tnet_pre_filters_spec']
         self.tnet_post_filters_spec = kwargs['tnet_post_filters_spec']
+        self.features_structuring_layer = kwargs.get(
+            'features_structuring_layer', None
+        )
         # Initialize cache-like attributes
         self.pretransf_feats, self.postransf_feats = [None]*2
         self.transf_feats = None

@@ -73,10 +73,16 @@ class FeaturesStructuringLayer(Layer):
         radii_resolution=4,
         angular_resolutions=(1, 2, 4, 8),
         structure_dimensionality=3,
+        dim_out=4,
         concatenation_strategy='FULL',
+        trainable_QX=False,
+        trainable_QW=True,
+        trainable_omegaD=True,
+        trainable_omegaF=True,
         built_QX=False,
         built_omegaD=False,
         built_omegaF=False,
+        built_QW=False,
         **kwargs
     ):
         """
@@ -91,16 +97,23 @@ class FeaturesStructuringLayer(Layer):
         self.angular_resolutions = np.array(angular_resolutions, dtype=int)
         self.structure_dimensionality = structure_dimensionality
         self.num_kernel_points = int(np.sum(np.power(angular_resolutions, 2)))
+        self.dim_out = dim_out
         self.concatenation_strategy = concatenation_strategy
         # Initialize to None attributes derived when building
         self.num_features = None  # The number of features
         self.concatf = None  # The concatenation strategy function
         self.QX = None  # Kernel's structure matrix
+        self.trainable_QX = trainable_QX  # True is trainable, false not
         self.built_QX = built_QX  # True if built, false otherwise
         self.omegaD = None  # Trainable parameters for distance
+        self.trainable_omegaD = trainable_omegaD  # True trainable, false not
         self.built_omegaD = built_omegaD  # True if built, false otherwise
         self.omegaF = None  # Trainable parameters for features
+        self.trainable_omegaF = trainable_omegaF  # True trainable, false not
         self.built_omegaF = built_omegaF  # True if built, false otherwise
+        self.QW = None  # Kernel's weights matrix
+        self.trainable_QW = trainable_QW  # True is trainable, false not
+        self.built_QW = built_QW  # True if built, false otherwise
         # Validate attributes
         if np.count_nonzero(self.max_radii <= 0):
             raise DeepLearningException(
@@ -122,6 +135,12 @@ class FeaturesStructuringLayer(Layer):
                 'FeaturesStructuringLayer received '
                 f'{self.structure_dimensionality} as structure dimensionality.'
                 ' Currently, only 3D structure spaces are supported.'
+            )
+        if self.dim_out < 1:
+            raise DeepLearningException(
+                'FeaturesStructuringLayer received '
+                f'{self.dim_out} as output dimensionality. '
+                'But it must be greater than or equal to one.'
             )
 
     # ---   LAYER METHODS   --- #
@@ -152,9 +171,11 @@ class FeaturesStructuringLayer(Layer):
             )
         # Build the kernel's structure (if not yet)
         if not self.built_QX:
-            self.QX = tf.constant(
+            self.QX = tf.Variable(
                 self.sample_concentric_ellipsoids(),
                 dtype='float32',
+                #trainable=False,  # TODO Restore ?
+                trainable=True,  # TODO Remove ?
                 name='QX'
             )
             self.built_QX = True
@@ -193,20 +214,22 @@ class FeaturesStructuringLayer(Layer):
                 name='omegaF'
             )
             self.built_omegaF = True
+        if not self.built_QW:
+            self.QW = tf.Variable(
+                tf.keras.initializers.GlorotUniform()(
+                    shape=(self.num_features, self.dim_out)
+                ),
+                dtype="float32",
+                trainable=True,
+                name='"QW'
+            )
+            self.built_QW = True
         # Handle concatenation strategy
         cs_up = self.concatenation_strategy.upper()
         if cs_up == "FULL":
             self.concatf = self.concatf_full
-        elif cs_up == "KDIM":
-            self.concatf = self.concatf_kdim
-        elif cs_up == "FDIM":
-            self.concatf = self.concatf_fdim
-        elif cs_up == 'FULL-OPAQUE':
-            self.concatf = self.concatf_full_opaque
-        elif cs_up == 'KDIM-OPAQUE':
-            self.concatf = self.concatf_kdim_opaque
-        elif cs_up == 'FDIM-OPAQUE':
-            self.concatf = self.concatf_fdim_opaque
+        elif cs_up == "OPAQUE":
+            self.concatf = self.concatf_opaque
         else:
             raise DeepLearningException(
                 'FeaturesStructuringLayer received an unexpected '
@@ -241,6 +264,7 @@ class FeaturesStructuringLayer(Layer):
         # Extract input
         X = inputs[0]  # Input structure space matrix
         F = inputs[1]  # Input features matrix
+        m = tf.cast(tf.shape(X)[-2], dtype="float32")  # Num input points
         # Compute the tensor of qx-x diffs for any qx in QX for any x in X
         SUBTRAHEND = tf.tile(
             tf.expand_dims(self.QX, 1),
@@ -257,9 +281,13 @@ class FeaturesStructuringLayer(Layer):
         )
 
         # Compute kernel-based features
-        QF = self.omegaF * tf.matmul(QD, F)
+        QF = self.omegaF/m * tf.matmul(QD, F)
+        # Multiply kernel features by weights
+        QY = tf.matmul(QF, self.QW)
+        QDT = tf.transpose(QD, [0, 2, 1])
+        QY = tf.matmul(QDT, QY)
         # Return
-        return self.concatf(F, QF)
+        return self.concatf(F, QY)
 
     # ---   BUILD METHODS   --- #
     # ------------------------- #
@@ -293,53 +321,18 @@ class FeaturesStructuringLayer(Layer):
     # ---   CALL METHODS   --- #
     # ------------------------ #
     @staticmethod
-    def concatf_full(F, QF):
+    def concatf_full(F, QY):
         r"""
-        :return: :math:`[\pmb{F}, \pmb{F}\pmb{Q_F}^\intercal, \pmb{F}\pmb{Q_F}^\intercal\pmb{Q_F}]`
+        :return: :math:`[\pmb{F}, \pmb{Q_F}, \pmb{Q_Y}]`
         """
-        QFT = tf.transpose(QF, [0, 2, 1])
-        FxQFT = tf.matmul(F, QFT)
-        return tf.concat([F, FxQFT, tf.matmul(FxQFT, QF)], axis=-1)
+
+        return tf.concat([F, QY], axis=-1)
 
     @staticmethod
-    def concatf_kdim(F, QF):
+    def concatf_opaque(F, QY):
         r"""
-        :return: :math:`[\pmb{F}, \pmb{F}\pmb{Q_F}^\intercal]`
+        :return: :math:`[\pmb{Q_Y}]`
         """
-        return tf.concat([
-            F, tf.matmul(F, tf.transpose(QF, [0, 2, 1]))
-        ], axis=-1)
+        return QY
 
-    @staticmethod
-    def concatf_fdim(F, QF):
-        r"""
-        :return: :math:`[\pmb{F}, \pmb{F}\pmb{Q_F}^\intercal\pmb{Q_F}]`
-        """
-        QFT = tf.transpose(QF, [0, 2, 1])
-        FxQFT = tf.matmul(F, QFT)
-        return tf.concat([F, tf.matmul(FxQFT, QF)], axis=-1)
-
-    @staticmethod
-    def concatf_full_opaque(F, QF):
-        r"""
-        :return: :math:`[\pmb{F}\pmb{Q_F}^\intercal, \pmb{F}\pmb{Q_F}^\intercal\pmb{Q_F}]`
-        """
-        QFT = tf.transpose(QF, [0, 2, 1])
-        FxQFT = tf.matmul(F, QFT)
-        return tf.concat([FxQFT, tf.matmul(FxQFT, QF)], axis=-1)
-
-    @staticmethod
-    def concatf_kdim_opaque(F, QF):
-        r"""
-        :return: :math:`[\pmb{F}, \pmb{F}\pmb{Q_F}^\intercal]`
-        """
-        return tf.concat([tf.matmul(F, tf.transpose(QF, [0, 2, 1]))], axis=-1)
-
-    @staticmethod
-    def concatf_fdim_opaque(F, QF):
-        r"""
-        :return: :math:`[\pmb{F}, \pmb{F}\pmb{Q_F}^\intercal\pmb{Q_F}]`
-        """
-        QFT = tf.transpose(QF, [0, 2, 1])
-        FxQFT = tf.matmul(F, QFT)
-        return tf.concat([tf.matmul(FxQFT, QF)], axis=-1)
+    # TODO Rethink : Implement serialization
