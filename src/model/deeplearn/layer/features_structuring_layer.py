@@ -2,8 +2,15 @@
 # ------------------- #
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
 from src.model.deeplearn.layer.layer import Layer
+from src.report.features_structuring_layer_report import \
+    FeaturesStructuringLayerReport
+from src.plot.features_structuring_layer_plot import \
+    FeaturesStructuringLayerPlot
+import src.main.main_logger as LOGGING
 import tensorflow as tf
 import numpy as np
+import time
+import os
 
 
 # ---   CLASS   --- #
@@ -174,8 +181,7 @@ class FeaturesStructuringLayer(Layer):
             self.QX = tf.Variable(
                 self.sample_concentric_ellipsoids(),
                 dtype='float32',
-                #trainable=False,  # TODO Restore ?
-                trainable=True,  # TODO Remove ?
+                trainable=self.trainable_QX,
                 name='QX'
             )
             self.built_QX = True
@@ -200,9 +206,9 @@ class FeaturesStructuringLayer(Layer):
         # Build the trainable weights (if not yet)
         if not self.built_omegaD:
             self.omegaD = tf.Variable(
-                np.ones(self.num_kernel_points),
+                np.ones(self.num_kernel_points)*np.max(self.max_radii),
                 dtype='float32',
-                trainable=True,
+                trainable=self.trainable_omegaD,
                 name='omegaD'
             )
             self.built_omegaD = True
@@ -210,7 +216,7 @@ class FeaturesStructuringLayer(Layer):
             self.omegaF = tf.Variable(
                 np.ones(self.num_features),
                 dtype='float32',
-                trainable=True,
+                trainable=self.trainable_omegaF,
                 name='omegaF'
             )
             self.built_omegaF = True
@@ -220,7 +226,7 @@ class FeaturesStructuringLayer(Layer):
                     shape=(self.num_features, self.dim_out)
                 ),
                 dtype="float32",
-                trainable=True,
+                trainable=self.trainable_QW,
                 name='"QW'
             )
             self.built_QW = True
@@ -336,3 +342,51 @@ class FeaturesStructuringLayer(Layer):
         return QY
 
     # TODO Rethink : Implement serialization
+
+    # ---  PLOTS and REPORTS  --- #
+    # --------------------------- #
+    def export_representation(self, dir_path, out_prefix=None, QXpast=None):
+        """
+        Export a set of files representing the state of the features
+        structuring kernel.
+
+        :param dir_path: The directory where the representation's files will
+            be exported.
+        :type dir_path: str
+        :param out_prefix: The output prefix to name the output files.
+        :type out_prefix: str
+        :param QXpast: The structure matrix of the layer in the past.
+        :type QXpast: :class:`np.ndarray` or :class:`tf.Tensor` or None
+        :return: Nothing at all, but the representation is exported as a set
+            of files inside the given directory.
+        """
+        # Check dir_path has been given
+        if dir_path is None:
+            LOGGING.LOGGER.debug(
+                'FeaturesStructuringLayer.export_representation received no '
+                'dir_path.'
+            )
+            return
+        # Export the values (report) and the plots
+        LOGGING.LOGGER.debug(
+            'Exporting representation of features structuring layer to '
+            f'"{dir_path}" ...'
+        )
+        start = time.perf_counter()
+        # Export report
+        FeaturesStructuringLayerReport(
+            np.array(self.QX), np.array(self.omegaF), np.array(self.omegaD),
+            QXpast=np.array(QXpast) if QXpast is not None else None
+        ).to_file(dir_path, out_prefix=out_prefix)
+        # Export plots
+        FeaturesStructuringLayerPlot(
+            omegaD=np.array(self.omegaD),
+            omegaF=np.array(self.omegaF),
+            xmax=np.max(self.max_radii),
+            path=os.path.join(dir_path, 'figure.svg')
+        ).plot(out_prefix=out_prefix)
+        end = time.perf_counter()
+        LOGGING.LOGGER.debug(
+            'Representation of features structuring layer exported to '
+            f'"{dir_path}" in {end-start:.3f} seconds.'
+        )

@@ -38,6 +38,8 @@ class DeepLearningModelSummaryReport(Report):
                 'summarized.'
             )
 
+    # ---   TO STRING   --- #
+    # --------------------- #
     def __str__(self):
         """
         The string representation of the deep learning model summary report.

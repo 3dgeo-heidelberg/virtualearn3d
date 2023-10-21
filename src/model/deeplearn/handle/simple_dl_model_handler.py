@@ -82,6 +82,9 @@ class SimpleDLModelHandler(DLModelHandler):
         # Assign member attributes
         self.summary_report_path = kwargs.get('summary_report_path', None)
         self.training_history_dir = kwargs.get('training_history_dir', None)
+        self.feat_struct_repr_dir = kwargs.get(
+            'features_structuring_representation_dir', None
+        )
         self.out_prefix = kwargs.get('out_prefix', None)
         self.training_epochs = kwargs.get('training_epochs', 100)
         self.batch_size = kwargs.get('batch_size', 16)
@@ -148,12 +151,7 @@ class SimpleDLModelHandler(DLModelHandler):
                 np.array(list(class_weight.values()), dtype=np.float32)
             )
             self.compiled.compile(**comp_args)
-        self.history = self.compiled.fit(
-            X, y_rf,
-            epochs=self.training_epochs,
-            callbacks=callbacks,
-            batch_size=self.batch_size
-        )
+        self.fit_logic(X, y_rf, callbacks)
         end = time.perf_counter()
         LOGGING.LOGGER.info(
             f'Deep learning model trained on {X.shape[0]} cases during '
@@ -208,6 +206,35 @@ class SimpleDLModelHandler(DLModelHandler):
                 )
         # Return
         return self
+
+    def fit_logic(self, X, y_rf, callbacks):
+        """
+        Implement the fit logic.
+
+        :param X: The pre-processed input.
+        :param y_rf: The point-wise labels for each receptive field.
+        :param callbacks: The callbacks to be executed during fit.
+        :return: The fit history (also assigned internally to self.history).
+        """
+        # Map for caching stuff during fit logic
+        fit_cache_map = {
+            'fsl_dir_path': self.feat_struct_repr_dir,
+            'out_prefix': self.out_prefix
+        }
+        # Pre-fit logic
+        if hasattr(self.arch, 'prefit_logic_callback'):
+            self.arch.prefit_logic_callback(fit_cache_map)
+        # Fit logic
+        self.history = self.compiled.fit(
+            X, y_rf,
+            epochs=self.training_epochs,
+            callbacks=callbacks,
+            batch_size=self.batch_size
+        )
+        # Post-fit logic
+        if hasattr(self.arch, 'posfit_logic_callback'):
+            self.arch.posfit_logic_callback(fit_cache_map)
+        return self.history
 
     def _predict(self, X, F=None, y=None, zout=None):
         """

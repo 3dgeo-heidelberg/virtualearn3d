@@ -3,8 +3,9 @@
 from src.model.deeplearn.arch.point_net import PointNet
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
 from src.model.deeplearn.layer.features_structuring_layer import \
-    FeaturesStructuringLayer  # TODO Rethink : Testing FeaturesStructuringLayer
+    FeaturesStructuringLayer
 import tensorflow as tf
+import os
 
 
 # ---   CLASS   --- #
@@ -44,6 +45,8 @@ class PointNetPwiseClassif(PointNet):
                 self.binary_crossentropy = \
                     fun_name == 'binary_crossentropy' or \
                     fun_name == 'class_weighted_binary_crossentropy'
+        # Internal cache
+        self.fsl_layer = None
 
     # ---   ARCHITECTURE METHODS   --- #
     # -------------------------------- #
@@ -86,10 +89,8 @@ class PointNetPwiseClassif(PointNet):
                 kernel_initializer=self.kernel_initializer,
                 name='pwise_feats'
             )
-        # TODO Rethink : Testing FeaturesStructuringLayer ---
         if self.features_structuring_layer is not None:
             x = self.build_features_structuring_layer(x)
-        # --- TODO Rethink : Testing FeaturesStructuringLayer
         return x
 
     def build_output(self, x, **kwargs):
@@ -147,7 +148,7 @@ class PointNetPwiseClassif(PointNet):
         if dim_out == "AUTO":
             dim_out = self.num_pwise_feats
         # The features structuring layer itself
-        x = FeaturesStructuringLayer(
+        self.fsl_layer = FeaturesStructuringLayer(
             max_radii=max_radii,
             radii_resolution=fsl['radii_resolution'],
             angular_resolutions=fsl['angular_resolutions'],
@@ -158,7 +159,8 @@ class PointNetPwiseClassif(PointNet):
             trainable_omegaD=fsl['trainable_distance_weights'],
             trainable_omegaF=fsl['trainable_feature_weights'],
             name='FSL'
-        )([self.inlayer, x])
+        )
+        x = self.fsl_layer([self.inlayer, x])
         # Batch normalization
         if fsl['batch_normalization']:
             x = tf.keras.layers.BatchNormalization(
@@ -214,3 +216,41 @@ class PointNetPwiseClassif(PointNet):
         self.num_classes = state['num_classes']
         self.num_pwise_feats = state['num_pwise_feats']
         self.binary_crossentropy = state['binary_crossentropy']
+
+    # ---  FIT LOGIC CALLBACKS   --- #
+    # ------------------------------ #
+    def prefit_logic_callback(self, cache_map):
+        """
+        The callback implementing any necessary logic immediately before
+        fitting a PointNetPwiseClassif model.
+
+        :param cache_map: The key-word dictionary containing variables that
+            are guaranteed to live at least during prefit, fit, and postfit.
+        :return: Nothing.
+        """
+        # Prefit logic for features structuring layer representation
+        if self.fsl_layer is not None:
+            self.fsl_layer.export_representation(
+                os.path.join(cache_map['fsl_dir_path'], 'init'),
+                out_prefix=cache_map['out_prefix'],
+                QXpast=None
+            )
+            cache_map['QXpast'] = self.fsl_layer.QX
+
+    def posfit_logic_callback(self, cache_map):
+        """
+        The callback implementing any necessary logic immediately after
+        fitting a PointNetPwiseClassif model.
+
+        :param cache_map: The key-word dictionary containing variables that
+            are guaranteed to live at least during prefit, fit, and postfit.
+        :return: Nothing.
+        """
+        # Postfit logic for features structuring layer representation
+        if self.fsl_layer is not None:
+            self.fsl_layer.export_representation(
+                os.path.join(cache_map['fsl_dir_path'], 'trained'),
+                out_prefix=cache_map['out_prefix'],
+                QXpast=cache_map.get('QXpast', None)
+            )
+
