@@ -382,6 +382,7 @@ class FeaturesStructuringLayer(Layer):
         FeaturesStructuringLayerPlot(
             omegaD=np.array(self.omegaD),
             omegaF=np.array(self.omegaF),
+            QW=np.array(self.QW),
             xmax=np.max(self.max_radii),
             path=os.path.join(dir_path, 'figure.svg')
         ).plot(out_prefix=out_prefix)

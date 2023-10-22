@@ -4,7 +4,9 @@ from src.model.deeplearn.arch.point_net import PointNet
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
 from src.model.deeplearn.layer.features_structuring_layer import \
     FeaturesStructuringLayer
+import src.main.main_logger as LOGGING
 import tensorflow as tf
+import numpy as np
 import os
 
 
@@ -236,6 +238,15 @@ class PointNetPwiseClassif(PointNet):
                 QXpast=None
             )
             cache_map['QXpast'] = self.fsl_layer.QX
+        # Prefit logic for freeze training
+        if self.features_structuring_layer.get('freeze_training', False):
+            msg = 'Freeze training (prefit):\n'
+            for layer in self.nn.layers[-4:-1]:
+                msg += f'Disabled training for "{layer.name}".\n'
+                layer.trainable = False
+            LOGGING.LOGGER.debug(msg)
+            cache_map['compilef'](cache_map['y_rf'])  # Recomp. to make effect.
+
 
     def posfit_logic_callback(self, cache_map):
         """
@@ -246,6 +257,59 @@ class PointNetPwiseClassif(PointNet):
             are guaranteed to live at least during prefit, fit, and postfit.
         :return: Nothing.
         """
+        # Postfit logic for freeze training
+        if self.features_structuring_layer.get('freeze_training', False):
+            # Prepare freeze training
+            msg = 'Freeze training (posfit):\n'
+            for layer in self.nn.layers:
+                msg += f'Disabled training for "{layer.name}".\n'
+                layer.trainable = False
+            msg += '\n'
+            for layer in self.nn.layers[-4:]:
+                msg  += f'Enabled training for "{layer.name}".\n'
+                layer.trainable = True
+            LOGGING.LOGGER.debug(msg)
+            cache_map['compilef'](cache_map['y_rf'])  # Recomp. to make effect.
+            fsl_init_lr = self.features_structuring_layer.get(
+                'freeze_training_init_learning_rate', None
+            )
+            if fsl_init_lr is not None:
+                self.nn.optimizer.lr.assign(fsl_init_lr)
+                if hasattr(self.nn.optimizer, '_learning_rate'):
+                    _lr = self.nn.optimizer._learning_rate
+                    if hasattr(_lr, 'initial_learning_rate'):
+                        _lr.initial_learning_rate = fsl_init_lr
+            # Fit unfrozen layers
+            history = self.nn.fit(
+                cache_map['X'], cache_map['y_rf'],
+                epochs=cache_map['training_epochs'],
+                callbacks=cache_map['callbacks'],
+                batch_size=cache_map['batch_size']
+            )
+            # Merge history
+            old_hist = cache_map['history']
+            for key in old_hist.history.keys():
+                old_hist.history[key] = np.concatenate(
+                    (old_hist.history[key], history.history[key]),
+                    axis=0
+                )
+            old_hist.params['epochs'] = (
+                old_hist.params['epochs'] + history.params['epochs']
+            )
+            old_hist.params['steps'] = (
+                old_hist.params['steps'] + history.params['steps']
+            )
+            old_hist.epoch += [
+                1+i+int(np.max(old_hist.epoch)) for i in history.epoch
+            ]
+            cache_map['history'] = old_hist
+            # Unfroze all layers
+            msg = 'After freeze training (posfit):\n'
+            for layer in self.nn.layers:
+                msg += f'Enabled training for "{layer.name}".\n'
+                layer.trainable = True
+            msg += 'RECOMPILING IS NECESSARY FOR THESE CHANGES TO MAKE EFFECT!'
+            LOGGING.LOGGER.debug(msg)
         # Postfit logic for features structuring layer representation
         if self.fsl_layer is not None:
             self.fsl_layer.export_representation(

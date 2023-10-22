@@ -1,6 +1,7 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from abc import abstractmethod
+from src.model.deeplearn.deep_learning_exception import DeepLearningException
 
 
 # ---   CLASS   --- #
@@ -117,7 +118,7 @@ class DLModelHandler:
         pass
 
     @abstractmethod
-    def compile(self, X=None, y=None, F=None):
+    def compile(self, X=None, y=None, F=None, **kwargs):
         """
         The method that provides the logic to compile a model.
 
@@ -170,6 +171,24 @@ class DLModelHandler:
         # Overwrite the attributes of the model's architecture
         if self.arch is not None:
             self.arch.overwrite_pretrained_model(spec)
+
+    # ---  MODEL HANDLING TASKS  --- #
+    # ------------------------------ #
+    def build_callbacks(self):
+        """
+        Build the callbacks for the model.
+
+        By default, the abstract baseline DLModelHandler does not provide an
+        implementation to build callbacks. Derived classes that need to work
+        with model callbacks must override this method to implement the
+        building of any necessary callback.
+
+        :return: List of built callbacks
+        :rtype: list
+        """
+        raise DeepLearningException(
+            'DLModelHandler does not support building callbacks.'
+        )
 
     # ---   SERIALIZATION   --- #
     # ------------------------- #

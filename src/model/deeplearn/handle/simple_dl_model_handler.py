@@ -118,22 +118,7 @@ class SimpleDLModelHandler(DLModelHandler):
                 f'{self.summary_report_path}"'
             )
         # Handle training callbacks
-        callbacks = []
-        if self.checkpoint_path is not None:
-            callbacks.append(tf.keras.callbacks.ModelCheckpoint(
-                self.checkpoint_path,
-                monitor=self.checkpoint_monitor,
-                save_best_only=True,
-                save_weights_only=True
-            ))
-        if self.learning_rate_on_plateau is not None:
-            callbacks.append(tf.keras.callbacks.ReduceLROnPlateau(
-                **self.learning_rate_on_plateau
-            ))
-        if self.early_stopping is not None:
-            callbacks.append(tf.keras.callbacks.EarlyStopping(
-                **self.early_stopping
-            ))
+        callbacks = self.build_callbacks()
         # Fit the model
         start = time.perf_counter()
         X, y_rf = self.arch.run_pre({
@@ -141,16 +126,8 @@ class SimpleDLModelHandler(DLModelHandler):
             'y': y,
             'training_support_points': True
         })
-        class_weight = self.handle_class_weight(y_rf)
-        y_rf = self.handle_labels_format(y_rf)
-        if class_weight is not None:  # Recompile for custom class weight loss
-            comp_args = SimpleDLModelHandler.build_compilation_args(
-                self.compilation_args
-            )
-            comp_args['loss'] = comp_args['loss'](
-                np.array(list(class_weight.values()), dtype=np.float32)
-            )
-            self.compiled.compile(**comp_args)
+        self.compile(y_rf=y_rf)  # Recompile with y_rf for class weights
+        y_rf = self.handle_labels_format(y_rf)  # Label format depends on loss
         self.fit_logic(X, y_rf, callbacks)
         end = time.perf_counter()
         LOGGING.LOGGER.info(
@@ -219,7 +196,13 @@ class SimpleDLModelHandler(DLModelHandler):
         # Map for caching stuff during fit logic
         fit_cache_map = {
             'fsl_dir_path': self.feat_struct_repr_dir,
-            'out_prefix': self.out_prefix
+            'out_prefix': self.out_prefix,
+            'X': X,
+            'y_rf': y_rf,
+            'training_epochs': self.training_epochs,
+            'callbacks': callbacks,
+            'batch_size': self.batch_size,
+            'compilef': lambda _y_rf: self.compile(y_rf=_y_rf)
         }
         # Pre-fit logic
         if hasattr(self.arch, 'prefit_logic_callback'):
@@ -233,7 +216,12 @@ class SimpleDLModelHandler(DLModelHandler):
         )
         # Post-fit logic
         if hasattr(self.arch, 'posfit_logic_callback'):
+            # Update callbacks for freeze training iterations
+            callbacks = self.build_callbacks()
+            fit_cache_map['callbacks'] = callbacks
+            fit_cache_map['history'] = self.history
             self.arch.posfit_logic_callback(fit_cache_map)
+            self.history = fit_cache_map['history']
         return self.history
 
     def _predict(self, X, F=None, y=None, zout=None):
@@ -259,19 +247,34 @@ class SimpleDLModelHandler(DLModelHandler):
         # Return
         return yhat
 
-    def compile(self, X=None, y=None, F=None):
+    def compile(self, X=None, y=None, F=None, y_rf=None, **kwargs):
         """
         See :class:`.DLModelHandler` and
         :meth:`dl_model_handler.DLModelHandler.compile`.
+
+        :param y_rf: The expected values for each receptive field. Can be
+            used to derive class weights.
         """
+        # Build architecture
         if not self.arch.is_built():
             self.arch.build()
         self.compiled = self.arch.nn
+        # Determine class weights if possible
+        class_weight = None
+        if y_rf is not None:
+            class_weight = self.handle_class_weight(y_rf)
+        # Build compilation args
+        comp_args = SimpleDLModelHandler.build_compilation_args(
+            self.compilation_args
+        )
+        if class_weight is not None:  # Recompile for custom class weight loss
+            comp_args['loss'] = comp_args['loss'](
+                np.array(list(class_weight.values()), dtype=np.float32)
+            )
+        # Compile
         self.compiled.compile(
             # run_eagerly=True,  # Uncomment for better debugging (but slower)
-            **SimpleDLModelHandler.build_compilation_args(
-                self.compilation_args
-            )
+            **comp_args
         )
         return self
 
@@ -303,6 +306,31 @@ class SimpleDLModelHandler(DLModelHandler):
                     spec_handling['learning_rate_on_plateau']
             if 'early_stopping' in spec_handling_keys:
                 self.early_stopping = spec_handling['early_stopping']
+
+    # ---  MODEL HANDLING TASKS  --- #
+    # ------------------------------ #
+    def build_callbacks(self):
+        """
+        See :meth:`dl_model_handler.DLModelHandler.build_callbacks`.
+        """
+        callbacks = []
+        if self.checkpoint_path is not None:
+            callbacks.append(tf.keras.callbacks.ModelCheckpoint(
+                self.checkpoint_path,
+                monitor=self.checkpoint_monitor,
+                save_best_only=True,
+                save_weights_only=True
+            ))
+        if self.learning_rate_on_plateau is not None:
+            callbacks.append(tf.keras.callbacks.ReduceLROnPlateau(
+                **self.learning_rate_on_plateau
+            ))
+        if self.early_stopping is not None:
+            callbacks.append(tf.keras.callbacks.EarlyStopping(
+                **self.early_stopping
+            ))
+        return callbacks
+
 
     # ---  UTIL METHODS  --- #
     # ---------------------- #
