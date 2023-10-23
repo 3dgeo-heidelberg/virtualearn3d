@@ -96,6 +96,7 @@ class SimplePipelineState(PipelineState):
                 )
         elif isinstance(comp, PredictivePipeline):
             self.update_preds(comp, new_preds)
+            self.update_model(comp, new_model)
         else:
             raise PipelineStateException(
                 'SimplePipelineState failed to update because an unexpected '

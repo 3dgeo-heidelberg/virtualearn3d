@@ -88,7 +88,7 @@ class Writer:
         PointCloudIO.write(pcloud, path)
         # Log info if requested
         if info:
-            LOGGING.LOGGER.info(f'Point cloud written to "{path}"')
+            LOGGING.LOGGER.info(f'Point cloud written to "{path}".')
 
     def prepare_path(self, prefix):
         """

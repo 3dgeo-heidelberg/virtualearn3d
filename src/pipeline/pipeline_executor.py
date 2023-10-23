@@ -14,6 +14,7 @@ from src.inout.model_writer import ModelWriter
 from src.pipeline.predictive_pipeline import PredictivePipeline
 from src.inout.predictive_pipeline_writer import PredictivePipelineWriter
 from src.inout.predictions_writer import PredictionsWriter
+from src.inout.classified_pcloud_writer import ClassifiedPcloudWriter
 import src.main.main_logger as LOGGING
 import time
 
@@ -206,7 +207,8 @@ class PipelineExecutor:
                 comp,
                 new_preds=comp.predict(
                     state.pcloud, out_prefix=self.out_prefix
-                )
+                ),
+                new_model=comp.get_first_model()
             )
         elif isinstance(comp, Evaluator):
             # Handle evaluation
@@ -232,7 +234,6 @@ class PipelineExecutor:
                     )
             if isinstance(comp, ModelWriter):
                 comp.write(state.model, prefix=self.out_prefix)
-
             elif isinstance(comp, PredictivePipelineWriter):
                 comp.write(self.maker, prefix=self.out_prefix)
             elif isinstance(comp, PredictionsWriter):
@@ -240,6 +241,8 @@ class PipelineExecutor:
                     state.pcloud.get_features_matrix(['prediction']),
                     prefix=self.out_prefix
                 )
+            elif isinstance(comp, ClassifiedPcloudWriter):
+                comp.write(state, prefix=self.out_prefix)
             else:
                 comp.write(state.pcloud, prefix=self.out_prefix)
 

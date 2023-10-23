@@ -63,7 +63,13 @@ class ClassifiedPcloudReport(Report):
         self.zhat = kwargs.get('zhat', None)
         self.class_names = kwargs.get('class_names', None)
         if self.class_names is None:
-            self.class_names = [f'C{i}' for i in range(self.zhat.shape[1])]
+            if self.zhat is not None:
+                self.class_names = [f'C{i}' for i in range(self.zhat.shape[1])]
+            else:
+                num_classes = len(
+                    np.unique(np.concatenate([self.y, self.yhat]))
+                )
+                self.class_names = [f'C{i}' for i in range(num_classes)]
 
     # ---   TO FILE   --- #
     # ------------------- #
