@@ -17,29 +17,18 @@ python vl3d.py --mine data_mining_spec.json
 
 
 
+
 ### Model training
 
 Train a machine learning model. The command below will often be used to start
-the loop.
+the loop. It can also be used to train a pretrained model when it is specified
+in the input JSON.
 
 
 ```bash
 python vl3d.py --train model_spec.json
 ```
 **IMPLEMENTING ...**
-
-
-
-
-### Continue model training
-
-Train a machine learning model from a previously trained model. The command
-below will often be used during the loop.
-
-```bash
-python vl3d.py --train model_spec.json --pretrained model_file.model
-```
-**NOT IMPLEMENTED**
 
 
 

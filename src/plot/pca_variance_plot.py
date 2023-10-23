@@ -2,7 +2,6 @@
 # ------------------- #
 from src.plot.plot import PlotException
 from src.plot.mpl_plot import MplPlot
-from src.plot.plot_utils import PlotUtils
 from matplotlib import pyplot as plt
 import numpy as np
 

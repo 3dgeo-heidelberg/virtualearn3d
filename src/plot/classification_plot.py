@@ -2,7 +2,6 @@
 # ------------------- #
 from src.plot.mpl_plot import MplPlot
 import src.main.main_logger as LOGGING
-import matplotlib as mpl
 from matplotlib import pyplot as plt
 from matplotlib import patheffects
 from sklearn.metrics import ConfusionMatrixDisplay
@@ -16,7 +15,8 @@ class ClassificationPlot(MplPlot):
     :author: Alberto M. Esmoris Pena
 
     Class to plot the evaluation of a classification task.
-    See :class:`.ClassificationPlot`.
+
+    See :class:`.MplPlot` and :class:`.ClassificationEvaluation`.
 
     :ivar class_names: See :class:`.ClassificationEvaluation`.
     :ivar yhat_count: See :class:`.ClassificationEvaluation`.
@@ -30,6 +30,11 @@ class ClassificationPlot(MplPlot):
     # ---   INIT   --- #
     # ---------------- #
     def __init__(self, **kwargs):
+        """
+        Initialize an instance of ClassificationPlot.
+
+        :param kwargs: The key-word arguments defining the plot's attributes.
+        """
         # Call parent's init
         super().__init__(**kwargs)
         # Initialize attributes of ClassificationPlot
@@ -125,11 +130,11 @@ class ClassificationPlot(MplPlot):
 
     def plot_class_distribution(self, **kwargs):
         """
-        Plot the class distribution
+        Plot the class distribution.
         """
         # Build figure
         fig = plt.figure(figsize=(14, 5))
-        # Determine bar position on x axis
+        # Determine bar position on x-axis
         x = np.arange(len(self.yhat_count))
         # Plot predictions distribution
         ax = fig.add_subplot(1, 2, 1)

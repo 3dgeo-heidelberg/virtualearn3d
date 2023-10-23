@@ -8,7 +8,10 @@ from src.main.main_train import MainTrain
 from src.main.main_predict import MainPredict
 from src.main.main_eval import MainEval
 from src.main.main_pipeline import MainPipeline
+from src.main.main_test import MainTest
+from src.main.vl3d_exception import VL3DException
 import sys
+import time
 
 
 # ---   MAIN   --- #
@@ -73,5 +76,17 @@ def main_test():
     """
     Execute the tests.
     """
-    # TODO Rethink : Implement
-    LOGGING.LOGGER.warning('main_test TODO yet ...')
+    LOGGING.LOGGER.info('Running tests ...')
+    start = time.perf_counter()
+    try:
+        success = MainTest.main()
+        end = time.perf_counter()
+        LOGGING.LOGGER.info(f'Tests ran in {end-start:.3f} seconds.')
+        LOGGING.LOGGER.info(
+            'All tests passed successfully    :)' if success else
+            'Tests were NOT passed successfully    :('
+        )
+        return 0 if success else 3
+    except Exception as ex:
+        LOGGING.LOGGER.error('Failed to run tests!')
+        raise VL3DException('VL3D tests failed.') from ex

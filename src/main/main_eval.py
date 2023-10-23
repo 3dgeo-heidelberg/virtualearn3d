@@ -1,4 +1,5 @@
 from src.eval.classification_evaluator import ClassificationEvaluator
+from src.eval.deeplearn.dl_model_evaluator import DLModelEvaluator
 
 
 # ---   CLASS   --- #
@@ -42,5 +43,7 @@ class MainEval:
         eval_low = eval.lower()
         if eval_low == 'classificationevaluator':
             return ClassificationEvaluator
+        elif eval_low == 'dlmodelevaluator':
+            return DLModelEvaluator
         # An unknown evaluator was specified
         return ValueError(f'There is no known evaluator "{eval}"')

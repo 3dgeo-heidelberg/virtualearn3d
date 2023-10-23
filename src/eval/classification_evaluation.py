@@ -42,7 +42,7 @@ class ClassificationEvaluation(Evaluation):
         """
         # Call parent's init
         super().__init__(**kwargs)
-        # Initialize attributes of ClassificationEvluation
+        # Initialize attributes of ClassificationEvaluation
         self.class_names = kwargs.get('class_names', None)
         self.metric_names = kwargs.get('metric_names', None)
         self.class_metric_names = kwargs.get('class_metric_names', None)
@@ -78,7 +78,6 @@ class ClassificationEvaluation(Evaluation):
     def can_report(self):
         """
         See :class:`.Evaluation` and :meth:`evaluation.Evaluation.can_report`.
-        :return:
         """
         return (
             (self.yhat_count is not None and self.y_count is not None) or
@@ -93,7 +92,7 @@ class ClassificationEvaluation(Evaluation):
 
         See :class:`.ClassificationPlot`.
 
-        :param kwargs:
+        :param kwargs: The key-word arguments for the plot.
         :return: The ClassificationPlot representing the
             ClassificationEvaluation.
         :rtype: :class:`.ClassificationEvaluation`

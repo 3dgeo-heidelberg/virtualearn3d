@@ -1,8 +1,10 @@
 # ---   IMPORTS  --- #
 # ------------------ #
 from src.model.model import Model
+from src.model.classification_model import ClassificationModel
 from src.model.random_forest_classification_model import \
     RandomForestClassificationModel
+from src.model.deeplearn.handle.dl_model_handler import DLModelHandler
 from src.main.vl3d_exception import VL3DException
 from enum import Enum
 
@@ -151,6 +153,77 @@ class ModelOp:
                 self.model.hypertuner.report_path = ModelOp.merge_path(
                     out_prefix, hypertuner_report_path
                 )
+        # Handle ClassificationModel paths
+        if isinstance(self.model, ClassificationModel):
+            training_evaluation_report_path = \
+                self.model.training_evaluation_report_path
+            old_paths['training_evaluation_report_path'] = \
+                self.model.training_evaluation_report_path
+            if ModelOp.path_needs_update(training_evaluation_report_path):
+                self.model.training_evaluation_report_path = \
+                    ModelOp.merge_path(
+                        out_prefix, training_evaluation_report_path
+                    )
+            training_class_evaluation_report_path = \
+                self.model.training_class_evaluation_report_path
+            old_paths['training_class_evaluation_report_path'] = \
+                self.model.training_class_evaluation_report_path
+            if ModelOp.path_needs_update(
+                training_class_evaluation_report_path
+            ):
+                self.model.training_class_evaluation_report_path = \
+                    ModelOp.merge_path(
+                        out_prefix, training_class_evaluation_report_path
+                    )
+            training_confusion_matrix_report_path = \
+                self.model.training_confusion_matrix_report_path
+            old_paths['training_confusion_matrix_report_path'] = \
+                self.model.training_confusion_matrix_report_path
+            if ModelOp.path_needs_update(
+                training_confusion_matrix_report_path
+            ):
+                self.model.training_confusion_matrix_report_path = \
+                    ModelOp.merge_path(
+                        out_prefix, training_confusion_matrix_report_path
+                    )
+            training_confusion_matrix_plot_path = \
+                self.model.training_confusion_matrix_plot_path
+            old_paths['training_confusion_matrix_plot_path'] = \
+                self.model.training_confusion_matrix_plot_path
+            if ModelOp.path_needs_update(
+                training_confusion_matrix_plot_path
+            ):
+                self.model.training_confusion_matrix_plot_path = \
+                    ModelOp.merge_path(
+                        out_prefix, training_confusion_matrix_plot_path
+                    )
+            training_class_distribution_report_path = \
+                self.model.training_class_distribution_report_path
+            if ModelOp.path_needs_update(
+                training_class_distribution_report_path
+            ):
+                self.model.training_class_distribution_report_path = \
+                    ModelOp.merge_path(
+                        out_prefix, training_class_distribution_report_path
+                    )
+            training_class_distribution_plot_path = \
+                self.model.training_class_distribution_plot_path
+            if ModelOp.path_needs_update(
+                training_class_distribution_plot_path
+            ):
+                self.model.training_class_distribution_plot_path = \
+                    ModelOp.merge_path(
+                        out_prefix, training_class_distribution_plot_path
+                    )
+            training_classified_point_cloud_path = \
+                self.model.training_classified_point_cloud_path
+            if ModelOp.path_needs_update(
+                training_classified_point_cloud_path
+            ):
+                self.model.training_classified_point_cloud_path = \
+                    ModelOp.merge_path(
+                        out_prefix, training_classified_point_cloud_path
+                    )
         # Handle RandomForest paths
         if isinstance(self.model, RandomForestClassificationModel):
             importance_report_path = self.model.importance_report_path
@@ -165,8 +238,143 @@ class ModelOp:
                 self.model.decision_plot_path = ModelOp.merge_path(
                     out_prefix, decision_plot_path
                 )
+        # Handle deep learning paths
+        if self.model.is_deep_learning_model():
+            self.update_dl_model_paths(out_prefix, old_paths)
         # Return dictionary to reverse updates
         return old_paths
+
+    def update_dl_model_paths(self, out_prefix, old_paths):
+        """
+        Update the model assuming it is a deep learning model. This method
+        will not check that self.model is a deep learning model. Instead,
+        it assumes it is because otherwise the method MUST NOT be called.
+
+        See :meth:`model_op.ModelOp.update_model_paths`.
+
+        :param old_paths: The output parameter. It must be a dictionary where
+            any modified path (value) will be stored before it is updated,
+            associated to its variable (key).
+        :type old_paths: dict
+        :return: Nothing at all, the old_paths list argument is updated if
+            necessary.
+        """
+        # Extract objects of interest
+        model_args = self.model.model_args
+        model_handling = model_args.get('model_handling', None)
+        preproc = model_args.get('pre_processing', None)
+        # Handle training activations path
+        training_activations_path = self.model.training_activations_path
+        if ModelOp.path_needs_update(training_activations_path):
+            self.model.training_activations_path = ModelOp.merge_path(
+                out_prefix, training_activations_path
+            )
+        old_paths['training_activations_path'] = training_activations_path
+        # Handle architecture graph path
+        architecture_graph_path = model_args.get(
+            'architecture_graph_path', None
+        )
+        if ModelOp.path_needs_update(architecture_graph_path):
+            model_args['architecture_graph_path'] = ModelOp.merge_path(
+                out_prefix, architecture_graph_path
+            )
+        old_paths['architecture_graph_path'] = architecture_graph_path
+        # Handle summary report path
+        summary_report_path = model_handling.get('summary_report_path', None)
+        if ModelOp.path_needs_update(summary_report_path):
+            model_handling['summary_report_path'] = ModelOp.merge_path(
+                out_prefix, summary_report_path
+            )
+        old_paths['summary_report_path'] = summary_report_path
+        # Handle training history dir
+        training_history_dir = model_handling.get('training_history_dir', None)
+        if ModelOp.path_needs_update(training_history_dir):
+            model_handling['training_history_dir'] = ModelOp.merge_path(
+                out_prefix, training_history_dir
+            )
+        old_paths['training_history_dir'] = training_history_dir
+        # Handle features structuring representation dir
+        feat_struct_repr_dir = model_handling.get(
+            'features_structuring_representation_dir', None
+        )
+        if ModelOp.path_needs_update(feat_struct_repr_dir):
+            model_handling['features_structuring_representation_dir'] = \
+                ModelOp.merge_path(out_prefix, feat_struct_repr_dir)
+        old_paths['feat_struct_repr_dir'] = feat_struct_repr_dir
+        # Handle checkpoint path
+        checkpoint_path = model_handling.get('checkpoint_path', None)
+        if ModelOp.path_needs_update(checkpoint_path):
+            model_handling['checkpoint_path'] = ModelOp.merge_path(
+                out_prefix, checkpoint_path
+            )
+        old_paths['checkpoint_path'] = checkpoint_path
+        # Handle training receptive fields distribution report path
+        trf_dist_report = preproc.get(
+            'training_receptive_fields_distribution_report_path', None
+        )
+        if ModelOp.path_needs_update(trf_dist_report):
+            preproc['training_receptive_fields_distribution_report_path'] =\
+                ModelOp.merge_path(out_prefix, trf_dist_report)
+        old_paths['training_receptive_fields_distribution_report_path'] =\
+            trf_dist_report
+        # Handle training receptive fields distribution plot path
+        trf_dist_plot = preproc.get(
+            'training_receptive_fields_distribution_plot_path', None
+        )
+        if ModelOp.path_needs_update(trf_dist_plot):
+            preproc['training_receptive_fields_distribution_plot_path'] = \
+                ModelOp.merge_path(out_prefix, trf_dist_plot)
+        old_paths['training_receptive_fields_distribution_plot_path'] = \
+            trf_dist_plot
+        # Handle training receptive fields dir
+        trf_dir = preproc.get('training_receptive_fields_dir', None)
+        if ModelOp.path_needs_update(trf_dir):
+            preproc['training_receptive_fields_dir'] = \
+                ModelOp.merge_path(out_prefix, trf_dir)
+        old_paths['training_receptive_fields_dir'] = trf_dir
+        # Handle receptive fields distribution report path
+        rf_dist_report = preproc.get(
+            'receptive_fields_distribution_report_path', None
+        )
+        if ModelOp.path_needs_update(rf_dist_report):
+            preproc['receptive_fields_distribution_report_path'] = \
+                ModelOp.merge_path(out_prefix, rf_dist_report)
+        old_paths['receptive_fields_distribution_report_path'] = \
+            rf_dist_report
+        # Handle receptive fields distribution plot path
+        rf_dist_plot = preproc.get(
+            'receptive_fields_distribution_plot_path', None
+        )
+        if ModelOp.path_needs_update(rf_dist_plot):
+            preproc['receptive_fields_distribution_plot_path'] = \
+                ModelOp.merge_path(out_prefix, rf_dist_plot)
+        old_paths['receptive_fields_distribution_plot_path'] = \
+            rf_dist_plot
+        # Handle receptive fields dir
+        rf_dir = preproc.get('receptive_fields_dir', None)
+        if ModelOp.path_needs_update(rf_dir):
+            preproc['receptive_fields_dir'] = \
+                ModelOp.merge_path(out_prefix, rf_dir)
+        old_paths['receptive_fields_dir'] = rf_dir
+        # Handle training support points report path
+        tsp_report = preproc.get('training_support_points_report_path', None)
+        if ModelOp.path_needs_update(tsp_report):
+            preproc['training_support_points_report_path'] =\
+                ModelOp.merge_path(out_prefix, tsp_report)
+        old_paths['training_support_points_report_path'] = tsp_report
+        # Handle support points report path
+        sp_report = preproc.get('support_points_report_path', None)
+        if ModelOp.path_needs_update(sp_report):
+            preproc['support_points_report_path'] = \
+                ModelOp.merge_path(out_prefix, sp_report)
+        old_paths['support_points_report_path'] = sp_report
+        # Make the changes effective
+        if model_args is not None:
+            self.model.model_args = model_args
+        if model_handling is not None:
+            self.model.model_args['model_handling'] = model_handling
+        if preproc is not None:
+            self.model.model_args['pre_processing'] = preproc
 
     def restore_model_paths(self, old_paths):
         """
@@ -190,6 +398,29 @@ class ModelOp:
             self.model.hypertuner.report_path = old_paths.get(
                 'hypertuner_report_path'
             )
+        # Restore classification model paths
+        if isinstance(self.model, ClassificationModel):
+            self.model.training_evaluation_report_path = old_paths.get(
+                'training_evaluation_report_path'
+            )
+            self.model.training_class_evaluation_report_path = old_paths.get(
+                'training_class_evaluation_report_path'
+            )
+            self.model.training_confusion_matrix_report_path = old_paths.get(
+                'training_confusion_matrix_report_path'
+            )
+            self.model.training_confusion_matrix_plot_path = old_paths.get(
+                'training_confusion_matrix_plot_path'
+            )
+            self.model.training_class_distribution_report_path = old_paths.get(
+                'training_class_distribution_report_path'
+            )
+            self.model.training_class_distribution_plot_path = old_paths.get(
+                'training_class_distribution_plot_path'
+            )
+            self.model.training_classified_point_cloud_path = old_paths.get(
+                'training_classified_point_cloud_path'
+            )
         # Restore random forest paths
         if isinstance(self.model, RandomForestClassificationModel):
             self.model.importance_report_path = old_paths.get(
@@ -198,6 +429,95 @@ class ModelOp:
             self.model.decision_plot_path = old_paths.get(
                 'decision_plot_path'
             )
+        # Restore deep learning paths
+        if self.model.is_deep_learning_model():
+            self.restore_dl_model_paths(old_paths)
+
+    def restore_dl_model_paths(self, old_paths):
+        """
+        Restore the model assuming it is a deep learning model. This method
+        will not check that self.model is a deep learning model. Instead,
+        it assumes it is because otherwise the method MSUT NOT be called.
+
+        See :meth:`model_op.ModelOp.restore_model_paths`.
+
+        :param old_paths: The output parameter. It must be a dictionary where
+            any variable (key) that needs to restore its old path (value) is
+            represented.
+        :type old_paths: dict
+        :return: Nothing at all, the old_paths dictionary is usted to restore
+            the variables of the model to its previous value.
+        """
+        # Extract objects of interest
+        model_args = self.model.model_args
+        model_handling = model_args.get('model_handling', None)
+        preproc = model_args.get('pre_processing', None)
+        # Restore training activations path
+        self.model.training_activations_path =\
+            old_paths['training_activations_path']
+        # Restore architecture graph path
+        if model_args.get('architecture_graph_path', None) is not None:
+            model_args['architecture_graph_path'] =\
+                old_paths['architecture_graph_path']
+        # Restore summary report path
+        if model_handling.get('summary_report_path', None) is not None:
+            model_handling['summary_report_path'] =\
+                old_paths['summary_report_path']
+        # Restore training history dir
+        if model_handling.get('training_history_dir', None) is not None:
+            model_handling['training_history_dir'] =\
+                old_paths['training_history_dir']
+        if model_handling.get('features_structuring_representation_dir', None)\
+                is not None:
+            model_handling['features_structuring_representation_dir'] = \
+                old_paths['feat_struct_repr_dir']
+        # Restore training receptive fields distribution report path
+        if preproc.get(
+            'training_receptive_fields_distribution_report_path', None
+        ) is not None:
+            preproc['training_receptive_fields_distribution_report_path'] = \
+                old_paths['training_receptive_fields_distribution_report_path']
+        # Restore training receptive fields distribution plot path
+        if preproc.get(
+            'training_receptive_fields_distribution_plot_path', None
+        ) is not None:
+            preproc['training_receptive_fields_distribution_plot_path'] = \
+                old_paths['training_receptive_fields_distribution_plot_path']
+        # Restore training receptive fields dir
+        if preproc.get('training_receptive_fields_dir', None) is not None:
+            preproc['training_receptive_fields_dir'] = \
+                old_paths['training_receptive_fields_dir']
+        # Restore receptive fields distribution report path
+        if preproc.get(
+            'receptive_fields_distribution_report_path', None
+        ) is not None:
+            preproc['receptive_fields_distribution_report_path'] = \
+                old_paths['receptive_fields_distribution_report_path']
+        # Restore receptive fields distribution plot path
+        if preproc.get(
+            'receptive_fields_distribution_plot_path', None
+        ) is not None:
+            preproc['receptive_fields_distribution_plot_path'] = \
+                old_paths['receptive_fields_distribution_plot_path']
+        # Restore receptive fields dir
+        if preproc.get('receptive_fields_dir', None) is not None:
+            preproc['receptive_fields_dir'] = old_paths['receptive_fields_dir']
+        # Restore training support points report path
+        if preproc.get(
+            'training_support_points_report_path', None
+        ) is not None:
+            preproc['training_support_points_report_path'] = \
+                old_paths['training_support_points_report_path']
+        if preproc.get('support_points_report_path', None) is not None:
+            preproc['support_points_report_path'] = \
+                old_paths['support_points_report_path']
+        # Make the changes effective
+        if model_args is not None:
+            self.model.model_args = model_args
+        if model_handling is not None:
+            self.model.model_args['model_handling'] = model_handling
+        if preproc is not None:
+            self.model.model_args['pre_processing'] = preproc
 
     @staticmethod
     def path_needs_update(path : str) -> bool:

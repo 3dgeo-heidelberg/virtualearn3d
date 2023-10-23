@@ -12,8 +12,10 @@ from src.main.main_eval import MainEval
 from src.mining.miner import Miner
 from src.utils.imput.imputer import Imputer
 from src.utils.ftransf.feature_transformer import FeatureTransformer
+from src.utils.ctransf.class_transformer import ClassTransformer
 from src.utils.imputer_utils import ImputerUtils
 from src.utils.ftransf_utils import FtransfUtils
+from src.utils.ctransf_utils import CtransfUtils
 from src.model.model_op import ModelOp
 from src.inout.writer import Writer
 from src.inout.writer_utils import WriterUtils
@@ -77,6 +79,12 @@ class SequentialPipeline(Pipeline):
                     **ftransf_class.extract_ftransf_args(comp)
                 )
                 self.sequence.append(ftransf)
+            if comp.get('class_transformer', None) is not None:  # Hdl. ctr.
+                ctransf_class = CtransfUtils.extract_ctransf_class(comp)
+                ctransf = ctransf_class(
+                    **ctransf_class.extract_ctransf_args(comp)
+                )
+                self.sequence.append(ctransf)
             if comp.get("train", None) is not None:  # Handle train
                 model_class = MainTrain.extract_model_class(comp)
                 model = model_class(**model_class.extract_model_args(comp))
@@ -86,7 +94,7 @@ class SequentialPipeline(Pipeline):
                     self.sequence.append(PipelineIO.read_predictive_pipeline(
                         comp['model_path']
                     ))
-                elif comp['predict'].ower() == 'modelloader':
+                elif comp['predict'].lower() == 'modelloader':
                     model = ModelIO.read(comp['model_path'])
                     self.sequence.append(ModelOp(model, ModelOp.OP.PREDICT))
                 else:
@@ -202,6 +210,9 @@ class SequentialPipeline(Pipeline):
             if isinstance(comp, FeatureTransformer) and \
                     kwargs.get('include_feature_transformer', True):
                 sp.sequence.append(comp)
+            if isinstance(comp, ClassTransformer) and \
+                    kwargs.get('include_class_transformer', True):
+                sp.sequence.append(comp)
             if isinstance(comp, Miner) and \
                     kwargs.get('include_miner', True):
                 sp.sequence.append(comp)
@@ -220,3 +231,39 @@ class SequentialPipeline(Pipeline):
         pp.out_pcloud = None
         # Return the predictive pipeline
         return pp
+
+    def is_using_deep_learning(self):
+        """
+        A sequential pipeline is said to use deep learning if it contains at
+        least one ModelOp which is based on a deep learning model.
+
+        See :meth:`pipeline.Pipeline.is_using_deep_learning`.
+        """
+        for comp in self.sequence:
+            if(
+                isinstance(comp, ModelOp) and
+                comp.model.is_deep_learning_model()
+            ):
+                return True
+        return False
+
+    def write_deep_learning_model(self, path):
+        """
+        Write the deep learning models contained in the sequential pipeline.
+
+        See :meth:`pipeline.Pipeline.write_deep_learning_model`.
+        """
+        # Write deep learning models
+        num_model = 1
+        for comp in self.sequence:
+            if(
+                isinstance(comp, ModelOp) and
+                comp.model.is_deep_learning_model()
+            ):
+                _path = path if num_model == 1 else f'{num_model}_{path}'
+                ModelIO.write(comp.model, _path)
+                LOGGING.LOGGER.debug(
+                    f'Deep learning model written to "{_path}"'
+                )
+                num_model += 1
+

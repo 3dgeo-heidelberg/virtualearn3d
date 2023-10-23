@@ -49,7 +49,7 @@ class FeatureTransformer:
     @staticmethod
     def extract_ftransf_args(spec):
         """
-        Extract the arguments to initialize/instantiate an FeatureTransformer
+        Extract the arguments to initialize/instantiate a FeatureTransformer
         from a key-word specification.
 
         :param spec: The key-word specification containing the arguments.
@@ -120,7 +120,7 @@ class FeatureTransformer:
         :type out_prefix: str
         :return: A new point cloud that is the transformed version of the
             input point cloud.
-        :rtype: :class:`PointCloud`
+        :rtype: :class:`.PointCloud`
         """
         # Check feature names
         if fnames is None:
