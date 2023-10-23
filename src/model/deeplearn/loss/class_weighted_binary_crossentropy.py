@@ -11,7 +11,7 @@ def vl3d_class_weighted_binary_crossentropy(class_weight):
     binary classification, i.e., two classes. Thus, it is possible to
     define a vector
     :math:`\pmb{\omega} \in \mathbb{R}^{m}` such that
-    :math:`\pmb{\omega}_{i} = y_i w_2 + (1-y_i) w_1`, where any :math:`y_i`
+    :math:`\omega_{i} = y_i w_2 + (1-y_i) w_1`, where any :math:`y_i`
     must be either zero or one. For then, the class weighted binary
     crossentropy can be obtained simply by computing the following Hadamard
     Product (where :math:`\pmb{\hat{y}}` is the vector of binary predictions):

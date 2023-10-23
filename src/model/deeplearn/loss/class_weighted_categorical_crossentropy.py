@@ -4,7 +4,20 @@ def vl3d_class_weighted_categorical_crossentropy(class_weight):
     r"""
     Function to compute a weighted categorical cross-entropy loss.
 
-    # TODO Rethink : Add more documentation (see the binary case)
+    Let :math:`\mathcal{L}(\pmb{y}, \pmb{\hat{y}}) \in \mathbb{R}^{m}` be a
+    categorical crossentropy loss on :math:`m` samples.  Now, let
+    :math:`\pmb{w} \in \mathbb{R}^n` be a vector of class weights for
+    multiclass classification, i.e., potentially many classes. Thus, it is
+    possible to define a vector
+    :math:`\pmb{\omega} \in \mathbb{R}^{m}` such that
+    :math:`\omega_i = \langle{\pmb{w}, \pmb{y}}\rangle`, where any :math:`y_j`
+    must be either zero or one for :math:`j=1,\ldots,n`. For then, the class
+    weighted categorical crossentropy can be obtained simply by computing the
+    following Hadamard Product (where :math:`\pmb{\hat{y}}` is the vector of
+    one-hot-encoded multiclass predictions).
+
+    .. math::
+        \mathcal{L}(\pmb{y}, \pmb{\hat{y}}) \odot \pmb{\omega}
 
     :param class_weight: The vector of class weights. The component i of this
         vector (:math:`\pmb{w}`) is the weight for class i.

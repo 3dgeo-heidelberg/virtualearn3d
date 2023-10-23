@@ -15,7 +15,15 @@ class DLModelEvaluator(Evaluator):
 
     Class to evaluate deep learning models.
 
-    TODO Rethink: Add ivar and vartype info
+    :ivar dlmodel: The deep learning model to be evaluated
+    :vartype dlmodel: :class:`.Model`
+    :ivar pwise_output_path: Where to export the point-wise output.
+    :vartype pwise_output_path: str
+    :ivar pwise_activations_path: Where to export the point-wise activations.
+    :vartype pwise_activations_path: str
+    :ivar accept_pipeline_state_predictions: Whether to accept predictions
+        from a pipeline's state (True) or not (False).
+    :vartype accept_pipeline_state_predictions: bool
     """
     # ---  SPECIFICATION ARGUMENTS  --- #
     # --------------------------------- #

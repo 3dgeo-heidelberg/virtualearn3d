@@ -53,7 +53,7 @@ class FeaturesStructuringLayerPlot(MplPlot):
         See :meth:`plot.Plot.plot`.
         """
         # Build figure
-        fig = plt.figure(figsize=(16, 6))
+        fig = plt.figure(figsize=(18, 6))
         # Handle QW plot
         if self.QW is not None:
             ax = fig.add_subplot(1, 3, 1)
@@ -83,7 +83,7 @@ class FeaturesStructuringLayerPlot(MplPlot):
             ax = fig.add_subplot(1, 3, 3)
             x = np.arange(0, len(self.omegaF), dtype=int)
             ax.bar(x, self.omegaF, edgecolor='black', linewidth=0.5)
-            ax.set_title('$\\omega_F$', fontsize=14)
+            ax.set_title('$\\bf{\\omega_F}$', fontsize=14)
             ax.set_ylabel('$\\omega_{Fi}$', fontsize=12)
             ax.set_xlabel('$i$', fontsize=12)
             ax.tick_params(axis='both', which='both', labelsize=12)

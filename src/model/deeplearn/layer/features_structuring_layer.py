@@ -56,7 +56,7 @@ class FeaturesStructuringLayer(Layer):
 
     :ivar max_radii: The radius of the last ellipsoid along each axis
         :math:`\pmb{r}^* \in \mathbb{R}^{n_x}`.
-    :vartype: :class:`np.ndarray` of float
+    :vartype max_radii: :class:`np.ndarray` of float
     :ivar radii_resolution: How many concentric ellipsoids must be considered
         :math:`n \in \mathbb{Z}_{>0}`
         (the first one is the center point, the last one is the biggest outer
@@ -68,9 +68,43 @@ class FeaturesStructuringLayer(Layer):
     :ivar num_kernel_points: The number of points representing the kernel
         :math:`K \in \mathbb{Z}_{>0}`.
     :vartype num_kernel_points: int
+    :ivar dim_out: The output dimensionality, it governs the trainable matrix
+        :math:`\pmb{Q_W} \in \mathbb{R}^{n_f \times n_y}`.
+    :vartype dim_out: int
+    :ivar concatenation_strategy: Specify the concatenation strategy defining
+        the output of the layer. It can be "FULL" so the generated output
+        will be passed together with the input or "OPAQUE" in which case the
+        input will not be forwarded as output.
+    :vartype concatenation_strategy: str
     :ivar num_features: The number of features per point received as input
         :math:`n_f \in \mathbb{Z}_{>0}`.
     :vartype num_features: int
+    :ivar concatf: The function implementing the concatenation strategy.
+    :vartype concatf: func
+    :ivar QX: The kernel's structure matrix.
+    :vartype QX: :class:`tf.Tensor`
+    :ivar trainable_QX: Flag to control whether QX is trainable or not.
+    :vartype trainable_QX: bool
+    :ivar built_QX: The kernel's structure matrix.
+    :vartype: Flag to control whether QX has been built or not.
+    :ivar omegaD: The kernel's distance weights.
+    :vartype omegaD: :class:`tf.Tensor`
+    :ivar trainable_omegaD: Flag to control whether omegaD is trainable or not.
+    :vartype trainable_omegaD: bool
+    :ivar built_omegaD: Flag to control whether omegaD has been built or not.
+    :vartype built_omegaD: bool
+    :ivar omegaF: The kernel's feature weights.
+    :vartype omegaF: :class:`tf.Tensor`
+    :ivar trainable_omegaF: Flag to control whether omegaF is trainable or not.
+    :vartype trainable_omegaF: bool
+    :ivar built_omegaF: Flag to control whether omegaF has been built or not.
+    :vartype built_omegaF: bool
+    :ivar QW: The kernel's weights matrix.
+    :vartype QW: :class:`tf.Tensor`
+    :ivar trainable_QW: Flag to control whether QW is trainable or not.
+    :vartype trainable_QW: bool
+    :ivar built_QW: Flag to control whether QW has been built or not.
+    :vartype built_QW: bool
     """
     # ---   INIT   --- #
     # ----------------- #
@@ -154,10 +188,18 @@ class FeaturesStructuringLayer(Layer):
     # ------------------------- #
     def build(self, dim_in):
         r"""
-        Build the :math:`\pmb{Q_X}` matrix representing the kernel's structure
-        as well as the :math:`\pmb{\omega_D} \in \mathbb{R}^{K}` and
-        :math:`\pmb{\omega_F} \in \mathbb{R}^{n_f}` vectors of trainable
-        parameters. The :math:`\pmb{\omega_D}` vector governs the relevance
+        Build the :math:`\pmb{Q_X} \in \mathbb{R}^{K \times n_x}` matrix
+        representing the kernel's structure, and the
+        :math:`\pmb{Q_W} \in \mathbb{R}^{n_f \times n_y}` matrix representing
+        the kernel's weights as well as the
+        :math:`\pmb{\omega_D} \in \mathbb{R}^{K}` and
+        :math:`\pmb{\omega_F} \in \mathbb{R}^{n_f}` vectors.
+
+        The :math:`\pmb{Q_X}` matrix represents the disposition of the
+        kernel's points while the :math:`\pmb{Q_W}` is a matrix of weights
+        that defines a potentially trainable transformation on the features.
+
+        The :math:`\pmb{\omega_D}` vector governs the relevance
         of the distance wrt to each kernel point when weighting the features,
         and the :math:`\pmb{\omega_F}` vectors governs the relevance of each
         feature independently of the distance in the structure space.
@@ -231,42 +273,65 @@ class FeaturesStructuringLayer(Layer):
             )
             self.built_QW = True
         # Handle concatenation strategy
-        cs_up = self.concatenation_strategy.upper()
-        if cs_up == "FULL":
-            self.concatf = self.concatf_full
-        elif cs_up == "OPAQUE":
-            self.concatf = self.concatf_opaque
-        else:
-            raise DeepLearningException(
-                'FeaturesStructuringLayer received an unexpected '
-                f'concatenation strategy "{self.concatenation_strategy}".'
-            )
+        self.assign_concatf()
 
     def call(self, inputs, training=False, mask=False):
         r"""
         The computation of the :math:`\pmb{Q_F} \in \mathbb{R}^{K \times n_f}`
-        matrix and the output features derived by matrix multiplication.
+        matrix and the output features :math:`\pmb{Q_Y}` obtained after
+        matrix multiplication wrt :math:`\pmb{Q_W}`.
 
-        # TODO Rethink: Doc QF maths here
+        Let the distance function between the point i of the kernel and the
+        point j of the input point cloud be:
+
+        .. math::
+            d_Q(\pmb{q_{Xi*}}, \pmb{x_{j*}}) = \exp\left[
+                - \dfrac{\lVert{ \pmb{x_{j*}} - \pmb{q_{Xi*}} }\rVert^2}{
+                    \omega_{Di}^2
+                }
+            \right]
+
+        .. math::
+            \pmb{Q_F} \in \mathbb{R}^{k \times n_f} \;\text{ s.t. }\;
+            q_{Fik} = \sum_{j=1}^{m}{
+                d_Q(\pmb{q_{Xi*}}, \pmb{x_{j*}}) \omega_{Fk} f_{jk}
+            }
+
+        Alternatively, :math:`\pmb{Q_F}` rows can be expressed as a sum of
+        vectors (where :math:`\odot` represents the Hadamard product):
+
+        .. math::
+            \pmb{q_{Fi*}} = \sum_{j=1}^{m}{
+                d_Q(\pmb{q_{Xi*}}, \pmb{x_{j*}}) (
+                    \pmb{\omega_F} \odot \pmb{f_{j*}}
+                )
+            }
+
+        Note also that there exists a distance matrix
+        :math:`\pmb{Q_D} \in \mathbb{R}^{k \times m}` describing how close each
+        point from the input point cloud is wrt each kernel's point. It can be
+        computed as:
+
+        .. math::
+            \pmb{Q_D} = \left[\begin{array}{ccc}
+                q_{D11} & \ldots & q_{D1m} \\
+                \vdots & \ddots & \vdots \\
+                q_{Dk1} & \ldots & q_{Dkm}
+            \end{array}\right]
+            \; \text{ s.t. } \;
+            Q_{Dij} = d_Q(\pmb{q_{Xi*}}, \pmb{x_{j*}})
+
+        For then, the output matrix can be calculated as:
+
+        .. math::
+            \pmb{Q_Y} = \pmb{Q_D}^\intercal \pmb{Q_F} \pmb{Q_W}
 
         See :class:`.Layer` and :meth:`layer.Layer.call`.
 
         :return: The output features. Depending on the concatenation strategy
-            they can be FULL
-            :math:`[\pmb{F}, \pmb{F}\pmb{Q_F}^\intercal, \pmb{F}\pmb{Q_F}^\intercal\pmb{Q_F}]`
-            , KDIM
-            :math:`[\pmb{F}, \pmb{F}\pmb{Q_F}^\intercal]`
-            , FDIM
-            :math:`[\pmb{F}, \pmb{F}\pmb{Q_F}^\intercal\pmb{Q_F}]`
-            , FULL-OPAQUE
-            :math:`[\pmb{F}\pmb{Q_F}^\intercal, \pmb{F}\pmb{Q_F}^\intercal\pmb{Q_F}]`
-            , KDIM-OPAQUE
-            :math:`[\pmb{F}\pmb{Q_F}^\intercal]`
-            , FDIM-OPAQUE
-            :math:`[\pmb{F}\pmb{Q_F}^\intercal\pmb{Q_F}]`
-            .
+            they can be FULL :math:`[\pmb{F}, \pmb{Q_Y}]` or OPAQUE
+            :math:`[\pmb{Q_Y}]`.
         """
-        # TODO Rethink : Validate layer
         # Extract input
         X = inputs[0]  # Input structure space matrix
         F = inputs[1]  # Input features matrix
@@ -298,12 +363,53 @@ class FeaturesStructuringLayer(Layer):
     # ---   BUILD METHODS   --- #
     # ------------------------- #
     def sample_concentric_ellipsoids(self):
-        """
-        # TODO Rethink : Doc
+        r"""
+        The structure matrix of the kernel :math:`\pmb{Q_X} \in \mathbb{R}^{3}`
+        is initialized for the 3D case assuming three parameters:
+
+        :math:`n` The radii resolution.
+
+        :math:`r_x^*, r_y^*, r_z^*` The max radii.
+
+        :math:`m_1, \ldots, m_n` The angular resolution for each radius.
+
+        First, the axis-wise radii for given ellipsoid are defined as:
+
+        .. math::
+            r_{xk} = \frac{k-1}{n-1} r_x^* \\
+            r_{yk} = \frac{k-1}{n-1} r_y^* \\
+            r_{zk} = \frac{k-1}{n-1} r_z^*
+
+        Where :math:`k=0,...,n-1` represents the :math:`n` concentric
+        ellipsoids with :math:`k=0` being the central point and
+        :math:`k=n-1` the biggest ellipsoid, i.e., from smaller to bigger.
+
+        For then, it is possible to define two angles
+        :math:`\alpha \in [0, \pi]` and :math:`\beta \in [0, 2\pi]` such that:
+
+        .. math::
+            \alpha_{kj} = \frac{j-1}{m_k - 1} \pi \;,\;\;
+            \beta_{kj} = \frac{j-1}{m_k -1} 2\pi
+
+        Where :math:`j=0, \ldots, m_k-1` for each :math:`k`.
+
+        Finally, the rows in :math:`\pmb{Q_X}` that represent the kernel's
+        structure can be computed as follows:
+
+        .. math::
+            \left[\begin{array}{c}
+                x \\
+                y \\
+                z
+            \end{array}\right]^\intercal =
+            \left[\begin{array}{c}
+                r_{xk} \sin(\alpha_{kj}) \cos(\beta_{kj}) \\
+                r_{yk} \sin(\alpha_{kj}) \sin(\beta_{kj}) \\
+                r_{zk} \cos(\alpha_{kj})
+            \end{array}\right]^\intercal
 
         :return: :math:`\pmb{Q_X} \in \mathbb{R}^{K \times n_x}`
         """
-        # TODO Rethink : Validate
         Q = []
         for k in range(self.radii_resolution):
             if k == 0:  # Center point
@@ -329,7 +435,7 @@ class FeaturesStructuringLayer(Layer):
     @staticmethod
     def concatf_full(F, QY):
         r"""
-        :return: :math:`[\pmb{F}, \pmb{Q_F}, \pmb{Q_Y}]`
+        :return: :math:`[\pmb{F}, \pmb{Q_Y}]`
         """
 
         return tf.concat([F, QY], axis=-1)
@@ -341,7 +447,67 @@ class FeaturesStructuringLayer(Layer):
         """
         return QY
 
-    # TODO Rethink : Implement serialization
+    # ---   UTIL METHODS   --- #
+    # ------------------------ #
+    def assign_concatf(self):
+        """
+        Assign the concatf function from the current state of the object.
+
+        :return: Nothing, but self.concatf is updated.
+        """
+        cs_up = self.concatenation_strategy.upper()
+        if cs_up == "FULL":
+            self.concatf = self.concatf_full
+        elif cs_up == "OPAQUE":
+            self.concatf = self.concatf_opaque
+        else:
+            raise DeepLearningException(
+                'FeaturesStructuringLayer received an unexpected '
+                f'concatenation strategy "{self.concatenation_strategy}".'
+            )
+
+    # ---   SERIALIZATION   --- #
+    # ------------------------- #
+    def get_config(self):
+        """Return necessary data to serialize the layer"""
+        # Call parent's get_config
+        config = super().get_config()
+        # Update config with custom attributes
+        config.update({
+            # Base attributes
+            'max_radii': self.max_radii,
+            'radii_resolution': self.radii_resolution,
+            'angular_resolutions': self.angular_resolutions,
+            'structure_dimensionality': self.structure_dimensionality,
+            'num_kernel_points': self.num_kernel_points,
+            'dim_out': self.dim_out,
+            'concatenation_strategy': self.concatenation_strategy,
+            # Building attributes
+            'num_features': self.num_features,
+            'concatf': None,
+            'trainable_QX': self.trainable_QX,
+            'built_QX': self.built_QX,
+            'trainable_omegaD': self.trainable_omegaD,
+            'built_omegaD': self.built_omegaD,
+            'trainable_omegaF': self.trainable_omegaF,
+            'built_omegaF': self.built_omegaF,
+            'trainable_QW': self.trainable_QW,
+            'built_QW': self.built_QW
+        })
+        # Return updated config
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        """Use given config data to deserialize the layer"""
+        # Instantiate layer
+        fsl = cls(**config)
+        # Deserialize custom attributes
+        fsl.num_features = config['num_features']
+        # Compute necessary initializations
+        fsl.assign_concatf()
+        # Return deserialized layer
+        return fsl
 
     # ---  PLOTS and REPORTS  --- #
     # --------------------------- #

@@ -15,7 +15,12 @@ class DLModelEvaluation(Evaluation):
     Class representing the result of evaluating a deep learning model. See
     :class:`.DLModelEvaluator`.
 
-    TODO Rethink : Doc ivars and vartypes
+    :ivar X: The input data.
+    :ivar y: Expected values.
+    :ivar yhat: Point-wise predictions.
+    :ivar zhat: Point-wise outputs (e.g., softmax).
+    :ivar activations: Point-wise activations.
+    :ivar class_names: The name for each class.
     """
     def __init__(self, **kwargs):
         """
