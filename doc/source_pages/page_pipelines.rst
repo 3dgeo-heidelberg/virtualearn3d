@@ -1,3 +1,5 @@
+.. _Pipelines page:
+
 Pipelines
 ***********
 
@@ -404,6 +406,8 @@ available.
 
 
 
+
+.. _Predictive pipeline section:
 
 Predictive pipeline
 ======================
