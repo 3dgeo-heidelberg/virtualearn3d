@@ -39,8 +39,9 @@ specify the input and the output.
     {
         "in_pcloud": ["/my/input/pcloud1.laz", "/my/input/pcloud2.laz"],
         "out_pcloud": ["/my/output/pcloud1/*", "/my/output/pcloud2/*"],
-        "sequential_pipeline": [...]
+        "sequential_pipeline": []
     }
+
 
 In the JSON above, the ``in_pcloud`` key defines a list of input paths. In
 general, these are expected to be point clouds in LAS or LAZ format. The

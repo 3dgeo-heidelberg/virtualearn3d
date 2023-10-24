@@ -1,7 +1,7 @@
 .. _Writers page:
 
 Writers
-********
+*********
 
 Writers are one of the many components supported by the VirtuaLearn3D (VL3D)
 framework. They are especially useful to design custom pipelines because they
@@ -9,6 +9,8 @@ allow to write data from the state variables (e.g., the point cloud) at
 different moments during execution. In this section, the many available writers
 are commented. Readers are strongly encouraged to get familiar with the idea
 of pipelines (see :ref:`page on pipelines <Pipelines page>`).
+
+
 
 
 Writer

@@ -27,6 +27,7 @@ function merge_sources {
     echo 'Merging sources ...'
     mkdir -p "source/_static"
     cp source_base/* "source"
+    mv "source/custom.css" "source/_static/custom.css"
     mv source_src/* "source"
     cp source_pages/* "source"
     echo 'Sources merged!'

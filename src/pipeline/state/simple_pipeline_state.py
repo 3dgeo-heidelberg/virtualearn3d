@@ -107,7 +107,7 @@ class SimplePipelineState(PipelineState):
 
     def prepare_iter(self, **kwargs):
         """
-        See :meth:`pipeline_state.PipelineState.prepare_iter
+        See :meth:`pipeline_state.PipelineState.prepare_iter`.
         """
         self.fnames = kwargs.get('fnames', None)
         if self.fnames is None:

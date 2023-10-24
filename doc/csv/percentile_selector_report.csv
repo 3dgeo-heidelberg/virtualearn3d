@@ -1,0 +1,15 @@
+FEATURE                  , F-VALUE      , P-VALUE
+eigenentropy_r0.1        ,      811.946 ,    0.000
+omnivariance_r0.05       ,     1050.085 ,    0.000
+linearity_r0.05          ,     2290.284 ,    0.000
+planarity_r0.1           ,     4795.994 ,    0.000
+linearity_r0.1           ,    16100.821 ,    0.000
+eigenentropy_r0.05       ,    16307.772 ,    0.000
+anisotropy_r0.05         ,    17643.102 ,    0.000
+surface_variation_r0.05  ,    18972.138 ,    0.000
+planarity_r0.05          ,    19226.943 ,    0.000
+omnivariance_r0.1        ,    20649.736 ,    0.000
+verticality_r0.05        ,    90577.769 ,    0.000
+verticality_r0.1         ,   106840.172 ,    0.000
+anisotropy_r0.1          ,   116002.960 ,    0.000
+surface_variation_r0.1   ,   122409.281 ,    0.000

@@ -1,0 +1,47 @@
+{
+  "in_pcloud": [
+	"test_data/QuePet_BR01_01_2019-07-03_q2_TLS-on_c.laz",
+	"test_data/QueRub_KA11_09_2019-09-03_q2_TLS-on_c_t.laz"
+  ],
+  "out_pcloud": [
+	"out/sphinx/training/QuePet_BR01_pca_RF/*",
+    "out/sphinx/training/QueRub_KA11_09_pca_RF/*"
+  ],
+  "sequential_pipeline": [
+	{
+	  "miner": "GeometricFeatures",
+	  "radius": 0.1,
+	  "fnames": ["surface_variation", "verticality", "anisotropy"]
+	},
+	{
+	  "writer": "Writer",
+ 	  "out_pcloud": "*pcloud/geomfeats.laz"
+	},
+	{
+	  "imputer": "UnivariateImputer",
+	  "fnames": ["AUTO"],
+	  "target_val": "NaN",
+	  "strategy": "mean",
+	  "constant_val": 0
+	},
+	{
+	  "feature_transformer": "Standardizer",
+	  "fnames": ["AUTO"],
+	  "center": true,
+	  "scale": true
+	},
+	{
+	  "feature_transformer": "PCATransformer",
+	  "out_dim": 0.3,
+	  "whiten": false,
+	  "random_seed": null,
+	  "fnames": ["AUTO"],
+	  "report_path": "*report/pca_projection.log",
+	  "plot_path": "*plot/pca_projection.svg"
+	},
+	{
+	  "writer": "Writer",
+	  "out_pcloud": "*pcloud/geomfeats_transf.laz"
+	}
+  ]
+}

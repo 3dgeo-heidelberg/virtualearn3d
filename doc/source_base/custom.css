@@ -1,0 +1,116 @@
+/* ***   MENU   *** */
+/* **************** */
+.wy-side-nav-search, .wy-nav-top {
+    background: #DAA520; /* Goldenrod */
+}
+
+.wy-menu-vertical header, .wy-menu-vertical p.caption{
+    color: #DAA520; /* Goldenrod */
+}
+
+.wy-menu.wy-menu-vertical{
+    font-size: 1.1em;
+}
+
+.wy-nav-content {
+    background-color: #F0F0F0;
+}
+
+a.icon.icon-home {
+    color: #101020;
+    font-size: 1.5em;
+    text-shadow: 4px 3px 3px #F0D040;
+
+}
+
+.wy-menu.wy-menu-vertical a:visited {
+    color: #DAA520; /* Goldenrod */
+}
+
+.wy-menu.wy-menu-vertical ul.current a {
+    color: #BF8A12;
+}
+
+.wy-menu-vertical li.current > a, .wy-menu-vertical li.on a {
+    background: #EEEEEE;
+}
+
+.wy-menu.wy-menu-vertical li..toctree-l1.current a:hover {
+    background: #999999;
+}
+
+.wy-menu-vertical .toctree-l1.current {
+    background: #CCCCCC;
+}
+
+.wy-menu.wy-menu-vertical li..toctree-l2.current a:hover {
+    background: #888888;
+}
+
+.wy-menu.wy-menu-vertical .toctree-l2 {
+    background: #AAAAAA;
+}
+
+.wy-menu.wy-menu-vertical .toctree-l2 {
+    background: #CCCCCC;
+}
+.wy-menu.wy-menu-vertical .toctree-l2:not(.current) a {
+    color: #C89510;
+}
+
+.wy-menu.wy-menu-vertical .toctree-l2.current {
+    background: #BFBFBF;
+}
+
+.wy-menu-vertical li.toctree-l2.current > a, .wy-menu-vertical li.toctree-l2.current li.toctree-l3 > a {
+    background: #B8B8B8
+}
+
+/* ***   BODY   *** */
+/* **************** */
+body {
+    color: #303030 !important;
+}
+
+/* ***   LINKS   *** */
+/* ***************** */
+a {
+    color: #DAA520; /* Goldenrod */
+}
+
+a:active, a:hover, a:visited:hover {
+    color: #AA9910;
+}
+
+a:visited {
+    color: #B08020;
+}
+
+
+
+/* ***   TABLES   *** */
+/* ****************** */
+
+.wy-table-responsive table.docutils {
+    border: solid 2px #707070;
+    border-collapse: separate !important;
+    border-radius: 5px !important;
+}
+
+.wy-table-responsive .docutils thead {
+    background: #CA9510;
+}
+
+
+.wy-table-responsive .docutils td {
+    color: #080808 !important;
+}
+
+.wy-table-responsive .docutils .row-odd td {
+    background: #DDDDDD !important;
+}
+
+.wy-table-responsive .docutils .row-even td {
+    background: #CCCCCC !important;
+}
+
