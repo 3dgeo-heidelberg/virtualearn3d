@@ -1,5 +1,9 @@
 /* ***   MENU   *** */
 /* **************** */
+.wy-nav-side {
+    background: #282828;
+}
+
 .wy-side-nav-search, .wy-nav-top {
     background: #DAA520; /* Goldenrod */
 }
@@ -13,7 +17,7 @@
 }
 
 .wy-nav-content {
-    background-color: #F0F0F0;
+    background-color: #E0E0E0;
 }
 
 a.icon.icon-home {
@@ -31,40 +35,69 @@ a.icon.icon-home {
     color: #BF8A12;
 }
 
-.wy-menu-vertical li.current > a, .wy-menu-vertical li.on a {
-    background: #EEEEEE;
+.wy-menu-vertical li.current a {
+    border: none;
 }
 
-.wy-menu.wy-menu-vertical li..toctree-l1.current a:hover {
-    background: #999999;
+.wy-menu-vertical li.current > a, .wy-menu-vertical li.on a {
+    background: #484848;
 }
 
 .wy-menu-vertical .toctree-l1.current {
-    background: #CCCCCC;
+    background: #B8B8B8;
 }
 
-.wy-menu.wy-menu-vertical li..toctree-l2.current a:hover {
-    background: #888888;
+.wy-menu-vertical li.toctree-l1.current a:hover {
+    background: #F8D8A0;
+    color: #A07000;
+}
+
+
+.wy-menu-vertical li.toctree-l1.current > a {
+    border-bottom: 1px solid #D0A000;
+    border-top: 1px solid #D0A000;
+}
+
+li.toctree-l1 a.reference.internal:not(.current):active {
+  background: #C09010 !important;
+  color: #202020 !important;
+}
+
+.wy-menu.wy-menu-vertical li.toctree-l2.current a:hover {
+    background: #F8D890;
+    color: #907000;
 }
 
 .wy-menu.wy-menu-vertical .toctree-l2 {
-    background: #AAAAAA;
-}
-
-.wy-menu.wy-menu-vertical .toctree-l2 {
-    background: #CCCCCC;
-}
-.wy-menu.wy-menu-vertical .toctree-l2:not(.current) a {
-    color: #C89510;
+    background: #606060;
 }
 
 .wy-menu.wy-menu-vertical .toctree-l2.current {
     background: #BFBFBF;
 }
 
-.wy-menu-vertical li.toctree-l2.current > a, .wy-menu-vertical li.toctree-l2.current li.toctree-l3 > a {
-    background: #B8B8B8
+.wy-menu.wy-menu-vertical .toctree-l2:.current a {
+    color: #B08010;
 }
+
+.wy-menu.wy-menu-vertical .toctree-l2:not(.current) a {
+    color: #D8A800;
+}
+
+.wy-menu-vertical li.toctree-l2.current > a, .wy-menu-vertical li.toctree-l2.current li.toctree-l3 > a {
+    background: #707070;
+    color: #C09000;
+}
+
+li.toctree-l2.current li.toctree-l3 a:hover{
+    background: #D8D4D0;
+}
+
+li.toctree-l3.current li.toctree-l4 a {
+    background: #C8C8C8;
+    color: #806000;
+}
+
 
 /* ***   BODY   *** */
 /* **************** */
@@ -75,15 +108,20 @@ body {
 /* ***   LINKS   *** */
 /* ***************** */
 a {
-    color: #DAA520; /* Goldenrod */
+    color: #A05000;
 }
 
 a:active, a:hover, a:visited:hover {
-    color: #AA9910;
+    color: #E8A018;
+}
+
+.wy-side-nav-search a.icon:hover {
+    color: #202020;
+    background: #EAB528;
 }
 
 a:visited {
-    color: #B08020;
+    color: #B06000;
 }
 
 
@@ -114,3 +152,10 @@ a:visited {
     background: #CCCCCC !important;
 }
 
+/* ***   CODE-BLOCKS   *** */
+/* *********************** */
+div.highlight {
+    border: solid 1px #202020 !important;
+    border-radius: 3px !important;
+    background: #f8f8f8 !important;
+}

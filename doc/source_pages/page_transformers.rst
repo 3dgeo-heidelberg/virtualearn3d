@@ -124,6 +124,13 @@ Feature transformers
 Minmax normalizer
 -------------------
 
+The :class:`.MinmaxNormalizer` maps the specified features so they are inside
+the :math:`[a, b]` interval. It can be configured to clip values outside the
+interval or not. If so, values below :math:`a` will be replaced by :math:`a`
+while values above :math:`b` will be replaced by :math:`b`. A
+:class:`.MinmaxNormalizer` can be defined inside a piepline using the JSON
+below:
+
 .. code-block:: json
 
     {
@@ -134,8 +141,35 @@ Minmax normalizer
         "report_path": "minmax_normalization.log"
     }
 
+The JSON above defines a :class:`.MinmaxNormalizer` that will map the features
+to be inside the :math:`[0, 1]` interval. If this transformer is later applied
+to different data, it will make sure that there is not value less than zero
+or greater than one. On top of that, a report about the normalization will be
+written to the `minmax_normalization.log` text file.
+
 
 **Arguments**
+
+-- ``fnames``
+    The names of the features to be normalized. If ``"AUTO"``, the features
+    considered by the last component that operated over the features will be
+    used.
+
+-- ``target_range``
+    The interval to normalize the features.
+
+-- ``clip``
+    When a minmax normalizer has been fit to a dataset, it will find the
+    min and max values to compute the normalization. It can be that the
+    normalizer is then applied to other dataset with different min and max.
+    Under those circumstances, values below :math:`a` or above :math:`b`
+    might appear. When clip is set to true, this values will be replaced
+    by either :math:`a` or :math:`b` so the normalizer never yields values
+    outside the :math:`[a, b]` interval.
+
+-- ``report_path``
+    When given, a text report will be exported to the file pointed by the
+    path.
 
 
 **Output**
@@ -215,6 +249,12 @@ normalization of some geometric features).
 Standardizer
 --------------
 
+The :class:`.Stantardizer` maps the specified features so they are transformed
+to have mean zero :math:`\mu = 0` and standard deviation one
+:math:`\sigma = 1`. Alternatively, it is possible to only center (mean zero)
+or scale (standard deviation one) the data. A :class:`.Standardizer` can be
+defined inside a pipeline using the JSON below:
+
 .. code-block:: json
 
     {
@@ -225,8 +265,28 @@ Standardizer
         "report_path": "standardization.log"
     }
 
+The JSON above defines a :class:`.Standardizer` that centers and scales the
+data. Besides, it will export a text report with the feature-wise means and
+variances to the `standardization.log` file.
+
 
 **Arguments**
+
+-- ``fnames``
+    The names of the features to be normalized. If ``"AUTO"``, the features
+    considered by the last component that operated over the features will be
+    used.
+
+-- ``center``
+    Whether to subtract the mean (true) or not (false).
+
+-- ``scale``
+    Whether to divide by the standard deviation (true) or not (false).
+
+-- ``report_path``
+    When given, a text report will be exported to the file pointed by the
+    path.
+
 
 **Output**
 
@@ -287,8 +347,16 @@ of some geometric features).
 
 
 
+
 Variance selector
 --------------------
+
+The variance selection is a simple strategy that consists of discarding all
+those features which variance lies below a given threshold. While simple,
+the :class:`.VarianceSelector` has a great strength and that is it can be
+computed without known classes because it is based only on the variance. A
+:class:`.VarianceSelector` can be defined inside a piepline using the JSON
+below:
 
 .. code-block:: json
 
@@ -299,9 +367,31 @@ Variance selector
         "report_path": "variance_selection.log"
     }
 
+The JSON above defines a :class:`.VarianceSelector` that removes all features
+which variance is below :math:`10^{-2}`. After that, it will export a text
+report describing the process to the `variance_selection.log` file.
+
 **Arguments**
 
+
+-- ``fnames``
+    The names of the features to be normalized. If ``"AUTO"``, the features
+    considered by the last component that operated over the features will be
+    used.
+
+-- ``variance_threshold``
+    Features which variance is below this threshold will be discarded.
+
+-- ``report_path``
+    When given, a text report will be exported to the file pointed by the path.
+
 **Output**
+
+A transformed point cloud is generated considering only the features that
+passed the variance threshold. On top of that, the feature-wise variances
+are exported through the logging system. The selected features are also
+explicitly listed (see below for an example corresponding
+to a variance selection on some geometric features).
 
 .. list-table::
     :widths: 60 40
@@ -359,19 +449,55 @@ Variance selector
 K-Best selector
 ------------------
 
+The :class:`.KBestSelector` computes the feature-wise ANOVA F-values and use
+them to sort the features. Then, only the :math:`K` best features, i.e., those
+with highest F-values, will be preserved. A :class:`.KBestSelector` can be
+defined inside a pipeline using the JSON below:
+
 .. code-block:: json
 
     {
         "feature_transformer": "KBestSelector",
+        "fnames": ["AUTO"],
         "type": "classification",
         "k": 2,
-        "fnames": ["AUTO"],
         "report_path": "kbest_selection.log"
     }
 
+The JSON above defines a :class:`.KBestSelector` that computes the ANOVA
+F-values assuming a classification task. Then, it discards all features
+but the two with the highest values. Finally, it writes a text report with
+the feature-wise F-Values and the associated p-value for each test to the
+file `kbest_selection.log`
+
 **Arguments**
 
+-- ``fnames``
+    The names of the features to be normalized. If ``"AUTO"``, the features
+    considered by the last component that operated over the features will be
+    used.
+
+-- ``type``
+    Specify which type of task is going to be computed. Either,
+    ``"regression"`` or ``"classification"``. The F-Values computation
+    will be carried out to be adequate for one of those tasks. For regression
+    tasks the target variable is expected to be numerical, while for
+    classification tasks it is expected to be categorical.
+
+-- ``k``
+    How many top-features must be preserved.
+
+-- ``report_path``
+    When given, a text report will be exported to the file pointed by the path.
+
+
 **Output**
+
+A transformed point cloud is generated considering only the K-best features
+according to the F-values. Moreover, the feature-wise F-Values and their
+associated p-value are exported through the logging system. The selected
+features are also explicitly listed (see below for an example corresponding to
+a K-best selection on some geometric features).
 
 .. csv-table::
     :file: ../csv/kbest_selector_report.csv
@@ -388,23 +514,57 @@ K-Best selector
     *   - anisotropy_r0.1
 
 
+
+
 Percentile selector
 ----------------------
+
+The :class:`.PercentileSelector` computes the ANOVA F-Values and use them to
+sort the features. Then, only a given percentage of the features are preserved.
+More concretely, the given percentage of the features with the highest
+F-Values will be preserved. A :class:`.PercentileSelector` can be defined
+inside a pipeline using the JSON below:
 
 .. code-block:: json
 
     {
-	  "feature_transformer": "PercentileSelector",
-	  "type": "classification",
-	  "percentile": 20,
-	  "fnames": ["AUTO"],
-	  "report_path": "*report/kbest_selection.log"
-	}
+        "feature_transformer": "PercentileSelector",
+        "fnames": ["AUTO"],
+        "type": "classification",
+        "percentile": 20,
+        "report_path": "*report/kbest_selection.log"
+    }
+
 
 **Arguments**
 
+-- ``fnames``
+    The names of the features to be normalized. If ``"AUTO"``, the features
+    considered by the last component that operated over the features will be
+    used.
+
+-- ``type``
+    Specify which type of task is going to be computed. Either,
+    ``"regression"`` or ``"classification"``. The F-Values computation
+    will be carried out to be adequate for one of those tasks. For regression
+    tasks the target variable is expected to be numerical, while for
+    classification tasks it is expected to be categorical.
+
+-- ``percentile``
+    An integer from :math:`0` to :math:`100` that specifies the percentage of
+    top-features to preserve.
+
+-- ``report_path``
+    When given, a text report will be exported to the file pointed by the
+    path.
+
 **Output**
 
+A transformed point cloud is generated considering only the requested
+percentage of best features according to the F-values. Moreover, the
+feature-wise F-Values and their p-value are exported through the logging
+system. The selected features are also explicitly listed (see below for an
+example corresponding to a percentile selection on some geometric features).
 
 .. csv-table::
     :file: ../csv/percentile_selector_report.csv
@@ -424,26 +584,100 @@ Percentile selector
 PCA transformer
 ------------------
 
+The :class:`.PCATransformer` can be used to compute a dimensionality reduction
+of the feature space. Let :math:`\pmb{F} \in \mathbb{R}^{m \times n_f}` be a
+matrix of features such that each row :math:`\pmb{f}_{i} \in \mathbb{R}^{n_f}`
+represents the :math:`n_f` features for a given point :math:`i`. After applying
+the PCA transformer a new matrix of features will be obtained
+:math:`\pmb{Y} \in \mathbb{R}^{m \times n_y}` such that :math:`n_y \leq n_f`.
+This dimensionality reduction can help reducing the number of input features
+for a machine learning model, and consequently reducing the execution time.
+
+To understand this transformation, simply note the singular value decomposition
+of :math:`\pmb{F} = \pmb{U} \pmb{\Sigma} \pmb{V}^\intercal`. The singular
+vectors in :math:`\pmb{V}^\intercal` can be ordered in descendant order from
+higher to lower singular value, where singular values are given by the diagonal
+of :math:`\pmb{\Sigma}`. Alternatively, the basis matrix defined by the
+singular vectors can be approximated with the eigenvectors of the centered
+covariance matrix. From now on, no matter how it was computed, we will call
+this basis matrix :math:`\pmb{B}`. We also assume that we always have enough
+linearly independent features for the analysis to be feasible.
+
+When all the basis vectors are considered, it will be that
+:math:`\pmb{B} \in \mathbb{R}^{n_f \times n_f}`, i.e., :math:`n_y=n_f`. In this
+case we are expressing potentially correlated features in a new basis where
+each feature aims to be orthogonal w.r.t. the others (principal components). When
+:math:`\pmb{B} \in \mathbb{R}^{n_f \times n_y}` for :math:`n_y<n_f`, and the
+basis contains the singular vectors corresponding to the higher singular values
+, we are reducing the dimensionality using a subset of the principal
+components. This dimensionality reduction transformation will preserve as much
+variance as possible in the data while using less orthogonal features.
+
+A :class:`.PCATransformer` can be defined inside a pipeline using the JSON
+below:
+
+
 .. code-block:: json
 
     {
         "feature_transformer": "PCATransformer",
+        "fnames": ["AUTO"],
         "out_dim": 0.99,
         "whiten": false,
         "random_seed": null,
-        "fnames": ["AUTO"],
         "report_path": "pca_projection.log",
         "plot_path": "pca_projection.svg"
     }
 
+
 **Arguments**
 
+-- ``fnames``
+    The names of the features to be normalized. If ``"AUTO"``, the features
+    considered by the last component that operated over the features will be
+    used.
+
+-- ``out_dim``
+    The ratio of preserved features governing the output dimensionality.
+    It is a value in :math:`(0, 1]` where 1 implies :math:`n_y=n_f` and
+    less than one governs how small is :math:`n_y` with respect to
+    :math:`n_f`.
+
+-- ``whiten``
+    When true, the singular vectors will be scaled by the square root of the
+    number of points and divided by the corresponding singular value.
+    Consequently, the output will consists of features with unit variance.
+    When false, nothing will be done.
+
+-- ``random_seed``
+    Can be used to specify a seed (as an integer) for reproducibility purposes
+    when using randomized solvers for the computations.
+
+-- ``report_path``
+    When given, a text report will be exported to the file pointed by the path.
+
+-- ``plot_path``
+    When given, a plot representing the explained variance ratio as a function
+    of the number of considered principal components will be exported to the
+    file pointed by the path.
+
+
 **Output**
+
+A transformed point cloud is generated with the new features obtained by the
+:class:`.PCATransformer`. Moreover, the explained variances will be exported
+through the logging system.
 
 .. csv-table::
     :file: ../csv/pca_transformer_report.csv
     :widths: 20 20
     :header-rows: 1
+
+Furthermore, if requested a plot will be exported to a file. This plot
+describes the explained variance ratio as a function of the number of
+output features (output dimensionality). An example can be see below
+where the :class:`.PCATransformer` was used to reduce 14 features into 8
+features that explain at least a :math:`99\%` of the variance.
 
 .. figure:: ../img/pca_transformer_plot.png
     :scale: 20%
@@ -452,6 +686,10 @@ PCA transformer
 
     The relationship between the PCA-derived features and the aggregated
     explained variance ratio.
+
+Finally, the image below represents how three different features were reduced
+to a single one using PCA. The output point cloud can be exported using a
+:class:`.Writer` component (see :ref:`Writer documentation <Writer page>`).
 
 .. figure:: ../img/pca_transformer_comparison.png
     :scale: 30%
