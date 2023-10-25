@@ -11,11 +11,13 @@ Welcome to VirtuaLearn3D's documentation!
    :caption: Contents:
 
    page_introduction
+   page_data_mining
    page_machine_learning
    page_deep_learning
    page_transformers
    page_imputers
    page_writers
+   page_evaluators
    page_pipelines
    page_examples
    modules

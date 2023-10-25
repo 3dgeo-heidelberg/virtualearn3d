@@ -465,7 +465,7 @@ defined inside a pipeline using the JSON below:
     }
 
 The JSON above defines a :class:`.KBestSelector` that computes the ANOVA
-F-values assuming a classification task. Then, it discards all features
+F-Values assuming a classification task. Then, it discards all features
 but the two with the highest values. Finally, it writes a text report with
 the feature-wise F-Values and the associated p-value for each test to the
 file `kbest_selection.log`
@@ -532,8 +532,14 @@ inside a pipeline using the JSON below:
         "fnames": ["AUTO"],
         "type": "classification",
         "percentile": 20,
-        "report_path": "*report/kbest_selection.log"
+        "report_path": "percentile_selection.log"
     }
+
+The JSON above defines a :class:`.PercentileSelector` that computes the
+ANOVA F-Values assuming a classification task. Then, it preserves the
+:math:`20\%` of the features with the highest F-Values. Finally, it writes
+a text report with the feature-wise F-Values and the associated p-value for
+each test to the file `percentile_selection.log`.
 
 
 **Arguments**
@@ -628,6 +634,15 @@ below:
         "report_path": "pca_projection.log",
         "plot_path": "pca_projection.svg"
     }
+
+The JSON above defines a :class:`.PCATransformer` that considers as many
+principal components as necessary to explain the :math:`99\%` of the variance.
+On top of that, it will export a text report with the aggregated contribution
+to the explained variance of the considered principal components (ordered from
+most significant to less significant) to a file named `pca_projection.log`.
+Finally, it will also export a plot representing the explained variance ratio
+as a function of the output dimensionality to a file
+named `pca_projection.svg`.
 
 
 **Arguments**
