@@ -113,14 +113,14 @@ to define a :class:`.CovarFeatsMiner`.
         "optimize": false,
         "fnames": ["Linearity", "Planarity", "SurfaceVariation", "Verticality", "Anisotropy"],
         "frenames": ["linearity_r0_3", "planarity_r0_3", "surface_variation_r0_3", "verticality_r0_3", "anisotropy_r0_3"],
-        "nthreads": 1
+        "nthreads": 12
     }
 
 The JSON above defines a :class:`.CovarFeatsMiner` that computes the linearity,
 planarity, surface variation, verticality, and anisotropy features
 considering a spherical neighborhood with :math:`30\,\mathrm{cm}` radius. The
 computed features will be named from the feature names and the neighborhood
-radius. No more than one thread will be used for the computations.
+radius. Exactly 12 threads will be used for the computations.
 
 
 **Arguments**

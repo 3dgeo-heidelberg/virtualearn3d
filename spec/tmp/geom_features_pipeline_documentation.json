@@ -1,0 +1,19 @@
+{
+  "in_pcloud": [
+	"/hei/lidar_data/parislille/training/Paris.laz"
+  ],
+  "out_pcloud": [
+	"out/sphinx/Paris_geomfeats.laz"
+  ],
+  "sequential_pipeline": [
+	{
+	  "miner": "GeometricFeatures",
+	  "in_pcloud": null,
+ 	  "out_pcloud": null,
+	  "radius": 0.3,
+	  "fnames": ["linearity", "planarity", "surface_variation", "verticality", "anisotropy"],
+	  "frenames": ["linearity_r0_3", "planarity_r0_3", "surface_variation_r0_3", "verticality_r0_3", "anisotropy_r0_3"],
+      "nthreads": -1
+	}
+  ]
+}

@@ -122,9 +122,27 @@ The VL3D framework is designed so the user can take model-selection and architec
       ]
     }
 
-The JSON below defines a pipeline to train random forest models. It will be run twice, once to train the model on the QuePet_BR01 tree and once to train on the QueRub_KA11 tree. Three sets of geometric features are computed with different radii for each input point cloud. The generated features are then written to an output point cloud **geomfeats.laz** to visualize them. The mean value of the feature will replace any feature with an invalid numerical value through the univariate imputer. Afterward, the features are standardized to have mean zero and standard deviation one. Then, the dimensionality of the feature space is transformed through PCA, and the resulting transformed features are exported to **geomfeats_transf.laz** for visualization.
+The JSON below defines a pipeline to train random forest models. It will be run
+twice, once to train the model on the QuePet_BR01 tree and once to train on the
+QueRub_KA11 tree. Three sets of geometric features are computed with different
+radii for each input point cloud. The generated features are then written to an
+output point cloud **geomfeats.laz** to visualize them. The mean value of the
+feature will replace any feature with an invalid numerical value through the
+univariate imputer. Afterward, the features are standardized to have mean zero
+and standard deviation one. Then, the dimensionality of the feature space is
+transformed through PCA, and the resulting transformed features are exported to
+**geomfeats_transf.laz** for visualization.
 
-At this point, the features are used to train a random forest classifier using a stratified kfold training strategy with :math:`k=5`. The trained model is evaluated through metrics like Overall Accuracy (OA) or Matthews Correlation Coefficient (MCC). Some model hyperparameters, like the number of estimators or the max depth of each decision tree, are explored using a grid search algorithm. The best combination of hyperparameters is automatically selected to train the final model. Finally, the data mining, imputation, and feature transformation components are assembled with the random forest classifier, and serialized to a file **LeafWood_Training_RF.pipe** that can be later loaded to be used as a leaf-wood segmentation model.
+At this point, the features are used to train a random forest classifier using
+a stratified K-folding training strategy with :math:`K=5`. The trained model is
+evaluated through metrics like Overall Accuracy (OA) or Matthews Correlation
+Coefficient (MCC). Some model hyperparameters, like the number of estimators or
+the max depth of each decision tree, are explored using a grid search
+algorithm. The best combination of hyperparameters is automatically selected to
+train the final model. Finally, the data mining, imputation, and feature
+transformation components are assembled with the random forest classifier,
+and serialized to a file **LeafWood_Training_RF.pipe** that can be later loaded
+to be used as a leaf-wood segmentation model.
 
 **TODO:** *Add images with results*
 

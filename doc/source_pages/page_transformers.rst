@@ -273,7 +273,7 @@ variances to the `standardization.log` file.
 **Arguments**
 
 -- ``fnames``
-    The names of the features to be normalized. If ``"AUTO"``, the features
+    The names of the features to be standardized. If ``"AUTO"``, the features
     considered by the last component that operated over the features will be
     used.
 
@@ -375,7 +375,7 @@ report describing the process to the `variance_selection.log` file.
 
 
 -- ``fnames``
-    The names of the features to be normalized. If ``"AUTO"``, the features
+    The names of the features to be transformed. If ``"AUTO"``, the features
     considered by the last component that operated over the features will be
     used.
 
@@ -473,7 +473,7 @@ file `kbest_selection.log`
 **Arguments**
 
 -- ``fnames``
-    The names of the features to be normalized. If ``"AUTO"``, the features
+    The names of the features to be transformed. If ``"AUTO"``, the features
     considered by the last component that operated over the features will be
     used.
 
@@ -545,7 +545,7 @@ each test to the file `percentile_selection.log`.
 **Arguments**
 
 -- ``fnames``
-    The names of the features to be normalized. If ``"AUTO"``, the features
+    The names of the features to be transformed. If ``"AUTO"``, the features
     considered by the last component that operated over the features will be
     used.
 
@@ -648,7 +648,7 @@ named `pca_projection.svg`.
 **Arguments**
 
 -- ``fnames``
-    The names of the features to be normalized. If ``"AUTO"``, the features
+    The names of the features to be transformed. If ``"AUTO"``, the features
     considered by the last component that operated over the features will be
     used.
 

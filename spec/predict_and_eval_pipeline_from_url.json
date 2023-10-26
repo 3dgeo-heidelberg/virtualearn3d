@@ -13,8 +13,8 @@
 	  "model_path": "out/training/PinSyl_KA09_T048_pca_RF/pipe/LeafWood_Training_RF.pipe" 
     },
 	{
-	  "writer": "Writer",
-	  "out_pcloud": "*predicted.laz"
+		"writer": "ClassifiedPcloudWriter",
+    	"out_pcloud": "*predicted.laz"
 	},
 	{
 	  "writer": "PredictionsWriter",
