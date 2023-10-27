@@ -245,6 +245,7 @@ normalization of some geometric features).
         - 0.94357
 
 
+.. _Standardizer
 
 Standardizer
 --------------
@@ -586,6 +587,8 @@ example corresponding to a percentile selection on some geometric features).
     *   - verticality_r0.1
     *   - anisotropy_r0.1
 
+
+.. _PCA transformer:
 
 PCA transformer
 ------------------

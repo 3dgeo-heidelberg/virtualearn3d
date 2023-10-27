@@ -12,6 +12,8 @@ a classification or regression task on the points.
 
 
 
+.. _Geometric features miner:
+
 Geometric features miner
 ==========================
 

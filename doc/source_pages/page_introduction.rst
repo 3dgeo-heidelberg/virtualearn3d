@@ -5,7 +5,7 @@ Introduction
 
 The VirtuaLearn3D (VL3D) framework is a software for point-wise classification and regression on 3D point clouds. It handles the training and prediction operations of the many implemented models. On top of that, it provides useful tools for transforming the point clouds and for automatic feature extraction. Moreover, it also supports evaluations on the data, the models, and the predictions. These evaluations yield further insights and analysis through automatically generated plots, CSV files, text reports, and point clouds.
 
-The VL3D framework is designed so the user can take model-selection and architecture-design choices and define custom pipelines. To achieve this, the user only needs to manipulate JSON files like the one shown below:
+The VL3D framework is designed so the user can easily decide about the model configuration and define custom pipelines. To achieve this, the user only needs to manipulate JSON files like the one shown below:
 
 .. code-block:: json
 
@@ -126,19 +126,30 @@ The JSON below defines a pipeline to train random forest models. It will be run
 twice, once to train the model on the QuePet_BR01 tree and once to train on the
 QueRub_KA11 tree. Three sets of geometric features are computed with different
 radii for each input point cloud. The generated features are then written to an
-output point cloud **geomfeats.laz** to visualize them. The mean value of the
-feature will replace any feature with an invalid numerical value through the
-univariate imputer. Afterward, the features are standardized to have mean zero
-and standard deviation one. Then, the dimensionality of the feature space is
-transformed through PCA, and the resulting transformed features are exported to
-**geomfeats_transf.laz** for visualization.
+output point cloud **geomfeats.laz** to visualize them
+(see the :ref:`geometric features miner documentation <Geometric features miner>`).
+The mean value of the feature will replace any feature with an invalid
+numerical value through the univariate imputer
+(see the :ref:`univariate imputer documentation <Univariate imputer>`).
+Afterward, the features are
+standardized to have mean zero and standard deviation one
+(see the :ref:`standardizer documentation <Standardizer>`).
+Then, the dimensionality of the feature space is transformed through PCA
+(see the :ref:`PCA transformer documentation <PCA transformer>`), and the
+resulting transformed features are exported to **geomfeats_transf.laz**
+for visualization.
 
-At this point, the features are used to train a random forest classifier using
-a stratified K-folding training strategy with :math:`K=5`. The trained model is
-evaluated through metrics like Overall Accuracy (OA) or Matthews Correlation
-Coefficient (MCC). Some model hyperparameters, like the number of estimators or
-the max depth of each decision tree, are explored using a grid search
-algorithm. The best combination of hyperparameters is automatically selected to
+At this point, the features are used to train a random forest classifier
+(see the
+:ref:`random forest classifier documentation <Random forest classifier>`).
+Using a stratified K-folding training strategy with :math:`K=5`
+(see the :ref:`stratified K-folding documentation <Stratified K-folding>`).
+The trained model is evaluated through metrics like Overall Accuracy (OA) or
+Matthews Correlation Coefficient (MCC). Some model hyperparameters, like the
+number of estimators or the max depth of each decision tree,
+are explored using a grid search algorithm
+(see the :ref:`grid search documentation <Grid search>`).
+The best combination of hyperparameters is automatically selected to
 train the final model. Finally, the data mining, imputation, and feature
 transformation components are assembled with the random forest classifier,
 and serialized to a file **LeafWood_Training_RF.pipe** that can be later loaded

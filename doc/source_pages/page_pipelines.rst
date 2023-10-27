@@ -16,6 +16,7 @@ applied to different point clouds.
 
 
 
+.. _Sequential pipeline
 
 Sequential pipeline
 ======================

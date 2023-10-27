@@ -27,6 +27,8 @@ Models
 ===========
 
 
+.. _Random forest classifier:
+
 Random forest classifier
 ---------------------------
 
@@ -144,7 +146,9 @@ The graphical representation of the decision trees is exported to the
 **Output**
 
 The table below is an example of the reported feature importances on a dataset
-where the geometric features have been transformed through PCA.
+where the geometric features have been transformed through PCA. The
+"PERM. IMP." columns refer to the permutation invariance feature importance
+(mean and standard deviation, respectively).
 
 .. csv-table::
     :file: ../csv/ml_rfclassif_importances.csv
@@ -232,9 +236,10 @@ auto-validation.
 
 
 
+.. _Stratified K-folding:
 
 Stratified K-folding
----------------------
+----------------------
 
 Understanding the stratified K-folding strategy for training requires
 understanding stratification and K-folding.
@@ -334,6 +339,7 @@ key.
 
 
 
+.. _Grid search:
 
 Grid search
 --------------
@@ -505,7 +511,7 @@ Working example
 
 This example shows how to define two different pipelines, one to train a model
 and export it as a :class:`.PredictivePipeline`, the other to use the
-predictive pipeline to compute leaf-wood segmentation on another point cloud.
+predictive pipeline to compute a leaf-wood segmentation on another point cloud.
 Readers are referred to the :ref:`pipelines documentation <Pipelines page>` to
 read more about how pipelines work and to see more examples.
 
@@ -514,6 +520,150 @@ read more about how pipelines work and to see more examples.
 
 Training pipeline
 --------------------
+
+The training pipeline will train two models, each on a different input point
+cloud. In this case, the input point clouds are specified using a URL format,
+i.e., the framework will automatically download them, providing the given links
+point to a valid and accessible LAS/LAZ file. The output for each model will be
+written to a different directory.
+
+The pipeline starts computing the geometric features on many different radii.
+Then, the geometric features are exported to a file inside the `pcloud` folder
+in the corresponding output directory (see the
+:ref:`sequential pipeline documentation <Sequential pipeline>` to understand
+how the ``*`` works when specifying output paths). Then, an univariate
+imputation is applied to NaN values, followed by a standardization. Afterward,
+a PCA transformer takes as many principal components as necessary to project
+the features on an orthogonal basis that explains at least :math:`99\%` of
+the variance. These transformed features are exported to the
+`geomfeats_transf.laz` file before training a random forest classifier on them.
+The random forest model is trained using stratified K-folding to assess its
+variance and potential generalization. On top of that, grid search is used
+as a hyperparameter tuning strategy to automatically find a good combination
+of max tree depth, max number of samples per tree, and the number of decision
+trees in the ensemble. Finally, the model is exported to a predictive pipeline
+that can later be used to compute predictions on previously unseen models.
+
+.. code-block:: json
+
+    {
+        "in_pcloud": [
+            "https://3dweb.geog.uni-heidelberg.de/trees_leafwood/PinSyl_KA09_T048_2019-08-20_q1_TLS-on_c_t.laz",
+            "https://3dweb.geog.uni-heidelberg.de/trees_leafwood/PinSyl_KA10_03_2019-07-30_q2_TLS-on_c_t.laz"
+        ],
+        "out_pcloud": [
+            "out/training/PinSyl_KA09_T048_pca_RF/*",
+            "out/training/PinSyl_KA10_03_pca_RF/*"
+        ],
+        "sequential_pipeline": [
+            {
+                "miner": "GeometricFeatures",
+                "radius": 0.05,
+                "fnames": ["linearity", "planarity", "surface_variation", "eigenentropy", "omnivariance", "verticality", "anisotropy"]
+            },
+            {
+                "miner": "GeometricFeatures",
+                "radius": 0.1,
+                "fnames": ["linearity", "planarity", "surface_variation", "eigenentropy", "omnivariance", "verticality", "anisotropy"]
+            },
+            {
+                "miner": "GeometricFeatures",
+                "radius": 0.2,
+                "fnames": ["linearity", "planarity", "surface_variation", "eigenentropy", "omnivariance", "verticality", "anisotropy"]
+            },
+            {
+                "writer": "Writer",
+                "out_pcloud": "*pcloud/geomfeats.laz"
+            },
+            {
+                "imputer": "UnivariateImputer",
+                "fnames": ["AUTO"],
+                "target_val": "NaN",
+                "strategy": "mean",
+                "constant_val": 0
+            },
+            {
+                "feature_transformer": "Standardizer",
+                "fnames": ["AUTO"],
+                "center": true,
+                "scale": true
+            },
+            {
+                "feature_transformer": "PCATransformer",
+                "out_dim": 0.99,
+                "whiten": false,
+                "random_seed": null,
+                "fnames": ["AUTO"],
+                "report_path": "*report/pca_projection.log",
+                "plot_path": "*plot/pca_projection.svg"
+            },
+            {
+                "writer": "Writer",
+                "out_pcloud": "*pcloud/geomfeats_transf.laz"
+            },
+            {
+                "train": "RandomForestClassifier",
+                "fnames": ["AUTO"],
+                "training_type": "stratified_kfold",
+                "random_seed": null,
+                "shuffle_points": true,
+                "num_folds": 5,
+                "model_args": {
+                    "n_estimators": 4,
+                    "criterion": "entropy",
+                    "max_depth": 20,
+                    "min_samples_split": 5,
+                    "min_samples_leaf": 1,
+                    "min_weight_fraction_leaf": 0.0,
+                    "max_features": "sqrt",
+                    "max_leaf_nodes": null,
+                    "min_impurity_decrease": 0.0,
+                    "bootstrap": true,
+                    "oob_score": false,
+                    "n_jobs": 4,
+                    "warm_start": false,
+                    "class_weight": null,
+                    "ccp_alpha": 0.0,
+                    "max_samples": 0.8
+                },
+                "autoval_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
+                "stratkfold_report_path": "*report/RF_stratkfold_report.log",
+                "stratkfold_plot_path": "*plot/RF_stratkfold_plot.svg",
+                "hyperparameter_tuning": {
+                    "tuner": "GridSearch",
+                    "hyperparameters": ["n_estimators", "max_depth", "max_samples"],
+                    "nthreads": -1,
+                    "num_folds": 5,
+                    "pre_dispatch": 8,
+                    "grid": {
+                        "n_estimators": [2, 4, 8, 16],
+                        "max_depth": [15, 20, 27],
+                        "max_samples": [0.6, 0.8, 0.9]
+                    },
+                    "report_path": "*report/RF_hyper_grid_search.log"
+                },
+                "importance_report_path": "*report/LeafWood_Training_RF_importance.log",
+                "importance_report_permutation": true,
+                "decision_plot_path": "*plot/LeafWood_Training_RF_decision.svg",
+                "decision_plot_trees": 3,
+                "decision_plot_max_depth": 5
+            },
+            {
+                "writer": "PredictivePipelineWriter",
+                "out_pipeline": "*pipe/LeafWood_Training_RF.pipe",
+                "include_writer": false,
+                "include_imputer": true,
+                "include_feature_transformer": true,
+                "include_miner": true
+            }
+        ]
+    }
+
+The table below is the report describing the finding of the grid search
+strategy. On the left side of the table, the columns correspond to the
+optimized hyperparameters. On the right side, the mean and standard deviation
+of the accuracy (percentage), and the mean and standard deviation of the
+training time (seconds).
 
 
 .. csv-table::
@@ -524,6 +674,18 @@ Training pipeline
 
 Predictive pipeline
 ----------------------
+
+The predictive pipeline will use the model trained on the first point cloud to
+compute leaf-wood segmentation on the second point cloud. The input point cloud
+will be downloaded from the given URL. The classified point cloud will be
+written including some extra information like the fail/success point-wise mask
+(because :class:`.ClassifiedPcloudWriter` is used instead of :class:`.Writer`)
+to the `predicted.laz` file. The predicted labels will also be exported to
+the single-column file `predictions.lbl`. Finally, the
+:class:`.ClassificationEvaluator` component is used to analyze the predictions
+with respect to the expected values. In doing so, many reports and plots
+are generated including confusion matrices, and the requested evaluation
+metrics.
 
 
 .. code-block:: json
@@ -563,10 +725,17 @@ Predictive pipeline
         ]
     }
 
+The table below exemplifies the evaluation metrics describing how good the
+predictions are with respect to the expected values.
+
 .. csv-table::
     :file: ../csv/ml_rfclassif_predict_global_eval.csv
     :widths: 9 9 9 9 9 9 9 9 9 9 9
     :header-rows: 1
+
+
+The figure below represents the computed leaf-wood segmentation directly
+visualized in the point cloud.
 
 .. figure:: ../img/rfclassif_unseen.png
     :scale: 25
@@ -575,8 +744,8 @@ Predictive pipeline
 
 
 
-    Visualization of the output obtained after computing a trained leaf-wood
-    segmentation model on a dataset containing a previously unseen tree.
+    Visualization of the output obtained after computing a leaf-wood
+    segmentation on a dataset containing a previously unseen tree.
     On the left, the red points represent misclassified points while the
     gray points represent successfully classified points. In the middle, the
     point-wise predicted labels (green for leaf, brown for wood). In the

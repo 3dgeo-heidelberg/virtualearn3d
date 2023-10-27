@@ -73,6 +73,7 @@ target value (``"AUTO"``).
 
 
 
+.. _Univariate imputer:
 
 Univariate imputer
 ====================
