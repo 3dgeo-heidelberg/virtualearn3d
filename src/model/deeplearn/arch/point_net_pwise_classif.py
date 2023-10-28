@@ -212,12 +212,13 @@ class PointNetPwiseClassif(PointNet):
         :type state: dict
         :return: Nothing, but modifies the internal state of the object.
         """
-        # Call parent's set state
-        super().__setstate__(state)
         # Assign PointNetPwiseClassif's attributes from state dictionary
         self.num_classes = state['num_classes']
         self.num_pwise_feats = state['num_pwise_feats']
         self.binary_crossentropy = state['binary_crossentropy']
+        self.fsl_layer = None
+        # Call parent's set state
+        super().__setstate__(state)
 
     # ---  FIT LOGIC CALLBACKS   --- #
     # ------------------------------ #
@@ -239,7 +240,10 @@ class PointNetPwiseClassif(PointNet):
             )
             cache_map['QXpast'] = self.fsl_layer.QX
         # Prefit logic for freeze training
-        if self.features_structuring_layer.get('freeze_training', False):
+        if (
+            self.features_structuring_layer is not None and
+            self.features_structuring_layer.get('freeze_training', False)
+        ):
             msg = 'Freeze training (prefit):\n'
             for layer in self.nn.layers[-4:-1]:
                 msg += f'Disabled training for "{layer.name}".\n'
@@ -258,7 +262,10 @@ class PointNetPwiseClassif(PointNet):
         :return: Nothing.
         """
         # Postfit logic for freeze training
-        if self.features_structuring_layer.get('freeze_training', False):
+        if (
+            self.features_structuring_layer is not None and
+            self.features_structuring_layer.get('freeze_training', False)
+        ):
             # Prepare freeze training
             msg = 'Freeze training (posfit):\n'
             for layer in self.nn.layers:

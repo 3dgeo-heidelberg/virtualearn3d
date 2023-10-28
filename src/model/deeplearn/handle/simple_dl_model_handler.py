@@ -653,6 +653,7 @@ class SimpleDLModelHandler(DLModelHandler):
         # Update
         state['summary_report_path'] = self.summary_report_path
         state['training_history_dir'] = self.training_history_dir
+        state['feat_struct_repr_dir'] = self.feat_struct_repr_dir
         state['out_prefix'] = self.out_prefix
         state['training_epochs'] = self.training_epochs
         state['batch_size'] = self.batch_size
@@ -680,6 +681,7 @@ class SimpleDLModelHandler(DLModelHandler):
         # Assign member attributes from state dictionary
         self.summary_report_path = state['summary_report_path']
         self.training_history_dir = state['training_history_dir']
+        self.feat_struct_repr_dir = state.get('feat_struct_repr_dir', None)
         self.out_prefix = state['out_prefix']
         self.training_epochs = state['training_epochs']
         self.batch_size = state['batch_size']

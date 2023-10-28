@@ -87,7 +87,14 @@ class SequentialPipeline(Pipeline):
                 self.sequence.append(ctransf)
             if comp.get("train", None) is not None:  # Handle train
                 model_class = MainTrain.extract_model_class(comp)
-                model = model_class(**model_class.extract_model_args(comp))
+                pretrained = comp.get('pretrained_model', None)
+                if pretrained is not None:
+                    model = MainTrain.extract_pretrained_model(
+                        comp, model_class
+                    )
+                    model.overwrite_pretrained_model(comp)
+                else:
+                    model = model_class(**model_class.extract_model_args(comp))
                 self.sequence.append(ModelOp(model, ModelOp.OP.TRAIN))
             if comp.get("predict", None) is not None:  # Handle predict
                 if comp['predict'].lower() == 'predictivepipeline':

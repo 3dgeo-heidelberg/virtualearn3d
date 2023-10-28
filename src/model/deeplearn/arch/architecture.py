@@ -294,6 +294,8 @@ class Architecture:
         self.post_runnable = state['post_runnable']
         self.nn_path = state['nn_path']
         self.build_args = state['build_args']
+        self.architecture_graph_path = None
+        self.architecture_graph_args = None
         # Load or rebuild
         if self.nn_path is not None:  # If path to neuralnet, load it
             self.nn = tf.keras.models.load_model(

@@ -339,6 +339,7 @@ class PointNet(Architecture, ABC):
         state['postransf_feats_spec'] = self.postransf_feats_spec
         state['tnet_pre_filters_spec'] = self.tnet_pre_filters_spec
         state['tnet_post_filters_spec'] = self.tnet_post_filters_spec
+        state['features_structuring_layer'] = self.features_structuring_layer
         # Return
         return state
 
@@ -352,8 +353,6 @@ class PointNet(Architecture, ABC):
         :type state: dict
         :return: Nothing, but modifies the internal state of the object.
         """
-        # Call parent's set state
-        super().__setstate__(state)
         # Assign PointNet's attributes from state dictionary
         self.num_points = state['num_points']
         self.kernel_initializer = state['kernel_initializer']
@@ -361,3 +360,8 @@ class PointNet(Architecture, ABC):
         self.postransf_feats_spec = state['postransf_feats_spec']
         self.tnet_pre_filters_spec = state['tnet_pre_filters_spec']
         self.tnet_post_filters_spec = state['tnet_post_filters_spec']
+        self.features_structuring_layer = state.get(
+            'features_structuring_layer', None
+        )
+        # Call parent's set state
+        super().__setstate__(state)
