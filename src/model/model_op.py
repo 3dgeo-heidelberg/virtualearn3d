@@ -368,13 +368,16 @@ class ModelOp:
             preproc['support_points_report_path'] = \
                 ModelOp.merge_path(out_prefix, sp_report)
         old_paths['support_points_report_path'] = sp_report
-        # Make the changes effective
+        # Make the changes effective on the arguments
         if model_args is not None:
             self.model.model_args = model_args
         if model_handling is not None:
             self.model.model_args['model_handling'] = model_handling
         if preproc is not None:
             self.model.model_args['pre_processing'] = preproc
+        # Make the changes effective on the path-related attributes
+        if hasattr(self.model, "update_paths"):
+            self.model.update_paths()
 
     def restore_model_paths(self, old_paths):
         """
@@ -511,13 +514,16 @@ class ModelOp:
         if preproc.get('support_points_report_path', None) is not None:
             preproc['support_points_report_path'] = \
                 old_paths['support_points_report_path']
-        # Make the changes effective
+        # Make the changes effective (on the arguments)
         if model_args is not None:
             self.model.model_args = model_args
         if model_handling is not None:
             self.model.model_args['model_handling'] = model_handling
         if preproc is not None:
             self.model.model_args['pre_processing'] = preproc
+        # Make the changes effective on the path-related attributes
+        if hasattr(self.model, "update_paths"):
+            self.model.update_paths()
 
     @staticmethod
     def path_needs_update(path : str) -> bool:
