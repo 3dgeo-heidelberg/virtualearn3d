@@ -109,7 +109,7 @@ The graphical representation of the decision trees is exported to the
 
 -- ``model_args``
     The arguments governing the Random Forest model. See the
-    `sklearn documentation <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html>`_
+    `sklearn documentation on Random Forest <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html>`_
     for further details.
 
 -- ``hyperparameter_tuning``
@@ -124,8 +124,8 @@ The graphical representation of the decision trees is exported to the
     True to enable permutation invariance, false to ignore it. Permutation
     invariance importance is more robust than the straightforward importance.
     However, it increases the computational cost since it computes feature-wise
-    permutations many times. See
-    `sklearn documentation <https://scikit-learn.org/stable/modules/permutation_importance.html>`_
+    permutations many times. See the
+    `sklearn documentation on permutation importance <https://scikit-learn.org/stable/modules/permutation_importance.html>`_
     for further details.
 
 -- ``decision_plot_path``

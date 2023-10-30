@@ -182,7 +182,7 @@ class DLModelEvaluator(Evaluator):
     def eval_args_from_state(self, state):
         """
         Obtain the arguments to call the DLModelEvaluator from the current
-        pipeline's state .
+        pipeline's state.
 
         :param state: The pipeline's state
         :type state: :class:`.SimplePipelineState`

@@ -14,6 +14,7 @@ of pipelines (see :ref:`page on pipelines <Pipelines page>`).
 
 
 .. _Writer page:
+
 Writer
 =========
 

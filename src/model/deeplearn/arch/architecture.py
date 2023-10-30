@@ -298,6 +298,13 @@ class Architecture:
         self.architecture_graph_args = None
         # Load or rebuild
         if self.nn_path is not None:  # If path to neuralnet, load it
+            if not os.path.exists(self.nn_path):
+                self.nn_path = input(
+                    '\n'
+                    f'The "{self.nn_path}" file does not exist.\n'
+                    'Please, type the path to the serialized neural network: '
+                )
+                print()
             self.nn = tf.keras.models.load_model(
                 self.nn_path,
                 custom_objects={

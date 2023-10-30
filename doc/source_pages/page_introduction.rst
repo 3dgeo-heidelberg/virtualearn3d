@@ -107,7 +107,7 @@ The VL3D framework is designed so the user can easily decide about the model con
           },
           "importance_report_path": "*report/LeafWood_Training_RF_importance.log",
           "importance_report_permutation": true,
-          "decision_plot_path": "*plot/LeafWood_Training_RF_decission.svg",
+          "decision_plot_path": "*plot/LeafWood_Training_RF_decision.svg",
           "decision_plot_trees": 3,
           "decision_plot_max_depth": 5
         },

@@ -14,9 +14,9 @@ class ClassificationEvaluation(Evaluation):
     Class representing the result of evaluating a classification. See
     :class:`.ClassificationEvaluator`.
 
-    :ivar class_names: See :class:`ClassificationEvaluator`.
-    :ivar metric_names: See :class:`ClassificationEvaluator`.
-    :ivar class_metric_names: See :class:`ClassificationEvaluator`.
+    :ivar class_names: See :class:`.ClassificationEvaluator`.
+    :ivar metric_names: See :class:`.ClassificationEvaluator`.
+    :ivar class_metric_names: See :class:`.ClassificationEvaluator`.
     :ivar yhat_count: The count of cases per predicted label.
     :vartype yhat_count: :class:`np.ndarray`
     :ivar y_count: The count of cases per expected label (real class
@@ -95,7 +95,7 @@ class ClassificationEvaluation(Evaluation):
         :param kwargs: The key-word arguments for the plot.
         :return: The ClassificationPlot representing the
             ClassificationEvaluation.
-        :rtype: :class:`.ClassificationEvaluation`
+        :rtype: :class:`.ClassificationPlot`
         """
         return ClassificationPlot(
             class_names=self.class_names,

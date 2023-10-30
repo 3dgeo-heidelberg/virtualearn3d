@@ -176,16 +176,6 @@ class PointNetPwiseClassifModel(ClassificationModel):
                     pre_processor.support_points_report_path = \
                         preproc['support_points_report_path']
 
-
-
-
-
-
-
-
-
-
-
     def predict(self, pcloud, X=None, F=None):
         """
         Use the model to compute predictions on the input point cloud.
@@ -275,8 +265,7 @@ class PointNetPwiseClassifModel(ClassificationModel):
     # ---------------------------- #
     def _predict(self, X, F=None, y=None, zout=None):
         """
-        Extend the base _predict method to account for coordinates (X) as
-        input.
+        Extend the base _predict method.
 
         See :meth:`model.Model_predict`.
 

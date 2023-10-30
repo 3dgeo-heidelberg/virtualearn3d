@@ -52,10 +52,10 @@ class ReceptiveFieldsDistributionPlot(MplPlot):
         # Count
         yhat_count, yhat_rf_count = self.count(
             self.yhat_rf
-        ) if self.yhat_rf is not None else None
+        ) if self.yhat_rf is not None else (None, None)
         y_count, y_rf_count = self.count(
             self.y_rf
-        ) if self.y_rf is not None else None
+        ) if self.y_rf is not None else (None, None)
         # Determine how many subplots and in how many rows and columns
         nplots = 4 if yhat_count is not None and y_count is not None else 2
         nrows, ncols = 1, 2

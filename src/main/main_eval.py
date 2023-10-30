@@ -1,4 +1,6 @@
 from src.eval.classification_evaluator import ClassificationEvaluator
+from src.eval.classification_uncertainty_evaluator import \
+    ClassificationUncertaintyEvaluator
 from src.eval.deeplearn.dl_model_evaluator import DLModelEvaluator
 
 
@@ -43,6 +45,8 @@ class MainEval:
         eval_low = eval.lower()
         if eval_low == 'classificationevaluator':
             return ClassificationEvaluator
+        elif eval_low == 'classificationuncertaintyevaluator':
+            return ClassificationUncertaintyEvaluator
         elif eval_low == 'dlmodelevaluator':
             return DLModelEvaluator
         # An unknown evaluator was specified

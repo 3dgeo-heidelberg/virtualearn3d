@@ -245,7 +245,7 @@ normalization of some geometric features).
         - 0.94357
 
 
-.. _Standardizer
+.. _Standardizer:
 
 Standardizer
 --------------
