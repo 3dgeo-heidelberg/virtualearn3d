@@ -17,12 +17,15 @@ class ClassificationUncertaintyReport(Report):
     clouds.
 
     See :class:`.Report`.
+
     :ivar X: See :class:`.ClassificationUncertaintyEvaluation`
     :ivar y: See :class:`.ClassificationUncertaintyEvaluation`
     :ivar yhat: See :class:`.ClassificationUncertaintyEvaluation`
     :ivar Zhat: See :class:`.ClassificationUncertaintyEvaluation`
     :ivar pwise_entropy: See :class:`.ClassificationUncertaintyEvaluation`
-    :ivar weighted_hspace_entropy: See
+    :ivar weighted_entropy: See
+        :class:`.ClassificationUncertaintyEvaluation`
+    :ivar cluster_wise_entropy: See
         :class:`.ClassificationUncertaintyEvaluation`
     :ivar class_ambiguity: See :class:`.ClassificationUncertaintyEvaluation`
     """
@@ -48,9 +51,8 @@ class ClassificationUncertaintyReport(Report):
                 predicted classes.
             *   *pwise_entropy* (``np.ndarray``) --
                 The vector of point-wise Shannon's entropy.
-            *   *weighted_hspace_entropy* (``np.ndarray``) --
-                The vector of point-wise weighted Shannon's entropy on features
-                half-spaces.
+            *   *weighted_entropy* (``np.ndarray``) --
+                The vector of point-wise weighted Shannon's entropy.
             *   *class_ambiguity* (``np.ndarray``) --
                 The vector of point-wise class ambiguities.
         """
@@ -63,9 +65,9 @@ class ClassificationUncertaintyReport(Report):
         self.yhat = kwargs.get('yhat', None)
         self.Zhat = kwargs.get('Zhat', None)
         self.pwise_entropy = kwargs.get('pwise_entropy', None)
-        self.weighted_hspace_entropy = kwargs.get(
-            'weighted_hspace_entropy', None
-        )
+        self.weighted_entropy = kwargs.get('weighted_entropy', None)
+        self.cluster_labels = kwargs.get('cluster_labels', None)
+        self.cluster_wise_entropy = kwargs.get('cluster_wise_entropy', None)
         self.class_ambiguity = kwargs.get('class_ambiguity', None)
 
     # ---   TO FILE   --- #
@@ -112,17 +114,25 @@ class ClassificationUncertaintyReport(Report):
             ])
         # Build output :  Point-wise entropy
         if self.pwise_entropy is not None:
-            onames.append('PwiseEntropy')
+            onames.append('PointWiseEntropy')
             outs = np.hstack([
                 outs,
                 self.pwise_entropy.reshape((-1, 1))
             ])
-        # Build output : Weighted half-space entropy
-        if self.weighted_hspace_entropy is not None:
-            onames.append('WHspaceEntropy')
+        # Build output : Weighted entropy
+        if self.weighted_entropy is not None:
+            onames.append('WeightedEntropy')
             outs = np.hstack([
                 outs,
-                self.weighted_hspace_entropy.reshape((-1, 1))
+                self.weighted_entropy.reshape((-1, 1))
+            ])
+        # Build output : Cluster-wise entropy
+        if self.cluster_wise_entropy is not None:
+            onames = onames + ['ClusterLabel', 'ClusterWiseEntropy']
+            outs = np.hstack([
+                outs,
+                self.cluster_labels.reshape((-1, 1)),
+                self.cluster_wise_entropy.reshape((-1, 1))
             ])
         # Build output : Class ambiguity
         if self.class_ambiguity is not None:

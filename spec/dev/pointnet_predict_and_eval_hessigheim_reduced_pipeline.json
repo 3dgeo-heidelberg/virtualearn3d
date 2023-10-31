@@ -33,7 +33,14 @@
 	{
 		"eval": "ClassificationUncertaintyEvaluator",
 		"class_names": ["Ground", "Vegetation", "Building", "Urban furniture", "Vehicle"],
+		"full_dataset_class_count": null,
 		"include_probabilities": true,
+		"include_weighted_entropy": true,
+		"include_clusters": false,
+		"weight_by_predictions": false,
+		"num_clusters": 256,
+		"clustering_max_iters": 64,
+		"clustering_batch_size": 64000,
 		"report_path": "*uncertainty/uncertainty.laz",
 		"plot_path": "*uncertainty/"
 	}
