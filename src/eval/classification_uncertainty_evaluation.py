@@ -37,6 +37,9 @@ class ClassificationUncertaintyEvaluation(Evaluation):
     :vartype cluster_wise_entropy: :class:`np.ndarray`
     :ivar class_ambiguity: The point-wise class ambiguity.
     :vartype class_ambiguity: :class:`np.ndarray`
+    :ivar gaussian_kernel_points: How many points consider for the
+        gaussian kernel density estimation.
+    :vartype gaussian_kernel_points: int
     """
     # ---   INIT   --- #
     # ---------------- #
@@ -60,6 +63,9 @@ class ClassificationUncertaintyEvaluation(Evaluation):
         self.cluster_labels = kwargs.get('cluster_labels', None)
         self.cluster_wise_entropy = kwargs.get('cluster_wise_entropy', None)
         self.class_ambiguity = kwargs.get('class_ambiguity', None)
+        self.gaussian_kernel_points = kwargs.get(
+            'gaussian_kernel_points', None
+        )
 
     # ---   EVALUATION METHODS   --- #
     # ------------------------------ #
@@ -120,6 +126,7 @@ class ClassificationUncertaintyEvaluation(Evaluation):
             weighted_entropy=self.weighted_entropy,
             cluster_wise_entropy=self.cluster_wise_entropy,
             class_ambiguity=self.class_ambiguity,
+            gaussian_kernel_points=self.gaussian_kernel_points,
             path=kwargs.get('path', None)
         )
 

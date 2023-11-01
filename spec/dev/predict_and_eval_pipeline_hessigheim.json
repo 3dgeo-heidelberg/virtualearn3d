@@ -1,9 +1,11 @@
 {
   "in_pcloud": [
-	"/hei/Hessigheim_Benchmark/Epoch_March2018/LiDAR/Mar18_val.laz"
+	"/hei/Hessigheim_Benchmark/Epoch_March2018/LiDAR/Mar18_val.laz",
+	"/hei/Hessigheim_Benchmark/Epoch_March2018/LiDAR/Mar18_train.laz"
   ],
   "out_pcloud": [
-	"out/prediction/RF_Hessigheim_March2018/*"
+	"out/prediction/RF_Hessigheim_March2018/*",
+	"out/training/RF_Hessigheim_March2018/autoval/*"
   ],
   "sequential_pipeline": [
 	{
@@ -51,6 +53,7 @@
 		"clustering_batch_size": 1000000,
 		"clustering_entropy_weights": true,
 		"clustering_reduce_function": "mean",
+		"gaussian_kernel_points": 256,
 		"report_path": "*uncertainty/uncertainty.laz",
 		"plot_path": "*uncertainty/"
 	}

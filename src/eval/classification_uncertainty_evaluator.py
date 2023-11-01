@@ -55,6 +55,10 @@ class ClassificationUncertaintyEvaluator(Evaluator):
         values in a given cluster to a single one. Either 'mean', 'median',
         'Q1' (first quartile), 'Q3' (third quartile), 'min, or 'max'.
     :vartype clustering_reduce_function: str
+    :ivar gaussian_kernel_points: How many points consider to compute the
+        gaussian kernel density estimations. Note that this argument has a
+        great impact on the time required to generate the plots.
+    :vartype gaussian_kernel_points: int
     :ivar report_path: The generated point cloud-like report will be exported
         to the file pointed by the report path.
     :vartype report_path: str
@@ -92,6 +96,9 @@ class ClassificationUncertaintyEvaluator(Evaluator):
             ),
             'clustering_reduce_function': spec.get(
                 'clustering_reduce_function', None
+            ),
+            'gaussian_kernel_points': spec.get(
+                'gaussian_kernel_points', None
             ),
             'report_path': spec.get('report_path', None),
             'plot_path': spec.get('plot_path', None)
@@ -133,6 +140,9 @@ class ClassificationUncertaintyEvaluator(Evaluator):
         )
         self.clustering_reduce_function = kwargs.get(
             'clustering_reduce_function', 'max'
+        )
+        self.gaussian_kernel_points = kwargs.get(
+            'gaussian_kernel_points', 256
         )
         self.report_path = kwargs.get('report_path', None)
         self.plot_path = kwargs.get('plot_path', None)
@@ -217,7 +227,8 @@ class ClassificationUncertaintyEvaluator(Evaluator):
             weighted_entropy=weighted_entropy,
             cluster_labels=cluster_labels,
             cluster_wise_entropy=cluster_wise_entropy,
-            class_ambiguity=class_ambiguity
+            class_ambiguity=class_ambiguity,
+            gaussian_kernel_points=self.gaussian_kernel_points
         )
 
     def __call__(self, pcloud, **kwargs):

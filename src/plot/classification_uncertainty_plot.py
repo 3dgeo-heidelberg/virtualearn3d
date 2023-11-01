@@ -17,7 +17,14 @@ class ClassificationUncertaintyPlot(MplPlot):
 
     See :class:`.MplPlot` and :class:`.ClassificationUncertaintyEvaluation`.
 
-    :ivar class_names: See :class:`.ClassificationEvaluation`.
+    :ivar class_names: See :class:`.ClassificationUncertaintyEvaluation`.
+    :ivar y: See :class:`.ClassificationUncertaintyEvaluation`.
+    :ivar yhat: See :class:`.ClassificationUncertaintyEvaluation`.
+    :ivar pwise_entropy: See :class:`.ClassificationUncertaintyEvaluation`.
+    :ivar weighted_entropy: See :class:`.ClassificationUncertaintyEvaluation`.
+    :ivar cluster_wise_entropy: See :class:`.ClassificationUncertaintyEvaluation`.
+    :ivar class_ambiguity: See :class:`.ClassificationUncertaintyEvaluation`.
+    :ivar gaussian_kernel_points: See :class:`.ClassificationUncertaintyEvaluation`.
     """
     # ---   INIT   --- #
     # ---------------- #
@@ -37,6 +44,7 @@ class ClassificationUncertaintyPlot(MplPlot):
         self.weighted_entropy = kwargs.get('weighted_entropy', None)
         self.cluster_wise_entropy = kwargs.get('cluster_wise_entropy', None)
         self.class_ambiguity = kwargs.get('class_ambiguity', None)
+        self.gaussian_kernel_points = kwargs.get('gaussian_kernel_points', 256)
 
     # ---   PLOT METHODS   --- #
     # ------------------------ #
@@ -182,7 +190,7 @@ class ClassificationUncertaintyPlot(MplPlot):
             parts = ax.violinplot(
                 violin_dataset,
                 showmedians=True,
-                points=min(256, y.shape[0]),
+                points=min(self.gaussian_kernel_points, y.shape[0]),
                 widths=0.75
             )
             for polycol in parts['bodies']:
