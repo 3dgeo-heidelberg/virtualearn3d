@@ -13,6 +13,7 @@ evaluators in their workflows.
 
 
 
+.. _Classification evaluator section:
 
 Classification evaluator
 =========================
@@ -135,6 +136,8 @@ in the image is the same than the one in the table but in a different format.
 
 
 
+
+.. _Classification uncertainty evaluator section:
 
 Classification uncertainty evaluator
 ======================================

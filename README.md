@@ -1,4 +1,4 @@
-# virtualearn3d
+# VirtuaLearn3D (VL3D)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Documentation Status](https://readthedocs.org/projects/virtualearn3d/badge/?version=latest)](https://virtualearn3d.readthedocs.io/en/latest/?badge=latest)
