@@ -5,6 +5,8 @@ from src.model.deeplearn.deep_learning_exception import DeepLearningException
 from src.model.deeplearn.regularizer.regularizer import Regularizer
 from src.model.deeplearn.regularizer.features_orthogonal_regularizer import \
     FeaturesOrthogonalRegularizer
+from src.model.deeplearn.layer.features_structuring_layer import \
+    FeaturesStructuringLayer
 from src.inout.io_utils import IOUtils
 import src.main.main_logger as LOGGING
 import tensorflow as tf
@@ -310,6 +312,9 @@ class Architecture:
                 custom_objects={
                     'FeaturesOrthogonalRegularizer':
                         FeaturesOrthogonalRegularizer,
+                    'FeaturesStructuringLayer':
+                        FeaturesStructuringLayer
+
                 },
                 compile=False
             )

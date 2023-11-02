@@ -114,7 +114,7 @@ class PipelineExecutor:
             state.update_pcloud(
                 None, PointCloudFactoryFacade.make_from_file(in_pcloud)
             )
-        # TODO Rethink : Handle model loading (if any)
+        # TODO Rethink : Handle model loading (if any) ?
 
     def pre_process(self, state, comp, comp_id, comps):
         """

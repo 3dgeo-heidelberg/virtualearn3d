@@ -269,7 +269,7 @@ class FeaturesStructuringLayer(Layer):
                 ),
                 dtype="float32",
                 trainable=self.trainable_QW,
-                name='"QW'
+                name='QW'
             )
             self.built_QW = True
         # Handle concatenation strategy
@@ -350,9 +350,17 @@ class FeaturesStructuringLayer(Layer):
                 tf.transpose(QDunexp, [0, 2, 1]) / omegaD_squared, [0, 2, 1]
             )
         )
-
+        # Weight by kernel distances (NEW) ---
+        """QD_row_wise_norm = tf.expand_dims(tf.reduce_sum(QD, axis=2), axis=-1)
+        QD = QD / QD_row_wise_norm
         # Compute kernel-based features
+        QF = self.omegaF * tf.matmul(QD, F)"""
+        # --- Weight by kernel distances (NEW)
+
+        # Weight by number of points (LEGACY) ---
         QF = self.omegaF/m * tf.matmul(QD, F)
+        # --- Weight by number of points (LEGACY)
+        # Compute kernel-based features
         # Multiply kernel features by weights
         QY = tf.matmul(QF, self.QW)
         QDT = tf.transpose(QD, [0, 2, 1])
@@ -484,7 +492,6 @@ class FeaturesStructuringLayer(Layer):
             'concatenation_strategy': self.concatenation_strategy,
             # Building attributes
             'num_features': self.num_features,
-            'concatf': None,
             'trainable_QX': self.trainable_QX,
             'built_QX': self.built_QX,
             'trainable_omegaD': self.trainable_omegaD,
@@ -500,12 +507,43 @@ class FeaturesStructuringLayer(Layer):
     @classmethod
     def from_config(cls, config):
         """Use given config data to deserialize the layer"""
+        # Obtain num_kernel_points and remove it from config
+        num_kernel_points = config['num_kernel_points']
+        del config['num_kernel_points']
+        # Obtain num_features and remove it from config
+        num_features = config['num_features']
+        del config['num_features']
         # Instantiate layer
         fsl = cls(**config)
         # Deserialize custom attributes
-        fsl.num_features = config['num_features']
+        fsl.num_features = num_features
         # Compute necessary initializations
         fsl.assign_concatf()
+        # Placeholders so build on model load does not fail
+        fsl.QX = tf.Variable(
+            np.zeros((num_kernel_points, config['structure_dimensionality'])),
+            dtype='float32',
+            trainable=config['trainable_QX'],
+            name='QX_placeholder'
+        )
+        fsl.omegaD = tf.Variable(
+            np.zeros(num_kernel_points),
+            dtype='float32',
+            trainable=config['trainable_omegaD'],
+            name='omegaD_placeholder'
+        )
+        fsl.omegaF = tf.Variable(
+            np.zeros(num_features),
+            dtype='float32',
+            trainable=config['trainable_omegaF'],
+            name='omegaF_placeholder'
+        )
+        fsl.QW = tf.Variable(
+            np.zeros((num_features, config['dim_out'])),
+            dtype='float32',
+            trainable=config['trainable_QW'],
+            name='QW_placeholder'
+        )
         # Return deserialized layer
         return fsl
 

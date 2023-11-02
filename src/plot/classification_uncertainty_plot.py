@@ -187,6 +187,16 @@ class ClassificationUncertaintyPlot(MplPlot):
                 E[y == class_idx]
                 for class_idx in range(len(self.class_names))
             ]
+            class_names = [class_name for class_name in self.class_names]
+            for i in range(len(self.class_names)-1, -1, -1):
+                if len(violin_dataset[i]) == 0:
+                    LOGGING.LOGGER.debug(
+                        'ClassificationUncertaintyPlot excludes '
+                        f'{class_names[i]} from {Ename} violin plot because '
+                        'it has no matches.'
+                    )
+                    del violin_dataset[i]
+                    del class_names[i]
             parts = ax.violinplot(
                 violin_dataset,
                 showmedians=True,
@@ -213,7 +223,7 @@ class ClassificationUncertaintyPlot(MplPlot):
             parts['cmedians'].set_label('median')
             ax.set_xticks(
                 [i+1 for i in range(len(violin_dataset))],
-                labels=self.class_names
+                labels=class_names
             )
             ax.set_ylabel(Ename, fontsize=12)
             ax.tick_params(axis='both', which='both', labelsize=12)

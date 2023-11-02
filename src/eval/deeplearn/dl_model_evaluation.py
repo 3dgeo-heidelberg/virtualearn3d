@@ -4,6 +4,7 @@ from src.eval.evaluation import Evaluation, EvaluationException
 from src.report.meta_report import MetaReport
 from src.report.classified_pcloud_report import ClassifiedPcloudReport
 from src.report.pwise_activations_report import PwiseActivationsReport
+from src.report.best_score_selection_report import BestScoreSelectionReport
 
 
 # ---   CLASS   --- #
@@ -20,6 +21,10 @@ class DLModelEvaluation(Evaluation):
     :ivar yhat: Point-wise predictions.
     :ivar zhat: Point-wise outputs (e.g., softmax).
     :ivar activations: Point-wise activations.
+    :ivar Fval: The F-values for the point-wise activations wrt the expected
+        values.
+    :ivar pval: The p-values for the point-wise acctivations wrt the expected
+        values.
     :ivar class_names: The name for each class.
     """
     def __init__(self, **kwargs):
@@ -36,6 +41,8 @@ class DLModelEvaluation(Evaluation):
         self.yhat = kwargs.get('yhat', None)
         self.zhat = kwargs.get('zhat', None)
         self.activations = kwargs.get('activations', None)
+        self.Fval = kwargs.get('Fval', None)
+        self.pval = kwargs.get('pval', None)
         self.class_names = kwargs.get('class_names', None)
         # Validate attributes
         if self.X is None:
@@ -75,6 +82,19 @@ class DLModelEvaluation(Evaluation):
                     X=self.X, activations=self.activations, y=self.y
                 ),
                 'path_key': 'pwise_activations_path'
+            })
+        # Handle point-wise activations ANOVA report
+        if self.Fval is not None:
+            reports.append({
+                'name': 'Point-wise activations ANOVA report',
+                'report': BestScoreSelectionReport(
+                    fnames=None,
+                    scores=self.Fval,
+                    score_name='F-value',
+                    pvalues=self.pval,
+                    selected_features=None
+                ),
+                'path_key': 'pwise_activations_anova_path'
             })
         # Validate reports
         if len(reports) < 1:

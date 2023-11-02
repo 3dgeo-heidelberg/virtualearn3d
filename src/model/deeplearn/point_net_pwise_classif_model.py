@@ -11,9 +11,11 @@ from src.model.deeplearn.dlrun.grid_subsampling_post_processor import \
     GridSubsamplingPostProcessor
 from src.report.classified_pcloud_report import ClassifiedPcloudReport
 from src.report.pwise_activations_report import PwiseActivationsReport
+from src.report.best_score_selection_report import BestScoreSelectionReport
 from src.utils.dict_utils import DictUtils
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
 import src.main.main_logger as LOGGING
+from sklearn.feature_selection import f_classif
 import tensorflow as tf
 import numpy as np
 import joblib
@@ -260,6 +262,26 @@ class PointNetPwiseClassifModel(ClassificationModel):
             ).to_file(
                 path=self.training_activations_path
             )
+            # ANOVA on activations
+            start = time.perf_counter()
+            Fval, pval = f_classif(activations, y)
+            end = time.perf_counter()
+            LOGGING.LOGGER.info(
+                'ANOVA computed on PointNet point-wise activations in '
+                f'{end-start:.3f} seconds.'
+            )
+            BestScoreSelectionReport(
+                fnames=None,
+                scores=Fval,
+                score_name='F-value',
+                pvalues=pval,
+                selected_features=None
+            ).to_file(
+                path=self.training_activations_path[
+                    :self.training_activations_path.rfind('.')
+                ] + '_ANOVA.csv'
+            )
+
 
     # ---  PREDICTION METHODS  --- #
     # ---------------------------- #
