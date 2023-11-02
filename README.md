@@ -107,3 +107,35 @@ python vl3d.py --test
 
 You should see that all tests are passed. Especially the
 **Keras, TensorFlow, GPU test** and the **Receptive field test**.
+
+
+
+
+## Demo case
+
+You can have a taste of the framework running some of our demo cases.
+For example, you can try a random forest for point-wise leaf-wood segmentation.
+
+To train the model run (from the framework's directory):
+
+```bash
+python vl3d.py --pipeline spec/demo/mine_transform_and_train_pipeline_pca_from_url.json
+```
+
+To compute a leaf-wood segmentation with the trained model on a previously
+unseen tree and evalute it run:
+
+```bash
+python vl3d.py --pipeline spec/demo/predict_and_eval_pipeline_from_url.json
+```
+
+More details about this demo can be read in the
+[documentation's introduction]().
+The image below represents some steps of the demo. The tree on the left side
+represents the PCA-transformed feature that explains the highest variance
+ratio on the training point cloud while the tree on the right side represents
+the leaf-wood segmentation on a previously unseen tree (gray classification,
+red misclassification).
+
+![Image representing a leaf-wood segmentation](doc/img/introduction_demo_legend.png "Leaf-wood segmentation demo")
+
