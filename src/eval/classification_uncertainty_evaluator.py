@@ -187,6 +187,10 @@ class ClassificationUncertaintyEvaluator(Evaluator):
         :rtype: :class:`.ClassificationUncertaintyEvaluation`
         """
         start = time.perf_counter()
+        # Adapt Zhat from vector of binary probabilities (no matrix)
+        if len(Zhat.shape) < 2:
+            Zhat = Zhat.reshape((-1, 1))
+            Zhat = np.hstack([1-Zhat, Zhat])
         # Compute point-wise Shannon's entropy
         pwise_entropy = self.compute_pwise_entropy(Zhat)
         # Compute point-wise weighted Shannon's entropy
@@ -283,7 +287,23 @@ class ClassificationUncertaintyEvaluator(Evaluator):
         # Obtain features if necessary
         F = None
         if self.include_clusters:
-            F = pcloud.get_features_matrix(fnames=model.fnames)
+            fnames = getattr(model, "fnames", None)
+            if fnames is None:
+                fnames = pcloud.get_features_names()
+                LOGGING.LOGGER.debug(
+                    'ClassificationUncertaintyEvaluator could not derive the '
+                    'feature names from the model. '
+                    'All available features in the point cloud have been '
+                    f'considered:\n{fnames}'
+                )
+            if fnames is not None and len(fnames) > 0:
+                F = pcloud.get_features_matrix(fnames=fnames)
+            else:
+                LOGGING.LOGGER.warning(
+                    'ClassificationUncertaintyEvaluator could not compute '
+                    'cluster-based uncertainty because no features were '
+                    'available.'
+                )
         # Obtain evaluation
         ev = self.eval(Zhat, X=X, y=y, yhat=yhat, F=F)
         out_prefix = kwargs.get('out_prefix', None)
