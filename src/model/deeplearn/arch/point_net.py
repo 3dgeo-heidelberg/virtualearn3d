@@ -135,7 +135,7 @@ class PointNet(Architecture, ABC):
         :param tnet_pre_filters: The list of number of filters (integer)
             defining each convolutional block before the global pooling.
         :type tnet_pre_filters: list
-        :param tnet_post_filters: The list of nubmer of filters (integer)
+        :param tnet_post_filters: The list of number of filters (integer)
             defining each MLP block after the global pooling.
         :type tnet_post_filters: list
         :param kernel_initializer: The name of the kernel initializer

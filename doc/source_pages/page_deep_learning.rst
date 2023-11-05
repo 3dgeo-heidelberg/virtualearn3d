@@ -57,7 +57,9 @@ Models
 PointNet-based point-wise classifier
 ---------------------------------------
 
-The :class:`PointNetPwiseClassifier`.
+The :class:`PointNetPwiseClassif` can be used to solve pint-wise classification
+tasks. This model is based on the PointNet architecture and it can be defined
+as shown in the JSON below:
 
 .. code-block:: json
 
@@ -184,7 +186,6 @@ The :class:`PointNetPwiseClassifier`.
                 "show_layer_activations": true
             }
         },
-        "autoval_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
         "training_evaluation_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
         "training_class_evaluation_metrics": ["P", "R", "F1", "IoU"],
         "training_evaluation_report_path": "*/training_eval/evaluation.log",
@@ -198,33 +199,501 @@ The :class:`PointNetPwiseClassifier`.
     }
 
 
+The JSON above defines a :class:`.PointNetPwiseClassif` that uses a
+furthest point subsampling strategy with a 3D rectangular neighborhood. The
+optimization algorithm to train the neural network is stochastic gradient
+descent (SGD). The loss function is a categorical cross-entropy that accounts
+for class weights. The class weights can be used to handle data imbalance.
+
+
+**Arguments**
+
+-- ``fnames``
+    The names of the features that must be considered by the neural network.
+    **Currently not supported**
+
+-- ``training_type``
+    Typically it should be ``"base"`` for neural networks. For further
+    details, read the :ref:`training strategies section <Training strategies>`.
+
+-- ``random_seed``
+    Can be used to specify an integer like seed for any randomness-based
+    computation. Mostly to be used for reproducibility purposes. Note that
+    the initialization of a neural network is often based on random
+    distributions. This parameter does not affect those distributions, so
+    it will not guarantee reproducibility for of deep learning models.
+
+-- ``model_args``
+    The model specification.
+
+    -- ``num_classess``
+        An integer specifying the number of classes involved in the
+        point-wise classification tasks.
+
+    -- ``class_names``
+        The names of the classes involved in the classification task. Each
+        string corresponds to the class associated to its index in the list.
+
+    -- ``num_pwise_feats``
+        How many point-wise features must be computed.
+
+    -- ``pre_processing``
+        How the **select** and **fix** stages of the deep learning strategy
+        must be handled. See the
+        :ref:`receptive fields section <Receptive fields section>` for further
+        details.
+
+    -- ``kernel_initializer``
+        The name of the kernel initialization method. See
+        `Keras documentation on layer initializers <https://keras.io/api/layers/initializers/>`_
+        for further details.
+
+    -- ``pretransf_feats_spec``
+        A list of dictionaries where each dictionary defines a layer to be placed
+        before the transformation block in the middle. Each dictionary must
+        contain ``filters`` (an integer specifying the output dimensionality of
+        the layer) and ``name`` (a string representing the layer's name).
+
+    -- ``postransf_feats_spec``
+        A list of dictionaries where each dictionary defines a layer to be placed
+        after the transformation block in the middle. Each dictionary must
+        contain ``filters`` (an integer specifying the output dimensionality of
+        the layer) and ``name`` (a string representing the layer's name).
+
+    -- ``tnet_pre_filters_spec``
+        A list of integers where each integer specifies the output dimensionality
+        of a convolutional layer placed before the global pooling.
+
+    -- ``tnet_post_filters_spec``
+        A list of integers where each integer specifies the output dimensionality
+        of a danse layer (MLP) placed after the global pooling.
+
+    -- ``architecture_graph_path``
+        Path where the plot representing the neural network's architecture wil be
+        exported.
+
+    -- ``architecture_graph_args``
+        Arguments governing the architecture's graph. See
+        `Keras documentation on plot_model <https://keras.io/api/utils/model_plotting_utils/#plotmodel-function>`_
+        for further details.
+
+    -- ``model_handling``
+        Define how to handle the model, i.e., not the architecture itself but
+        how it must be used.
+
+        -- ``summary_report_path``
+            Path where a text describing the built network's architecture must
+            be exported.
+
+        -- ``training_history_dir``
+            Path where the data (plots and text) describing the training
+            process must be exported.
+
+        -- ``class_weight``
+            The class weights for the model's loss. It can be ``null`` in which
+            case no class weights will be considered. Alternatively, it can be
+            ``"AUTO"`` to automatically compute the class weights based on
+            `TensorFlow's imbalanced data tutorial <https://www.tensorflow.org/tutorials/structured_data/imbalanced_data>`_.
+            It can also be a list with as many elements as classes where each
+            element governs the class weight for the corresponding class.
+
+        -- ``training_epochs``
+            How many epochs must be considered to train the model.
+
+        -- ``batch_size``
+            How many receptive fields per batch must be grouped together as
+            input for the neural network.
+
+        -- ``checkpoint_path``
+            Path where a checkpoint of the model's current status can be
+            exported. When given, it will be used during training to keep
+            the best model.
+
+        -- ``checkpoint_monitor``
+            What metric must be analyzed to decide what is the best model when
+            using the checkpoint strategy. See the
+            `Keras documentation on ModelCheckpoint <https://keras.io/api/callbacks/model_checkpoint/>`_
+            for more information.
+
+        -- ``learning_rate_on_plateau``
+            When given, it can be used to configure the learning rate on
+            plateau callback. See the
+            `Keras documentation on ReduceLROnPlateau <https://keras.io/api/callbacks/reduce_lr_on_plateau/>`_
+            for more information.
+
+        -- ``early_stopping``
+            When given, it can be used to configure the early stopping
+            callback. See the
+            `Keras documentation on EarlyStopping <https://keras.io/api/callbacks/early_stopping/>`_
+            for more information.
+
+
+
+
+    -- ``compilation_args``
+        The arguments governing the model's compilation. They include the
+        optimizer, the loss function and the metrics to be monitored during
+        training. See the :ref:`optimizers section <Optimizers section>` and
+        :ref:`losses section <Losses section>` for further details.
+
+
+-- ``training_evaluation_metrics``
+    What metrics must be considered to evaluate the model on the training data.
+
+    * ``"OA"`` Overall accuracy.
+    * ``"P"`` Precision.
+    * ``"R"`` Recall.
+    * ``"F1"`` F1 score (harmonic mean of precision and recall).
+    * ``"IoU"`` Intersection over union (also known as Jaccard index).
+    * ``"wP"`` Weighted precision (weights by the number of true instances for each class).
+    * ``"wR"`` Weighted recall (weights by the number of true instances for each class).
+    * ``"wF1"`` Weighted F1 score (weights by the number of true instances for each class).
+    * ``"wIoU"`` Weighted intersection over union (weights by the number of true instances for each class).
+    * ``"MCC"`` Matthews correlation coefficient.
+    * ``"Kappa"`` Cohen's kappa score.
+
+-- ``training_class_evaluation_metrics``
+    What class-wose metrics must be considered to evaluate the model on the
+    training data.
+
+    * ``"P"`` Precision.
+    * ``"R"`` Recall.
+    * ``"F1"`` F1 score (harmonic mean of precision and recall).
+    * ``"IoU"`` Intersection over union (also known as Jaccard index).
+
+-- ``training_evaluation_report_path``
+    Path where the report about the model evaluated on the training data
+    must be exported.
+
+-- ``training_class_evaluation_report_path``
+    Path where the report about the model's class-wise evaluation on the
+    training data must be exported.
+
+-- ``training_confusion_matrix_report_path``
+    Path where the confusion matrix must be exported (in text format).
+
+-- ``training_confusion_matrix_plot_path``
+    Path where the confusion matrix must be exported (in image format).
+
+-- ``training_class_distribution_report_path``
+    Path where the analysis of the classes distribution must be exported
+    (in text format).
+
+-- ``training_class_distribution_plot_path``
+    Path where the analysis of the classes distribution must be exported
+    (in image format).
+
+-- ``training_classifier_point_cloud_path``
+    Path where the training data with the model's predictions must be exported.
+
+-- ``training_activations_path``
+    Path where a point cloud representing the point-wise activations of the
+    model must be exported. It might demand a lot of memory. However, it can be
+    useful to understand, debug, and improve the model.
+
+
+
+
+.. _Receptive fields section:
+
+
 
 
 Receptive fields
 ===================
 
+The receptive fields can be as important as the model's architecture. They
+define the input to the neural network. If a receptive field is poorly
+configured it can be impossible for the neural network to converge to a
+satisfactory solution. Thus, understanding receptive fields is key to
+successfully configure a neural network for point cloud processing. The
+sections below explain how to use the available receptive field definitions
+in the VL3D framework.
+
 
 Grid
 -------
 
+Grid subsampling is one of the simpler receptive fields. It consists of
+dividing the input neighborhood into a fixed number of cells. Receptive fields
+based on grid subsampling are implemented through
+:class:`.GridSubsamplingPreProcessor` and
+:class:`.ReceptiveFieldGS`. They can be configured as shown in the JSON below:
+
+.. code-block:: json
+
+    "pre_processing": {
+        "pre_processor": "grid_subsampling",
+        "sphere_radius": 0.2,
+        "separation_factor": 0.86,
+        "cell_size": [0.1, 0.1, 0.1],
+        "interpolate": false,
+        "nthreads": 6,
+        "receptive_fields_dir": "out/PointnetPwiseClassifier_GSfill_weighted/eval/receptive_fields/"
+    }
+
+In the JSON above a grid-based receptive field is configured. The input
+neighborhood will be a sphere of :math:`20\,\mathrm{cm}`. There will be as
+many spheres as possible to cover the entire input point cloud with a
+separation factor of :math:`0.86`, i.e., the spheres will be seperated in
+:math:`0.86` times the radius. The built grid will be the smaller one
+containing the sphere. Each cell of the grid will have edges
+with length :math:`10\%` of the radius. In case of missing centroids in the
+grid, the corresponding cells will not be interpolated. Instead, the
+coordinate-wise mean value will be considered for each empty cell to have a
+fixed-size input. The generated receptive fields will be exported to the
+directory given at ``receptive_fields_dir``.
+
+
+
+
+
 Furthest point sampling
 -------------------------
 
+Furthest point sampling (FPS) starts by considering an initial point. Then, the
+second point will be the one that is furthest from the first. The third point
+will be the one that is furthest from the first and the second, and so on
+until the last point is selected. A receptive field based on FPS provides a
+good coverage of the space occupied by points. The FPS receptive fields are
+implemented through :class:`.FurthestPointSubsamplingPreProcessor` and
+:class:`.ReceptiveFieldFPS`. They can be configured as shown in the JSON
+below:
 
+
+.. code-block:: json
+
+    "pre_processing": {
+        "pre_processor": "furthest_point_subsampling",
+        "support_chunk_size": 2000,
+        "training_class_distribution": [10000, 10000],
+        "center_on_pcloud": true,
+        "num_points": 8192,
+        "num_encoding_neighbors": 1,
+        "fast": false,
+        "neighborhood": {
+            "type": "rectangular3D",
+            "radius": 1.5,
+            "separation_factor": 0.5
+        },
+        "nthreads": 12,
+        "training_receptive_fields_distribution_report_path": "training_eval/training_receptive_fields_distribution.log",
+        "training_receptive_fields_distribution_plot_path": "training_eval/training_receptive_fields_distribution.svg",
+        "training_receptive_fields_dir": "training_eval/training_receptive_fields/",
+        "receptive_fields_distribution_report_path": "training_eval/receptive_fields_distribution.log",
+        "receptive_fields_distribution_plot_path": "training_eval/receptive_fields_distribution.svg",
+        "receptive_fields_dir": "training_eval/receptive_fields/",
+        "training_support_points_report_path": "training_eval/training_support_points.laz",
+        "support_points_report_path": "training_eval/support_points.laz"
+    }
+
+
+The JSON above defines a FPS receptive field on 3D rectangular neighborhoods
+with edges of length :math:`3,\mathrm{m}`. Each receptive field will contain
+8192 different points and it will be centered on a point from the input point
+cloud.
+
+**Arguments**
+
+-- ``support_chunk_size``
+    When given and distinct than zero, it will define the chunk size. The
+    chunk size will be used to group certain tasks into chunks with a max
+    size to prevent memory exhaustion.
+
+-- ``training_class_distribution``
+    When given, the support points to be considered as the centers of the
+    neighborhoods will be taken by randomly selecting as many points per class
+    as specified. This list must have as many elements as classes. Then, each
+    element can be understood as the number of samples centered on a point
+    of the class that must be considered.
+
+
+-- ``center_on_pcloud``
+    When ``true`` the neighborhoods will be centered on a point from the
+    input point cloud. Typically by finding the nearest neighbor of a support
+    point in the input point cloud.
+
+-- ``num_points``
+    How many points must be in the receptive field.
+
+-- ``num_encoding_neighbors``
+    How many neighbors must be considered when encoding the values for a
+    point in the receptive field. If one, then the values of the point will be
+    preserved, otherwise they will be interpolated from its k nearest
+    neighbors.
+
+-- ``fast``
+    When ``true`` the FPS computation will be accelerated using a uniform point
+    sampling strategy. It is recommended only when the number of points is
+    too high to be computed deterministically.
+
+-- ``neighborhood``
+    Define the neighborhood to be used.
+
+    -- ``type``
+        The type of neighborhood. Supported types are:
+
+        -- ``"sphere"``
+            Consider a spherical neighborhood where the radius is the radius
+            of the sphere.
+
+        -- ``"cylinder"``
+            Consider a cylindrical neighborhood where the radius is the radius
+            of the cylinder's disk.
+
+        -- ``"rectangular3d"``
+            Consider a rectangular 3D neighorbhood where the radius is half of
+            the cell size. Alternatively, the radius can be given as a list
+            of three decimal numbers. In this case, each number will define a
+            different radius for each axis understood as :math:`(x, y, z)`.
+
+        -- ``"rectangular2d"``
+            Consider a rectangular 2D neighborhood where the radius is defined
+            for the horizontal plane on :math:`(x, y)` while the :math:`z`
+            coordinate is considered unbounded.
+
+    -- ``radius``
+        A decimal number governing the size of the neighborhood. Note that a
+        neighborhood of radius zero means to consider the entire point cloud
+        as input.
+
+    -- ``separation_factor``
+        A decimal number governing the separation between neighborhoods.
+        Typically, it can be read as "how many times the radius" must be
+        considered as the separation between neighborhoods.
+
+-- ``nthreads``
+    How many threads must be used to compute the receptive fields. If -1 is
+    given, then as many parallel threads as possible will be used. Note that
+    in most Python backends processes will be used instead of threads due to
+    the GIL issue.
+
+-- ``training_receptive_fields_distribution_report_path``
+    Path where a text report about the distribution of classes among the
+    receptive fields will be exported. It considers the receptive fields used
+    during training.
+
+-- ``training_receptive_fields_distribution_plot_path``
+    Path where a plot about the distribution of classes among the receptive
+    fields will be exported. It considers the receptive fields used during
+    training.
+
+-- ``training_receptive_fields_dir``
+    Path to the directory where the point clouds representing each receptive
+    field will be written. It considers the receptive fields used during
+    training.
+
+-- ``receptive_fields_distribution_report_path``
+    Path where a text report about the distribution of classes among the
+    receptive fields will be exported.
+
+-- ``receptive_fields_distribution_plot_path``
+    Path where a plot about the distribution of classes among the receptive
+    fields will be exported.
+
+-- ``receptive_fields_dir``
+    Path to the directory where the point clouds representing each receptive
+    field will be written.
+
+-- ``support_points_report_path``
+    Path to the directory where the point cloud representing the support
+    points (those used as the centers of the input neighborhoods) will be
+    exported.
+
+
+
+
+.. _Optimizers section:
 
 Optimizers
 =============
 
+The optimizers, as well as the loss functions, can be configured through the
+``compilation_args`` JSON specification. More concretely, the optimizers can
+be configured through the ``optimizer`` element of a ``compilation_args``. See
+the JSON below as an example:
+
+.. code-block:: json
+
+    "optimizer": {
+        "algorithm": "SGD",
+        "learning_rate": {
+            "schedule": "exponential_decay",
+            "schedule_args": {
+                "initial_learning_rate": 1e-2,
+                "decay_steps": 2000,
+                "decay_rate": 0.96,
+                "staircase": false
+            }
+        }
+    }
+
+
+The supported optimization algorithms are those from Keras (see
+`Keras documentation on optimizers <https://keras.io/api/optimizers/#available-optimizers>`_).
+The ``learning_rate`` can be given both as an initial value or as an
+scheduling. You can see the
+`Keras learning rate schedules API <https://keras.io/api/optimizers/learning_rate_schedules/>`_
+for more information.
+
+.. _Losses section:
 
 Losses
 ========
 
-Callbacks
-============
+The loss functions, as well as the optimizers, can be configured through the
+``compilation_args`` JSON specification. More concretely, the loss functions
+can be configured through the ``loss`` element of a ``compilation_args``. See
+the JSON below as an example:
+
+.. code-block:: json
+
+    "loss": {
+        "function": "class_weighted_categorical_crossentropy"
+    }
+
+The supported loss functions are those from Keras (see
+`Keras documentation on losses <https://keras.io/api/losses/>`_).
+On top of that, the VL3D framework provides some custom loss functions.
+
+
+-- ``"class_weighted_binary_crossentropy"``
+    A binary loss that supports class weights. It can be useful to mitigate
+    class imbalance in binary point-wise classification tasks.
+
+-- ``"class_weighted_categorical_crossentropy"``
+    A loss that supports class weights for more than two classes. It can be
+    useful to mitigate class imbalance in multiclass point-wise classification
+    tasks.
+
+
+
+
 
 
 Further training
 ==================
+
+Once a model has been trained, it might be the case that we want to train it
+using a different dataset. Using more training data on a model is likely to
+improve its generalization capabilities. In the VL3D framework, further
+training of a pretrained model is quite simple. Using the ``pretrained_model``
+element inside a training component to specify the path to a pretrained
+model is enough, as shown in the JSON below:
+
+.. code-block:: json
+
+    {
+		"train": "PointNetPwiseClassifier",
+		"pretrained_model": "out/my_model/pipe/MyModel.model"
+    }
+
+The JSON above loads a pretrained :class:`.PointNetPwiseClassif` model for
+further training. Note that model parameters are available. For example,
+it is possible to change the optimization of the model through the
+``compilation_args`` element. This can be used to start the training
+at a lower learning rate than the original model to avoid losing what
+has been learned before, as typical in fine-tuning.
 
 
 Working example
