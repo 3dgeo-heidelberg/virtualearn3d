@@ -528,8 +528,8 @@ results, as expected.
     :header-rows: 1
 
 The figure below shows the reference and predicted labels, as well as the
-fail/success boolean mask representing correctly classified (red) and
-misclassified (gray) points.
+fail/success boolean mask representing correctly classified (gray) and
+misclassified (red) points.
 
 .. figure:: ../img/pnetclassif_unseen.png
     :scale: 35
@@ -537,7 +537,7 @@ misclassified (gray) points.
             classifier on previously unseen data.
 
     Visualization of the semantic segmentation model applied to previously
-    unseen data. The bottom image shows correct classified points in gray and
+    unseen data. The bottom image shows correctly classified points in gray and
     misclassified points in red. The predictions and reference images use the
     same color code for the classes.
 
