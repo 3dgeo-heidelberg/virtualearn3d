@@ -6,6 +6,7 @@ from src.mining.miner import Miner
 from src.utils.imput.imputer import Imputer
 from src.utils.ftransf.feature_transformer import FeatureTransformer, \
     FeatureTransformerException
+from src.utils.ctransf.class_transformer import ClassTransformer
 from src.model.model_op import ModelOp
 from src.eval.evaluator import Evaluator
 from src.inout.writer import Writer
@@ -13,6 +14,7 @@ from src.inout.model_writer import ModelWriter
 from src.pipeline.predictive_pipeline import PredictivePipeline
 from src.inout.predictive_pipeline_writer import PredictivePipelineWriter
 from src.inout.predictions_writer import PredictionsWriter
+from src.inout.classified_pcloud_writer import ClassifiedPcloudWriter
 import src.main.main_logger as LOGGING
 import time
 
@@ -112,7 +114,7 @@ class PipelineExecutor:
             state.update_pcloud(
                 None, PointCloudFactoryFacade.make_from_file(in_pcloud)
             )
-        # TODO Rethink : Handle model loading (if any)
+        # TODO Rethink : Handle model loading (if any) ?
 
     def pre_process(self, state, comp, comp_id, comps):
         """
@@ -133,6 +135,9 @@ class PipelineExecutor:
             else:  # Otherwise
                 self.pre_fnames = state.fnames  # Cache fnames before update
                 state.fnames = fnames_comp.fnames  # Set the state
+        # Handle lazy preparation
+        if hasattr(comp, 'lazy_prepare'):
+            comp.lazy_prepare(state)
 
     def process(self, state, comp, comp_id, comps):
         """
@@ -163,6 +168,14 @@ class PipelineExecutor:
                     state.pcloud, out_prefix=self.out_prefix
                 )
             )
+        elif isinstance(comp, ClassTransformer):  # Handle class transformer
+            # Compute component logic and update pipeline state
+            state.update(
+                comp,
+                new_pcloud=comp.transform_pcloud(
+                    state.pcloud, out_prefix=self.out_prefix
+                )
+            )
         elif isinstance(comp, ModelOp):
             if comp.op == ModelOp.OP.TRAIN:
                 # Handle train
@@ -174,7 +187,13 @@ class PipelineExecutor:
                 # Handle predict
                 state.update(
                     comp,
+                    new_model=comp.model,
                     new_preds=comp(state.pcloud, out_prefix=self.out_prefix)
+                )
+                state.pcloud.add_features(
+                    ['prediction'],
+                    state.preds.reshape((-1, 1)),
+                    ftypes=state.preds.dtype
                 )
             else:
                 raise PipelineExecutorException(
@@ -188,15 +207,23 @@ class PipelineExecutor:
                 comp,
                 new_preds=comp.predict(
                     state.pcloud, out_prefix=self.out_prefix
-                )
+                ),
+                new_model=comp.get_first_model()
             )
         elif isinstance(comp, Evaluator):
             # Handle evaluation
-            comp(
-                state.preds,
-                y=state.pcloud.get_classes_vector(),
-                out_prefix=self.out_prefix
-            )
+            if hasattr(comp, 'eval_args_from_state'):
+                comp(
+                    **comp.eval_args_from_state(state),
+                    y=state.pcloud.get_classes_vector(),
+                    out_prefix=self.out_prefix
+                )
+            else:
+                comp(
+                    state.preds,
+                    y=state.pcloud.get_classes_vector(),
+                    out_prefix=self.out_prefix
+                )
         elif isinstance(comp, Writer):  # Handle writer
             if comp.needs_prefix():
                 if self.out_prefix is None:
@@ -207,7 +234,6 @@ class PipelineExecutor:
                     )
             if isinstance(comp, ModelWriter):
                 comp.write(state.model, prefix=self.out_prefix)
-
             elif isinstance(comp, PredictivePipelineWriter):
                 comp.write(self.maker, prefix=self.out_prefix)
             elif isinstance(comp, PredictionsWriter):
@@ -215,6 +241,8 @@ class PipelineExecutor:
                     state.pcloud.get_features_matrix(['prediction']),
                     prefix=self.out_prefix
                 )
+            elif isinstance(comp, ClassifiedPcloudWriter):
+                comp.write(state, prefix=self.out_prefix)
             else:
                 comp.write(state.pcloud, prefix=self.out_prefix)
 

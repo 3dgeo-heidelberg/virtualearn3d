@@ -1,0 +1,6 @@
+CLASS           , PRED. COUNT   , PRED. PERCENT., TRUE COUNT    , TRUE PERCENT. 
+Ground          ,       39676955,         66.746,       40385955,         67.938
+Vegetation      ,        9858128,         16.584,        9163959,         15.416
+Building        ,        8257266,         13.891,        8477955,         14.262
+Urban furniture ,        1367284,          2.300,        1159205,          1.950
+Vehicle         ,         285473,          0.480,         258032,          0.434

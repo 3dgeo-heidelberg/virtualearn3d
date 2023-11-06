@@ -20,7 +20,7 @@ class ModelException(VL3DException):
     :author: Alberto M. Esmoris Pena
 
     Class for exceptions related to model components.
-    See :class:`.VL3DException`
+    See :class:`.VL3DException`.
     """
     def __init__(self, message=''):
         # Call parent VL3DException
@@ -87,7 +87,8 @@ class Model:
             'hyperparameter_tuning': spec.get('hyperparameter_tuning', None),
             'fnames': spec.get('fnames', None),
             'stratkfold_report_path': spec.get('stratkfold_report_path', None),
-            'stratkfold_plot_path': spec.get('stratkfold_plot_path', None)
+            'stratkfold_plot_path': spec.get('stratkfold_plot_path', None),
+            'model_args': spec.get('model_args', None)
         }
         # Delete keys with None value
         kwargs = DictUtils.delete_by_val(kwargs, None)
@@ -103,6 +104,7 @@ class Model:
         :param kwargs: The attributes for the Model.
         """
         # Fundamental initialization of any model
+        self.autoval_metrics_names = kwargs.get('autoval_metrics', None)
         self.training_type = kwargs.get("training_type", "base")
         self.random_seed = kwargs.get("random_seed", None)
         self.shuffle_points = kwargs.get("shuffle_points", True)
@@ -131,6 +133,7 @@ class Model:
             'stratkfold_report_path', None
         )
         self.stratkfold_plot_path = kwargs.get('stratkfold_plot_path', None)
+        self.model_args = kwargs.get("model_args", None)
 
     # ---   MODEL METHODS   --- #
     # ------------------------- #
@@ -191,6 +194,55 @@ class Model:
         """
         pass
 
+    def overwrite_pretrained_model(self, spec):
+        """
+        This method must be called when preparing a pretrained model to
+        overwrite any attribute that must be overriding depending on the model
+        and the given training specification.
+
+        :param spec: The key-word training specification to continue the
+            training of the pretrained model.
+        :type spec: dict
+        :return: Nothing, but the model object internal state is updated.
+        """
+        spec_keys = spec.keys()
+        # Overwrite autoval attributes
+        if 'autoval_metrics' in spec_keys:
+            self.autoval_metrics_names = spec['autoval_metrics']
+        # Overwrite stratified kfolding attributes
+        if 'stratkfold_report_path' in spec_keys:
+            self.stratkfold_report_path = spec['stratkfold_report_path']
+        if 'stratkfold_plot_path' in spec_keys:
+            self.stratkfold_plot_path = spec['stratkfold_plot_path']
+        # Overwrite hyperparameter tuning attributes
+        if 'hyperparameter_tuning' in spec_keys:
+            ht_spec = spec['hyperparameter_tuning']
+            hypertuner_class = TunerUtils.extract_tuner_class(ht_spec)
+            self.hypertuner = hypertuner_class(
+                **hypertuner_class.extract_tuner_args(ht_spec)
+            )
+
+    def get_input_from_pcloud(self, pcloud):
+        """
+        Obtain the model-ready input from the given point cloud.
+
+        :param pcloud: The point cloud containing the data to fit the model.
+        :return: Model-ready input data.
+        """
+        return pcloud.get_features_matrix(self.fnames)
+
+    def is_deep_learning_model(self):
+        """
+        Check whether a model is a deep learning model or not.
+
+        By default, models are not deep learning models. Those models which
+        are a deep learning model should explicitly overwrite this method to
+        return True. It is necessary for correct pipelines.
+
+        :return: True if the model is a deep learning model, False otherwise.
+        """
+        return False
+
     # ---   TRAINING METHODS   --- #
     # ---------------------------- #
     @abstractmethod
@@ -234,7 +286,7 @@ class Model:
         :return: The trained model.
         :rtype: :class:`.Model`
         """
-        X = pcloud.get_features_matrix(self.fnames)
+        X = self.get_input_from_pcloud(pcloud)
         y = pcloud.get_classes_vector()
         if self.imputer is not None:
             X, y = self.imputer.impute(X, y)
@@ -258,7 +310,7 @@ class Model:
         :rtype: :class:`.Model`
         """
         # Training
-        X = pcloud.get_features_matrix(self.fnames)
+        X = self.get_input_from_pcloud(pcloud)
         y = pcloud.get_classes_vector()
         if self.imputer is not None:
             X, y = self.imputer.impute(X, y)
@@ -301,7 +353,7 @@ class Model:
         """
         start = time.perf_counter()
         # Prepare stratified kfold
-        X = pcloud.get_features_matrix(self.fnames)
+        X = self.get_input_from_pcloud(pcloud)
         y = pcloud.get_classes_vector()
         if self.imputer is not None:
             X, y = self.imputer.impute(X, y)

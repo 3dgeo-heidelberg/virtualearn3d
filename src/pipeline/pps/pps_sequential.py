@@ -6,6 +6,7 @@ from src.mining.miner import Miner
 from src.model.model_op import ModelOp
 from src.utils.imput.imputer import Imputer
 from src.utils.ftransf.feature_transformer import FeatureTransformer
+from src.utils.ctransf.class_transformer import ClassTransformer
 from src.inout.writer import Writer
 import src.main.main_logger as LOGGING
 import time
@@ -95,6 +96,10 @@ class PpsSequential(PipelinePredictiveStrategy):
             elif isinstance(comp, Imputer):  # Handle imputer
                 pcloud = comp.impute_pcloud(pcloud)
             elif isinstance(comp, FeatureTransformer):  # Handle feat. transf.
+                pcloud = comp.transform_pcloud(
+                    pcloud, out_prefix=self.out_path
+                )
+            elif isinstance(comp, ClassTransformer):
                 pcloud = comp.transform_pcloud(
                     pcloud, out_prefix=self.out_path
                 )

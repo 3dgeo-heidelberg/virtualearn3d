@@ -4,6 +4,7 @@ from src.inout.writer import Writer
 from src.inout.model_writer import ModelWriter
 from src.inout.predictive_pipeline_writer import PredictivePipelineWriter
 from src.inout.predictions_writer import PredictionsWriter
+from src.inout.classified_pcloud_writer import ClassifiedPcloudWriter
 
 
 # ---   CLASS   --- #
@@ -42,5 +43,7 @@ class WriterUtils:
             return PredictivePipelineWriter
         if writer_low == 'predictionswriter':
             return PredictionsWriter
+        if writer_low == 'classifiedpcloudwriter':
+            return ClassifiedPcloudWriter
         # An unknown writer was specified
         raise ValueError(f'There is no known writer "{writer}"')

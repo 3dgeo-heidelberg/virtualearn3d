@@ -22,6 +22,8 @@ class PCATransformer(FeatureTransformer):
     dimensionality space defined by the singular vectors of the centered
     matrix of features.
 
+    See :class:`.FeatureTransformer`.
+
     :ivar out_dim: The number of features after the projection, i.e., the
         dimensionality of the output. It can be given as a float inside [0, 1]
         that represents how many variance must be preserved (1 preserves the

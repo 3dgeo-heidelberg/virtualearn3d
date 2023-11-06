@@ -1,0 +1,36 @@
+{
+  "in_pcloud": [
+	"test_data/QuePet_BR01_01_2019-07-03_q2_TLS-on_c.laz",
+	"test_data/QueRub_KA11_09_2019-09-03_q2_TLS-on_c_t.laz"
+  ],
+  "out_pcloud": [
+	"out/prediction/QuePet_BR01_kbest_RF/QuePet_BR01/*",
+    "out/prediction/QuePet_BR01_kbest_RF/QueRub_KA11_09/*"
+  ],
+  "sequential_pipeline": [
+    {
+      "predict": "PredictivePipeline",
+	  "model_path": "out/training/QuePet_BR01_kbest_RF/pipe/LeafWood_Training_RF.pipe" 
+    },
+	{
+	  "writer": "PredictionsWriter",
+	  "out_preds": "*predictions.lbl"
+	},
+	{
+	  "writer": "ClassifiedPcloudWriter",
+	  "out_pcloud": "*predicted.laz"
+	},
+	{
+	  "eval": "ClassificationEvaluator",
+	  "class_names": ["wood", "leaf"],
+	  "metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
+      "class_metrics": ["P", "R", "F1", "IoU"],
+	  "report_path": "*report/global_eval.log",
+	  "class_report_path": "*report/class_eval.log",
+	  "confusion_matrix_report_path" : "*report/confusion_matrix.log",
+	  "confusion_matrix_plot_path" : "*plot/confusion_matrix.svg",
+	  "class_distribution_report_path": "*report/class_distribution.log",
+	  "class_distribution_plot_path": "*plot/class_distribution.svg"
+	}
+  ]
+}

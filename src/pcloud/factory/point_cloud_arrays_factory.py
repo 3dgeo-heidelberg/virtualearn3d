@@ -49,14 +49,14 @@ class PointCloudArraysFactory(PointCloudFactory):
         self.header = header
         self.fnames = fnames
         # Validate
-        if self.X.shape[0] != self.F.shape[0]:
+        if self.F is not None and self.X.shape[0] != self.F.shape[0]:
             raise PointCloudFactoryException(
                 'PointCloudArraysFactory cannot deal with coordinates for '
                 f'{self.X.shape[0]} points and features for {self.F.shape[0]} '
                 'points.'
             )
         # Load defaults when necessary
-        if self.fnames is None:
+        if self.F is not None and self.fnames is None:
             self.fnames = [f'f{i}' for i in range(1, self.F.shape[1]+1)]
 
     # ---  FACTORY METHODS  --- #
@@ -74,11 +74,12 @@ class PointCloudArraysFactory(PointCloudFactory):
             )
             las.header.offsets = np.min(self.X, axis=0)
             las.header.scales = [0.01]*3
-            extra_bytes = [
-                laspy.ExtraBytesParams(name=fname, type='f')
-                for fname in self.fnames
-            ]
-            las.add_extra_dims(extra_bytes)
+            if self.F is not None:
+                extra_bytes = [
+                    laspy.ExtraBytesParams(name=fname, type='f')
+                    for fname in self.fnames
+                ]
+                las.add_extra_dims(extra_bytes)
         else:  # Initialize from previous header
             header = copy.deepcopy(self.header)
             header.point_count = self.X.shape[0]
@@ -88,8 +89,9 @@ class PointCloudArraysFactory(PointCloudFactory):
         las.y = self.X[:, 1]
         las.z = self.X[:, 2]
         # Assign features
-        for i, fname in enumerate(self.fnames):
-            las[fname] = self.F[:, i]
+        if self.F is not None:
+            for i, fname in enumerate(self.fnames):
+                las[fname] = self.F[:, i]
         # Assign classification
         if self.y is not None:
             las.classification = self.y

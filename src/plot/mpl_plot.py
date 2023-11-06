@@ -3,6 +3,7 @@
 from abc import ABC
 from src.plot.plot import Plot
 from src.inout.io_utils import IOUtils
+import src.main.main_logger as LOGGING
 from matplotlib import pyplot as plt
 import os
 
@@ -28,7 +29,7 @@ class MplPlot(Plot, ABC):
 
     # ---   MPL METHODS   --- #
     # ----------------------- #
-    def save_show_and_clear(self, out_prefix=None):
+    def save_show_and_clear(self, out_prefix=None, logging=False):
         """
         Method to handle the save, show, and clear figure logic. It is expected
         to be called at the end of a plot method invocation. See
@@ -37,7 +38,7 @@ class MplPlot(Plot, ABC):
         :return: Nothing.
         """
         # Save
-        if self.path:
+        if self.path is not None:
             path = self.path
             if out_prefix is not None:
                 path = out_prefix[:-1] + path[1:]
@@ -47,6 +48,8 @@ class MplPlot(Plot, ABC):
                 f'"{path}"'
             )
             plt.savefig(path)
+            if logging:
+                LOGGING.LOGGER.info(f'Plot exported to "{path}"')
         # Show
         if self.show:
             plt.show()

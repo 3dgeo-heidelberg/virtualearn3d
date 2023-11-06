@@ -37,7 +37,7 @@ class IOUtils:
             valid.
         """
         # Check input path as URL
-        if IOUtils.is_url(path):
+        if accept_url and IOUtils.is_url(path):
             IOUtils.validate_url_to_file(path, msg)
             return
         # Validate input path as file

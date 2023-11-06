@@ -1,6 +1,7 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.pipeline.pipeline import Pipeline, PipelineException
+from src.model.model_op import ModelOp
 
 
 # ---   CLASS   --- #
@@ -82,3 +83,36 @@ class PredictivePipeline(Pipeline):
             self.pps.out_path = out_prefix
         # Return the predictions
         return self.pps.predict(self.pipeline, pcloud)
+
+    def get_first_model(self):
+        """
+        Obtain the first model that appears in the predictive pipeline
+        components.
+
+        :return: The first found model in the predictive pipeline. None if
+            no model was found.
+        :rtype: :class:`.ModelOp` or None
+        """
+        # Check the pipeline has a sequence of components
+        if not hasattr(self.pipeline, 'sequence'):
+            return None
+        # Iterate over the sequence until a ModelOp is found
+        for comp in self.pipeline.sequence:
+            if isinstance(comp, ModelOp):
+                return comp
+        # No model was found
+        return None
+
+    # ---  PIPELINE METHODS  --- #
+    # -------------------------- #
+    def is_using_deep_learning(self):
+        """
+        See :meth:`pipeline.Pipeline.is_using_deep_learning`.
+        """
+        return self.pipeline.is_using_deep_learning()
+
+    def write_deep_learning_model(self, path):
+        """
+        See :meth:`pipeline.Pipeline.write_deep_learning_model`
+        """
+        return self.pipeline.write_deep_learning_model(path)
