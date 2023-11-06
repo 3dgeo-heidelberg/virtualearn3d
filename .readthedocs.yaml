@@ -22,13 +22,7 @@ build:
       - echo `pwd`
       - echo "ls "
       - ls .
-      - cd doc
-      - echo "CWD is "
-      - echo `pwd`
-      - bash doc/build_documentation.sh
-      - cd ..
-      - echo "CWD is "
-      - echo `pwd`
+      - cd doc && bash build_documentation.sh
       - mv doc/build/* $READTHEDOCS_OUTPUT/
 
 
