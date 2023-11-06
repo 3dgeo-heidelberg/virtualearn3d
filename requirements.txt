@@ -12,3 +12,7 @@ pdal==2.4.2
 # Deep learning requirements
 tensorflow>=2.11.0
 open3d>=0.17.0
+
+# Sphins and readthedocs requirements
+sphinx
+sphinx-rtd-theme
