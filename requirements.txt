@@ -1,15 +1,14 @@
 # Fundamental requirements
-numpy~=1.21.5
-sklearn~=0.0.post1
-scikit-learn~=1.2.0
-PyYAML~=5.4.1
-matplotlib~=3.5.1
-joblib~=1.2.0
-laspy~=2.3.0
-scipy~=1.8.0
-jakteristics~=0.5.0
-pdal~=3.2.3
+numpy>=1.21.5
+scikit-learn>=1.2.0
+PyYAML>=5.4.1
+matplotlib>=3.5.1
+joblib>=1.2.0
+laspy>=2.3.0
+scipy>=1.8.0
+jakteristics>=0.5.0
+pdal>=3.2.3
 
 # Deep learning requirements
-tensorflow-gpu~=2.11.0
-open3d~=0.17.0
+tensorflow>=2.11.0
+open3d>=0.17.0
