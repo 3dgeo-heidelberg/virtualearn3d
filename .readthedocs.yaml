@@ -17,9 +17,10 @@ build:
     - cmake
     - cmake-data
   jobs:
-    - echo "PWD: ${PWD}"
-    - ./build_documentation.sh
-    - mv build/* $READTHEDOCS_OUTPUT/ 
+    post_build:
+      - echo "PWD: ${PWD}"
+      - ./build_documentation.sh
+      - mv build/* $READTHEDOCS_OUTPUT/ 
 
 # Build documentation in the "docs/" directory with Sphinx
 sphinx:
