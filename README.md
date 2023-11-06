@@ -84,9 +84,9 @@ python vl3d.py --pipeline pipeline_spec.json
 ```
 
 You can find information about pipelines and the many available components
-in our [documentation](). As the first step, we recommend understanding how pipelines
+in our [documentation](https://virtualearn3d.readthedocs.io/en/latest/page_introduction.html). As the first step, we recommend understanding how pipelines
 work, i.e., reading the
-[documentation on pipelines]().
+[documentation on pipelines](https://virtualearn3d.readthedocs.io/en/latest/page_pipelines.html).
 
 
 
@@ -130,7 +130,7 @@ python vl3d.py --pipeline spec/demo/predict_and_eval_pipeline_from_url.json
 ```
 
 More details about this demo can be read in the
-[documentation's introduction]().
+[documentation's introduction](https://virtualearn3d.readthedocs.io/en/latest/page_introduction.html).
 The image below represents some steps of the demo. The tree on the left side
 represents the PCA-transformed feature that explains the highest variance
 ratio on the training point cloud while the tree on the right side represents
