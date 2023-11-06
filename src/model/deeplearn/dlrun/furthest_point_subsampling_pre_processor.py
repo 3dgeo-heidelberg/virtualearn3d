@@ -231,7 +231,7 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             )(
                 X_rf[i],
                 y[Ii],
-                reduce_f=lambda x: scipy.stats.mode(x)[0][0]
+                reduce_f=lambda x: scipy.stats.mode(x)[0]
             ) for i, Ii in enumerate(I)
         ))
 
