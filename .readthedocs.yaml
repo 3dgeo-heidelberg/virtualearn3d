@@ -18,7 +18,8 @@ build:
     - cmake-data
   jobs:
     post_build:
-      - echo "Running post_build from: "`pwd`
+      - echo "Running post_build from "
+      - echo `pwd`
       - echo `date`
 
 # Build documentation in the "docs/" directory with Sphinx
