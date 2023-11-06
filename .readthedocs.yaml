@@ -16,6 +16,20 @@ build:
     - libpdal-dev
     - cmake
     - cmake-data
+  jobs:
+    post_build:
+      - echo "Running post_build from "
+      - echo `pwd`
+      - echo "ls . "
+      - ls .
+      - echo "ls READTHEDOCS_OUTPUT BEFORE"
+      - ls $READTHEDOCS_OUTPUT
+      - cd doc && bash build_documentation.sh
+      - rm -fr $READTHEDOCS_OUTPUT/html $READTHEDOCS_OUTPUT/json
+      - mv doc/build/* $READTHEDOCS_OUTPUT/
+      - echo "ls READTHEDOCS_OUTPUT AFTER"
+      - ls $READTHEDOCS_OUTPUT
+
 
 # Build documentation in the "docs/" directory with Sphinx
 sphinx:
