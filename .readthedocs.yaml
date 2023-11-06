@@ -19,8 +19,8 @@ build:
   jobs:
     post_build:
       - echo "Running post_build from: ${PWD}"
-      - bash ./build_documentation.sh
-      - mv build/* $READTHEDOCS_OUTPUT/ 
+      - echo "bash ./build_documentation.sh"
+      - echo "mv build/* $READTHEDOCS_OUTPUT/"
 
 # Build documentation in the "docs/" directory with Sphinx
 sphinx:
