@@ -22,7 +22,15 @@ build:
       - echo `pwd`
       - echo "ls "
       - ls .
+      - cd doc
+      - echo "CWD is "
+      - echo `pwd`
       - bash doc/build_documentation.sh
+      - cd ..
+      - echo "CWD is "
+      - echo `pwd`
+      - mv doc/build/* $READTHEDOCS_OUTPUT/
+
 
 # Build documentation in the "docs/" directory with Sphinx
 sphinx:
