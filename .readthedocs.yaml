@@ -17,7 +17,7 @@ build:
     - cmake
     - cmake-data
   jobs:
-    - echo PWD: "${PWD}"
+    - echo "PWD: ${PWD}"
     - ./build_documentation.sh
     - mv build/* $READTHEDOCS_OUTPUT/ 
 
