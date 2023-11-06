@@ -31,7 +31,7 @@ simple. It consists of three steps:
 3. Install the requirements.
 
     ```bash
-    pip -r requirements
+    pip install -r requirements.txt
     ```
 
 ### Deep learning install
