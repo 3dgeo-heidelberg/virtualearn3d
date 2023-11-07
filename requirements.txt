@@ -10,7 +10,7 @@ jakteristics>=0.5.0
 pdal==2.4.2
 
 # Deep learning requirements
-tensorflow>=2.11.0
+tensorflow==2.12.0
 open3d>=0.17.0
 
 # Sphins and readthedocs requirements
