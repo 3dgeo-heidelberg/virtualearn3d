@@ -18,7 +18,7 @@
 			"pre_processing": {
 				"pre_processor": "furthest_point_subsampling",
 				"support_chunk_size": 2000,
-				"training_class_distribution": [10000, 10000],
+				"training_class_distribution": [5000, 5000],
 				"center_on_pcloud": true,
 				"num_points": 8192,
 				"num_encoding_neighbors": 1,
@@ -41,20 +41,16 @@
 			"kernel_initializer": "he_normal",
 			"pretransf_feats_spec": [
 				{
-					"filters": 64,
-					"name": "prefeats64_A"
-				},
-				{
-					"filters": 64,
-					"name": "prefeats_64B"
-				},
-				{
 					"filters": 128,
 					"name": "prefeats_128"
 				},
 				{
-					"filters": 192,
-					"name": "prefeats_192"
+					"filters": 256,
+					"name": "prefeats_256"
+				},
+				{
+					"filters": 512,
+					"name": "prefeats_512"
 				}
 			],
 			"postransf_feats_spec": [
@@ -63,16 +59,16 @@
 					"name": "posfeats_128"
 				},
 				{
-					"filters": 192,
-					"name": "posfeats_192"
+					"filters": 256,
+					"name": "posfeats_256"
 				},
 				{
-					"filters": 256,
-					"name": "posfeats_end_64"
+					"filters": 512,
+					"name": "posfeats_end_512"
 				}
 			],
-			"tnet_pre_filters_spec": [64, 128, 192],
-			"tnet_post_filters_spec": [192, 128, 64],
+			"tnet_pre_filters_spec": [128, 256, 512],
+			"tnet_post_filters_spec": [256, 128],
 			"_features_structuring_layer": {
 				"max_radii": [5, 5, 5],
 				"radii_resolution": 4,
@@ -92,9 +88,9 @@
 				"summary_report_path": "*/model_summary.log",
 				"training_history_dir": "*/training_eval/history",
 				"features_structuring_representation_dir": "*/training_eval/feat_struct_layer/",
-				"class_weight": [1, 1],
+				"class_weight": [1, 0.6666667],
 				"training_epochs": 200,
-				"batch_size": 32,
+				"batch_size": 16,
 				"checkpoint_path": "*/checkpoint.model",
 				"checkpoint_monitor": "loss",
 				"learning_rate_on_plateau": {
