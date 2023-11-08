@@ -659,7 +659,7 @@ that can later be used to compute predictions on previously unseen models.
         ]
     }
 
-The table below is the report describing the finding of the grid search
+The table below is the report describing the findings of the grid search
 strategy. On the left side of the table, the columns correspond to the
 optimized hyperparameters. On the right side, the mean and standard deviation
 of the accuracy (percentage), and the mean and standard deviation of the
