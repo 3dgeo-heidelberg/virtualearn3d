@@ -301,7 +301,7 @@ class ReceptiveFieldGS(ReceptiveField):
             val_dim = 1
         # Prepare output matrix (last row is shadow)
         Ytype = v.dtype if isinstance(v, np.ndarray) else type(v[0])
-        Y = np.full([self.m+1, val_dim], np.nan, dtype=Ytype)
+        Y = np.full([self.m+1, val_dim], 0, dtype=Ytype)
         # Populate output matrix
         for i, Ni in enumerate(
             self.N[np.sum(self.N >= 0, dtype=bool, axis=1)]  # Non-empty cells
