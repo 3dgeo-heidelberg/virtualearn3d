@@ -198,7 +198,7 @@ class ReceptiveFieldFPS(ReceptiveField):
             val_dim = 1
         # Prepare output matrix
         Ytype = v.dtype if isinstance(v, np.ndarray) else type(v[0])
-        Y = np.full([len(self.M), val_dim], np.nan, dtype=Ytype)
+        Y = np.full([len(self.M), val_dim], 0, dtype=Ytype)
         # Populate output matrix : Reduce by mean
         if reduce_strategy == 'mean':
             for i, Mi in enumerate(self.M):
