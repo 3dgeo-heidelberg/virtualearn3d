@@ -1,17 +1,13 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from abc import ABC
-from src.model.deeplearn.regularizer.features_orthogonal_regularizer import \
-    FeaturesOrthogonalRegularizer
 from src.model.deeplearn.arch.architecture import Architecture
 from src.model.deeplearn.arch.point_net import PointNet
 from src.model.deeplearn.dlrun.point_net_pre_processor import \
     PointNetPreProcessor
 from src.model.deeplearn.dlrun.point_net_post_processor import \
     PointNetPostProcessor
-from src.utils.dict_utils import DictUtils
 import tensorflow as tf
-import numpy as np
 
 
 # ---   CLASS   --- #
@@ -31,7 +27,8 @@ class RBFNet(Architecture, ABC):
         See :meth:architecture.Architecture.__init__`.
         """
         # Call parent's init
-        kwargs['arch_name'] = 'RBFNet'
+        if kwargs.get('arch_name', None) is None:
+            kwargs['arch_name'] = 'RBFNet'
         super().__init__(**kwargs)
         # Update the preprocessing logic
         self.pre_runnable = PointNetPreProcessor(**kwargs['pre_processing'])
@@ -113,3 +110,49 @@ class RBFNet(Architecture, ABC):
             )
         # Return
         return x
+
+    # ---   SERIALIZATION   --- #
+    # ------------------------- #
+    def __getstate__(self):
+        """
+        Method to be called when saving the serialized RBFNet architecture.
+
+        :return: The state's dictionary of the object.
+        :rtype: dict
+        """
+        # Call parent's method
+        state = super().__getstate__()
+        # Add RBFNet's attributes to state dictionary
+        state['num_points'] = self.num_points
+        state['enhanced_dim'] = self.enhanced_dim
+        state['enhancement_kernel_initializer'] = \
+            self.enhancement_kernel_initializer
+        state['after_features_MLPs'] = self.after_features_MLPs
+        state['after_features_kernel_initializer'] = \
+            self.after_features_kernel_initializer
+        state['tnet_pre_filters_spec'] = self.tnet_pre_filters_spec
+        state['tnet_post_filters_spec'] = self.tnet_post_filters_spec
+        # Return
+        return state
+
+    def __setstate__(self, state):
+        """
+        Method to be called when loading and deserializing a previously
+        serialized RBFNet architecture.
+
+        :param state: The state's dictionary of the saved RBFNet architecutre.
+        :type state: dict
+        :return: Nothing, but modifies the internal state of the object.
+        """
+        # Assign RBFNet's attributes from state dictionary
+        self.num_points = state['num_points']
+        self.enhanced_dim = state['enhanced_dim']
+        self.enhancement_kernel_initializer = \
+            state['enhancement_kernel_initializer']
+        self.after_features_MLPs = state['after_features_MLPs']
+        self.after_features_kernel_initializer = \
+            self.after_features_kernel_initializer
+        self.tnet_pre_filters_spec = state['tnet_pre_filters_spec']
+        self.tnet_post_filters_spec = state['tnet_post_filters_spec']
+        # Call parent's set state
+        super().__setstate__(state)

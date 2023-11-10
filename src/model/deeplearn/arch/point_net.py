@@ -31,7 +31,8 @@ class PointNet(Architecture, ABC):
         See :meth:`architecture.Architecture.__init__`.
         """
         # Call parent's init
-        kwargs['arch_name'] = 'PointNet'
+        if kwargs.get('arch_name', None) is None:
+            kwargs['arch_name'] = 'PointNet'
         super().__init__(**kwargs)
         # Update the preprocessing logic
         self.pre_runnable = PointNetPreProcessor(**kwargs['pre_processing'])

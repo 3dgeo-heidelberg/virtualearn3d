@@ -251,7 +251,6 @@ class PointNetPwiseClassif(PointNet):
             LOGGING.LOGGER.debug(msg)
             cache_map['compilef'](cache_map['y_rf'])  # Recomp. to make effect.
 
-
     def posfit_logic_callback(self, cache_map):
         """
         The callback implementing any necessary logic immediately after
