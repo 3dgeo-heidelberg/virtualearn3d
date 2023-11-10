@@ -66,6 +66,13 @@ class RBFNetPwiseClassif(RBFNet):
         :return: The output layer.
         :rtype: :class:`tf.Tensor`
         """
+        # TODO Rethink : Section ---
+        x = tf.tile(
+            x,
+            [1, self.num_points, 1],
+            name='global_feats'
+        )
+        # --- TODO Rethink : Section
         # Handle output layer for binary crossentropy loss
         if self.binary_crossentropy:
             return tf.keras.layers.Conv1D(

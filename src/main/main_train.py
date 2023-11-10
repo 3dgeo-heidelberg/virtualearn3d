@@ -9,6 +9,8 @@ from src.model.random_forest_classification_model import \
     RandomForestClassificationModel
 from src.model.deeplearn.point_net_pwise_classif_model import \
     PointNetPwiseClassifModel
+from src.model.deeplearn.rbf_net_pwise_classif_model import \
+    RBFNetPwiseClassifModel
 import os
 import time
 
@@ -107,6 +109,8 @@ class MainTrain:
             return RandomForestClassificationModel
         if model_low == 'pointnetpwiseclassifier':
             return PointNetPwiseClassifModel
+        if model_low == 'rbfnetpwiseclassifier':
+            return RBFNetPwiseClassifModel
         # An unknown model was specified
         raise ValueError(f'There is no known model "{model}"')
 

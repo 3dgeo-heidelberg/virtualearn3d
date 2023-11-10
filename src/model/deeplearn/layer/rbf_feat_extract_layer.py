@@ -86,7 +86,7 @@ class RBFFeatExtractLayer(Layer):
         trainable_Q=True,
         trainable_omega=True,
         built_Q=False,
-        built_omega=True,
+        built_omega=False,
         **kwargs
     ):
         """
@@ -206,9 +206,7 @@ class RBFFeatExtractLayer(Layer):
         omega_squared = self.omega * self.omega
         D_squared = tf.reduce_sum(SUB*SUB, axis=-1)
         # Compute the output features
-        Y = tf.exp(
-            -tf.transpose(D_squared, [0, 2, 1]) / omega_squared, [0, 1, 2]
-        )
+        Y = tf.exp(-tf.transpose(D_squared, [0, 2, 1]) / omega_squared)
         # Return
         return Y
 

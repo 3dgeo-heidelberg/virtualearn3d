@@ -7,6 +7,8 @@ from src.model.deeplearn.dlrun.point_net_pre_processor import \
     PointNetPreProcessor
 from src.model.deeplearn.dlrun.point_net_post_processor import \
     PointNetPostProcessor
+from src.model.deeplearn.layer.rbf_feat_extract_layer import \
+    RBFFeatExtractLayer
 import tensorflow as tf
 
 
@@ -36,6 +38,12 @@ class RBFNet(Architecture, ABC):
         self.post_runnable = PointNetPostProcessor(self.pre_runnable)
         # The number of points (cells for grid, points for furth. pt. sampling)
         self.num_points = self.pre_runnable.get_num_input_points()
+        # The specification for the RBF feature extraction layer
+        self.max_radii = kwargs['max_radii']
+        self.radii_resolution = kwargs['radii_resolution']
+        self.angular_resolutions = kwargs['angular_resolutions']
+        self.trainable_kernel_structure = kwargs['trainable_kernel_structure']
+        self.trainable_kernel_sizes = kwargs['trainable_kernel_sizes']
         # Neural network architecture specifications
         self.tnet_pre_filters_spec = kwargs['tnet_pre_filters_spec']
         self.tnet_post_filters_spec = kwargs['tnet_post_filters_spec']
@@ -87,7 +95,15 @@ class RBFNet(Architecture, ABC):
             kernel_initializer=self.tnet_kernel_initializer
         )
         # RBF feature extraction layer
-        # TODO Rethink : Implement
+        x = RBFFeatExtractLayer(
+            max_radii=self.max_radii,
+            radii_resolution=self.radii_resolution,
+            angular_resolutions=self.angular_resolutions,
+            trainable_Q=self.trainable_kernel_structure,
+            trainable_omega=self.trainable_kernel_sizes
+        )(x)
+        # TODO Rethink : BatchNormalization might be necessary here
+        # TODO Rethink : Activation (e.g., ReLU) might be necessary here
         # Apply enhancement if requested
         if self.enhanced_dim > 0:
             x = PointNet.build_mlp_block(
@@ -97,11 +113,12 @@ class RBFNet(Architecture, ABC):
                 self.enhancement_kernel_initializer
             )
         # Pooling
-        x = tf.keras.layers.GlobalMaxPooling1D(
+        x = tf.keras.layers.MaxPooling1D(
+            self.num_points,
             name=f'after_feats_pooling'
         )(x)
         # MLPs
-        for i, dim in self.after_features_MLPs:
+        for i, dim in enumerate(self.after_features_MLPs):
             x = PointNet.build_mlp_block(
                 x,
                 dim,
