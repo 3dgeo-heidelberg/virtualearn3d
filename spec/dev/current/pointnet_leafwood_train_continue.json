@@ -90,7 +90,7 @@
 				"training_history_dir": "*/training_eval/history",
 				"features_structuring_representation_dir": "*/training_eval/feat_struct_layer/",
 				"class_weight": [1, 0.6666667],
-				"training_epochs": 200,
+				"training_epochs": 150,
 				"batch_size": 16,
 				"checkpoint_path": "*/checkpoint.model",
 				"checkpoint_monitor": "loss",
@@ -117,7 +117,7 @@
 					"learning_rate": {
 						"schedule": "exponential_decay",
 						"schedule_args": {
-							"initial_learning_rate": 1e-2,
+							"initial_learning_rate": 5e-4,
 							"decay_steps": 1000,
 							"decay_rate": 0.96,
 							"staircase": false

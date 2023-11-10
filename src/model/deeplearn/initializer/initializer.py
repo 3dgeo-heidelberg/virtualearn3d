@@ -6,15 +6,15 @@ import tensorflow as tf
 
 # ---   CLASS   --- #
 # ----------------- #
-class Regularizer(tf.keras.regularizers.Regularizer):
+class Initializer(tf.keras.initializers.Initializer):
     r"""
     :author: Alberto M. Esmoris Pena
 
-    A regularizer can be seen as a map :math:`f` from an input tensor
-    :math:`\mathcal{X}` to an output scalar :math:`y` that can be added to the
-    loss function.
+    An initializer can be seen as a routine that initializes the internal
+    state of a layer from a neural network. Typically, initializers receive
+    the shape of the expected output tensor as a parameter.
 
-    The Regularizer class provides an interface that must be realized by any
+    The Initializer class provides an interface that must be realized by any
     class that must assume the role of a regularizer inside a neural network.
     """
 
@@ -22,35 +22,36 @@ class Regularizer(tf.keras.regularizers.Regularizer):
     # ---------------- #
     def __init__(self, **kwargs):
         """
-        Initialize the member attributes of the regularizer.
+        Initialize the member attributes of the initializer.
 
         :param kwargs: The key-word specification to parametrize the
-            regularizer.
+            initializer.
         """
         # Call parent's init
         super().__init__()
 
-    # ---   REGULARIZER METHODS   --- #
+    # ---   INITIALIZER METHODS   --- #
     # ------------------------------- #
-    def __call__(self, x):
+    def __call__(self, shape, dtype=None):
         """
-        The regularizer's computation logic.
+        The initializer's computation logic.
 
-        :param x: The input tensor.
-        :return: The output scalar.
+        :param shape: The shape of the variable to initializer.
+        :param dtype: The type of value.
+        :return: The initialized variable.
         """
         raise DeepLearningException(
-            "Regularizer has no __call__ method. Derived classes must "
+            "Initializer has no __call__ method. Derived classes must "
             "overload the __call__ method to define the computational "
             "logic of the layer."
         )
 
     def get_config(self):
         """
-        The dictionary specifying how to serialize the regularizer.
+        The dictionary specifying how to serialize the initializer.
 
         :return: The dictionary with the necessary data to serialize the
-            regularizer.
+            initializer.
         :rtype: dict
         """
         return {}
