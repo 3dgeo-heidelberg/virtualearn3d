@@ -104,6 +104,8 @@ class KernelPointStructureInitializer(Initializer):
             Q = self.sample_concentric_ellipsoids()
         elif init_type == 'concentric_rectangulars':
             Q = self.sample_concentric_rectangulars()
+        elif init_type == 'concentric_grids':
+            Q = self.sample_concentric_grids()
         elif init_type == 'zeros':
             Q = np.zeros((num_kernel_points, structure_dim))
         # Handle unexpected initialization type
@@ -200,19 +202,19 @@ class KernelPointStructureInitializer(Initializer):
         # Return
         return Q
 
-    def sample_concentric_rectangulars(self):
+    def sample_concentric_grids(self):
         """
-        In the concentric rectangular prisms strategy the angular resolution
+        In the concentric grids strategy the angular resolution
         is understood as the edge resolution :math:`r_e`.
 
-        One rectangular prism will be generated for each radius in the radii
-        resolution specification. More concretely, each rectangular prism will
+        One grid will be generated for each radius in the radii
+        resolution specification. More concretely, each grid will
         have a length side of twice the radius and a number of points equal
         to :math:`r_e^3` for the 3D case. Note that a radius is given for each
-        axis such that rectangular prisms are supported in general, not only
-        voxels (those correspond to all axis having the same radius).
+        axis such that rectangular grids are supported in general, not only
+        voxel grids (those correspond to all axis having the same radius).
 
-        :return: Points sampled from concentric rectangular prisms.
+        :return: Points sampled from concentric grids.
         :rtype: :class:`tf.Tensor`
         """
         # Generate kernel's structure
@@ -222,7 +224,7 @@ class KernelPointStructureInitializer(Initializer):
             if k == 0:  # Center point
                 Q.append(np.zeros(3))
                 continue
-            # Concentric rectangular prism
+            # Concentric grids
             radii = k/(self.radii_resolution-1)*self.max_radii
             edge_resolution = self.angular_resolutions[k]
             tx = np.linspace(-radii[0], radii[0], edge_resolution)
@@ -237,7 +239,58 @@ class KernelPointStructureInitializer(Initializer):
         if Q.shape[0] != self.compute_num_kernel_points():
             raise DeepLearningException(
                 'KernelPointStructureInitializer generated an unexpected '
-                'number of kernel points for concentric rectangulars'
+                'number of kernel points for concentric grids'
+            )
+        # Return
+        return Q
+
+    def sample_concentric_rectangulars(self):
+        """
+        In the concentric rectangulars strategy the angular resolution
+        is understood as the edge resolution :math:`r_e`.
+
+        One rectangular prism will be generated for each radius in the radii
+        resolution specification. More concretely, each rectangular prism will
+        have a length side of twice the radius and a number of points equal
+        to :math:`6r_e^2-12r_3+8` for the 3D case. Note that a radius is given
+        for each axis such that rectangular prisms are supported in general,
+        not only voxels (those correspond to all axis having the same radius).
+
+        :return: Points sampled from concentric grids.
+        :rtype: :class:`tf.Tensor`
+        """
+        # Generate kernel's structure
+        dimensions = 3
+        Q = []
+        for k in range(self.radii_resolution):
+            if k == 0:  # Center point
+                Q.append(np.zeros(3))
+                continue
+            # Concentric grids
+            radii = k/(self.radii_resolution-1)*self.max_radii
+            edge_resolution = self.angular_resolutions[k]
+            tx = np.linspace(-radii[0], radii[0], edge_resolution)
+            ty = np.linspace(-radii[1], radii[1], edge_resolution)
+            tz = np.linspace(-radii[2], radii[2], edge_resolution)
+            # Find x,y boundary
+            for x in [tx[0], tx[-1]]:  # For each extreme x
+                for y in ty:  # For each y
+                    for z in tz:  # For each z
+                        Q.append(np.array([x, y, z]))
+            for y in [ty[0], ty[-1]]:  # For each extreme y
+                for x in tx[1:-1]:  # For each non-extreme x
+                    for z in tz:  # For each z
+                        Q.append(np.array([x, y, z]))
+            for x in tx[1:-1]:  # For each non-extreme x
+                for y in ty[1:-1]:  # For each non-extreme y
+                    for z in [tz[0], tz[-1]]:  # For each extreme z
+                        Q.append(np.array([x, y, z]))
+        Q = np.array(Q)
+        # Validate
+        if Q.shape[0] != self.compute_num_kernel_points():
+            raise DeepLearningException(
+                'KernelPointStructureInitializer generated an unexpected '
+                'number of kernel points for concentric grids'
             )
         # Return
         return Q
@@ -256,6 +309,12 @@ class KernelPointStructureInitializer(Initializer):
         if init_type == 'concentric_ellipsoids' or init_type == 'zeros':
             return int(np.sum(np.power(self.angular_resolutions, 2)))
         elif init_type == 'concentric_rectangulars':
+            return int(1+np.sum(  # 1+ first ang.res. forced to 1 (center pt.)
+                6 * np.power(self.angular_resolutions[1:], 2)
+                - 12 * np.array(self.angular_resolutions[1:])
+                + 8
+            ))
+        elif init_type == 'concentric_grids':
             return int(np.sum(np.power(self.angular_resolutions, 3)))
         raise DeepLearningException(
             'KernelPointStructureInitializer could not compute the number '

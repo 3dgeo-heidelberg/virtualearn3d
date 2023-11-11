@@ -1,6 +1,7 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from abc import ABC
+from src.model.deeplearn.deep_learning_exception import DeepLearningException
 from src.model.deeplearn.arch.architecture import Architecture
 from src.model.deeplearn.arch.point_net import PointNet
 from src.model.deeplearn.dlrun.point_net_pre_processor import \
@@ -39,14 +40,7 @@ class RBFNet(Architecture, ABC):
         # The number of points (cells for grid, points for furth. pt. sampling)
         self.num_points = self.pre_runnable.get_num_input_points()
         # The specification for the RBF feature extraction layer
-        self.max_radii = kwargs['max_radii']
-        self.radii_resolution = kwargs['radii_resolution']
-        self.angular_resolutions = kwargs['angular_resolutions']
-        self.structure_initialization_type = kwargs.get(
-            'structure_initialization_type', 'concentric_ellipsoids'
-        )
-        self.trainable_kernel_structure = kwargs['trainable_kernel_structure']
-        self.trainable_kernel_sizes = kwargs['trainable_kernel_sizes']
+        self.rbfs = kwargs['rbfs']
         # Neural network architecture specifications
         self.tnet_pre_filters_spec = kwargs['tnet_pre_filters_spec']
         self.tnet_post_filters_spec = kwargs['tnet_post_filters_spec']
@@ -58,7 +52,7 @@ class RBFNet(Architecture, ABC):
             'enhancement_kernel_initializer', 'glorot_normal'
         )
         # Initialize cache-like attributes
-        self.rbf_layer, self.rbf_layer_output_tensor = None, None
+        self.rbf_layers, self.rbf_output_tensors = [], []
 
     # ---   ARCHITECTURE METHODS   --- #
     # -------------------------------- #
@@ -93,19 +87,38 @@ class RBFNet(Architecture, ABC):
             tnet_post_filters=self.tnet_post_filters_spec,
             kernel_initializer=self.tnet_kernel_initializer
         )
-        # RBF feature extraction layer
-        self.rbf_layer = RBFFeatExtractLayer(
-            max_radii=self.max_radii,
-            radii_resolution=self.radii_resolution,
-            angular_resolutions=self.angular_resolutions,
-            structure_initialization_type=self.structure_initialization_type,
-            trainable_Q=self.trainable_kernel_structure,
-            trainable_omega=self.trainable_kernel_sizes
+        # RBF feature extraction layers
+        for i, rbf in enumerate(self.rbfs):
+            rbf_layer = RBFFeatExtractLayer(
+                max_radii=rbf['max_radii'],
+                radii_resolution=rbf['radii_resolution'],
+                angular_resolutions=rbf['angular_resolutions'],
+                structure_initialization_type=rbf['structure_initialization_type'],
+                trainable_Q=rbf['trainable_kernel_structure'],
+                trainable_omega=rbf['trainable_kernel_sizes'],
+                name=f'RBF_feat_extract{i+1}'
+            )
+            _x = rbf_layer(x)
+            if rbf.get('batch_normalization', False):
+                _x = tf.keras.layers.BatchNormalization(
+                    momentum=0.0, name=f'RBF_feat_extract_BN{i+1}'
+                )(_x)
+            if rbf.get('activation', None) is not None:
+                act = rbf['activation']
+                act_low = act.lower()
+                if act_low == 'relu':
+                    _x = tf.keras.layers.Activation(
+                        "relu", name=f'RBF_feat_extract_ReLU{i+1}'
+                    )(_x)
+                else:
+                    raise DeepLearningException(
+                        f'RBFNet does not support "{act}" activation for RBFs.'
+                    )
+            self.rbf_layers.append(rbf_layer)
+            self.rbf_output_tensors.append(_x)
+        x = tf.keras.layers.Concatenate(name='rbf_concat')(
+            self.rbf_output_tensors,
         )
-        x = self.rbf_layer(x)
-        self.rbf_layer_output_tensor = x
-        # TODO Rethink : BatchNormalization might be necessary here
-        # TODO Rethink : Activation (e.g., ReLU) might be necessary here
         # Apply enhancement if requested
         if self.enhanced_dim is not None:
             for i, enhanced_dim in enumerate(self.enhanced_dim):
@@ -131,11 +144,7 @@ class RBFNet(Architecture, ABC):
         state = super().__getstate__()
         # Add RBFNet's attributes to state dictionary
         state['num_points'] = self.num_points
-        state['max_radii'] = self.max_radii
-        state['radii_resolution'] = self.radii_resolution
-        state['angular_resolutions'] = self.angular_resolutions
-        state['trainable_kernel_structure'] = self.trainable_kernel_structure
-        state['trainable_kernel_sizes'] = self.trainable_kernel_sizes
+        state['rbfs'] = self.rbfs
         state['enhanced_dim'] = self.enhanced_dim
         state['enhancement_kernel_initializer'] = \
             self.enhancement_kernel_initializer
@@ -156,11 +165,7 @@ class RBFNet(Architecture, ABC):
         """
         # Assign RBFNet's attributes from state dictionary
         self.num_points = state['num_points']
-        self.max_radii = state['max_radii']
-        self.radii_resolution = state['radii_resolution']
-        self.angular_resolutions = state['angular_resolutions']
-        self.trainable_kernel_structure = state['trainable_kernel_structure']
-        self.trainable_kernel_sizes = state['trainable_kernel_sizes']
+        self.rbfs = state['rbfs']
         self.enhanced_dim = state['enhanced_dim']
         self.enhancement_kernel_initializer = \
             state['enhancement_kernel_initializer']

@@ -17,7 +17,7 @@
 			"pre_processing": {
 				"pre_processor": "furthest_point_subsampling",
 				"support_chunk_size": 2000,
-				"training_class_distribution": [500, 500],
+				"training_class_distribution": [5000, 5000],
 				"center_on_pcloud": true,
 				"num_points": 8192,
 				"num_encoding_neighbors": 1,
@@ -37,17 +37,82 @@
 				"training_support_points_report_path": "*/training_eval/training_support_points.laz",
 				"support_points_report_path": "*/training_eval/support_points.laz"
 			},
-			"kernel_initializer": "he_normal",
-			"max_radii": [1.5, 1.5, 1.5],
-			"radii_resolution": 5,
-			"angular_resolutions": [1, 2, 3, 4, 5],
-			"structure_initialization_type": "concentric_rectangulars",
-			"trainable_kernel_structure": true,
-			"trainable_kernel_sizes": true,
+			"rbfs": [
+				{
+					"max_radii": [1.5, 1.5, 1.5],
+					"radii_resolution": 5,
+					"angular_resolutions": [1, 2, 3, 4, 5],
+					"structure_initialization_type": "concentric_grids",
+					"trainable_kernel_structure": true,
+					"trainable_kernel_sizes": true,
+					"batch_normalization": false,
+					"activation": null
+				},
+				{
+					"max_radii": [1.5, 1.5, 1.5],
+					"radii_resolution": 2,
+					"angular_resolutions": [1, 8],
+					"structure_initialization_type": "concentric_grids",
+					"trainable_kernel_structure": true,
+					"trainable_kernel_sizes": true,
+					"batch_normalization": false,
+					"activation": null
+				},
+				{
+					"max_radii": [1.5, 1.5, 1.5],
+					"radii_resolution": 5,
+					"angular_resolutions": [1, 2, 4, 6, 8],
+					"structure_initialization_type": "concentric_rectangulars",
+					"trainable_kernel_structure": true,
+					"trainable_kernel_sizes": true,
+					"batch_normalization": false,
+					"activation": null
+				},
+				{
+					"max_radii": [1.5, 1.5, 1.5],
+					"radii_resolution": 2,
+					"angular_resolutions": [1, 10],
+					"structure_initialization_type": "concentric_rectangulars",
+					"trainable_kernel_structure": true,
+					"trainable_kernel_sizes": true,
+					"batch_normalization": false,
+					"activation": null
+				},
+				{
+					"max_radii": [1.5, 1.5, 1.5],
+					"radii_resolution": 5,
+					"angular_resolutions": [1, 2, 4, 8, 16],
+					"structure_initialization_type": "concentric_ellipsoids",
+					"trainable_kernel_structure": true,
+					"trainable_kernel_sizes": true,
+					"batch_normalization": false,
+					"activation": null
+				},
+				{
+					"max_radii": [1.5, 1.5, 1.5],
+					"radii_resolution": 2,
+					"angular_resolutions": [1, 20],
+					"structure_initialization_type": "concentric_ellipsoids",
+					"trainable_kernel_structure": true,
+					"trainable_kernel_sizes": true,
+					"batch_normalization": false,
+					"activation": null
+				},
+				{
+					"max_radii": [1.5, 1.5, 1.5],
+					"radii_resolution": 1,
+					"angular_resolutions": [1],
+					"structure_initialization_type": "zeros",
+					"trainable_kernel_structure": true,
+					"trainable_kernel_sizes": true,
+					"batch_normalization": false,
+					"activation": null
+				}
+			],
 			"tnet_pre_filters_spec": [64, 128, 256],
 			"tnet_post_filters_spec": [128, 64, 32],
 			"enhanced_dim": [16, 128, 1024],
-			"after_features_dim": [512, 128, 32],
+			"after_features_dim": [512, 256, 128],
 			"after_features_type": "Conv1D",
 			"model_handling": {
 				"summary_report_path": "*/model_summary.log",
@@ -55,7 +120,7 @@
 				"features_structuring_representation_dir": "*/training_eval/feat_struct_layer/",
 				"rbf_feature_extraction_representation_dir": "*/training_eval/rbf_layer/",
 				"class_weight": [1, 0.6666667],
-				"training_epochs": 100,
+				"training_epochs": 200,
 				"batch_size": 16,
 				"checkpoint_path": "*/checkpoint.model",
 				"checkpoint_monitor": "loss",
@@ -83,7 +148,7 @@
 						"schedule": "exponential_decay",
 						"schedule_args": {
 							"initial_learning_rate": 1e-2,
-							"decay_steps": 100,
+							"decay_steps": 1000,
 							"decay_rate": 0.96,
 							"staircase": false
 						}
@@ -119,7 +184,7 @@
 		"training_class_distribution_report_path": "*/training_eval/class_distribution.log",
 		"training_class_distribution_plot_path": "*/training_eval/class_distribution.svg",
 		"training_classified_point_cloud_path": "*/training_eval/classified_point_cloud.laz",
-		"training_activations_path": "*/training_eval/activations.laz"
+		"_training_activations_path": "*/training_eval/activations.laz"
 	},
 	{
 	  "writer": "PredictivePipelineWriter",

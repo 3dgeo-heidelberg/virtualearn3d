@@ -86,8 +86,7 @@ class RBFNetPwiseClassif(RBFNet):
         )
         # Concatenate features for point-wise classification
         x = tf.keras.layers.Concatenate(name='full_feats')(
-            [
-                self.rbf_layer_output_tensor,
+            self.rbf_output_tensors + [
                 self.prepool_feats_tensor,
                 self.global_feats_tensor
             ]
@@ -203,13 +202,15 @@ class RBFNetPwiseClassif(RBFNet):
         :return: Nothing.
         """
         # Prefit logic for RBF feature extraction layer representation
-        if self.rbf_layer is not None:
-            self.rbf_layer.export_representation(
-                os.path.join(cache_map['rbf_dir_path'], 'init'),
-                out_prefix=cache_map['out_prefix'],
-                Qpast=None
-            )
-            cache_map['Qpast'] = np.array(self.rbf_layer.Q)
+        if self.rbf_layers is not None:
+            cache_map['Qpast'] = []
+            for i, rbf_layer in enumerate(self.rbf_layers):
+                rbf_layer.export_representation(
+                    os.path.join(cache_map['rbf_dir_path'], f'RBF{i+1}_init'),
+                    out_prefix=cache_map['out_prefix'],
+                    Qpast=None
+                )
+                cache_map['Qpast'].append(np.array(rbf_layer.Q))
 
     def posfit_logic_callback(self, cache_map):
         """
@@ -221,11 +222,14 @@ class RBFNetPwiseClassif(RBFNet):
         :return: Nothing.
         """
         # Postfit logic for RBF feature extraction layer representation
-        if self.rbf_layer is not None:
-            self.rbf_layer.export_representation(
-                os.path.join(cache_map['rbf_dir_path'], 'trained'),
-                out_prefix=cache_map['out_prefix'],
-                Qpast=cache_map['Qpast']
-            )
+        if self.rbf_layers is not None:
+            for i, rbf_layer in enumerate(self.rbf_layers):
+                rbf_layer.export_representation(
+                    os.path.join(
+                        cache_map['rbf_dir_path'], f'RBF{i+1}_trained'
+                    ),
+                    out_prefix=cache_map['out_prefix'],
+                    Qpast=cache_map['Qpast'][i]
+                )
 
 
