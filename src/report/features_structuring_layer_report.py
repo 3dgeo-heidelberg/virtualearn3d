@@ -25,6 +25,9 @@ class FeaturesStructuringLayerReport(Report):
     :vartype omegaF: :class:`np.ndarray`
     :ivar omegaD: The vector of distance-wise weights.
     :vartype omegaD: :class:`np.ndarray`
+    :ivar omegaD_name: The name of the omegaD vector. It can be overriden to
+        utilize the report for a :class:`.RBFFeatExtractLayer`.
+    :vartype omegaD_name: str
     """
     # ---   INIT   --- #
     # ---------------- #
@@ -41,6 +44,9 @@ class FeaturesStructuringLayerReport(Report):
         self.omegaF = omegaF
         self.omegaD = omegaD
         self.QXpast = kwargs.get('QXpast', None)
+        # Might be overriden to reuse the report
+        self.QX_name = kwargs.get('QX_name', 'QX')
+        self.omegaD_name = kwargs.get('omegaD_name', '$\\omega_{Di}')
         # Validate
         if self.QX is None and self.omegaF is None and self.omegaD is None:
             raise ReportException(
@@ -74,7 +80,9 @@ class FeaturesStructuringLayerReport(Report):
         if self.QX is not None:
             QXdiff = None
             if self.QXpast is not None:
-                QXdiff = np.sum(np.power(self.QX-self.QXpast, 2), axis=1)
+                QXdiff = np.sqrt(
+                    np.sum(np.power(self.QX-self.QXpast, 2), axis=1)
+                )
             # Output QX point cloud
             fnames = ['distance_weight']
             outF = self.omegaD.reshape((-1, 1))
@@ -88,12 +96,12 @@ class FeaturesStructuringLayerReport(Report):
                     None,
                     fnames=fnames
                 ),
-                os.path.join(path, 'QX.laz')
+                os.path.join(path, f'{self.QX_name}.laz')
             )
         # Output omegaD vector
         if self.omegaD is not None:
             np.savetxt(
-                os.path.join(path, 'omegaD.csv'),
+                os.path.join(path, f'{self.omegaD_name}.csv'),
                 self.omegaD,
                 fmt='%.7f'
             )

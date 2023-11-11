@@ -473,7 +473,7 @@ class FeaturesStructuringLayer(Layer):
         Export a set of files representing the state of the features
         structuring kernel.
 
-        :param dir_path: The directory where the representation's files will
+        :param dir_path: The directory where the representation files will
             be exported.
         :type dir_path: str
         :param out_prefix: The output prefix to name the output files.

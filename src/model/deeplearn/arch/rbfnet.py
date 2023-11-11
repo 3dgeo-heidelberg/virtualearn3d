@@ -42,6 +42,9 @@ class RBFNet(Architecture, ABC):
         self.max_radii = kwargs['max_radii']
         self.radii_resolution = kwargs['radii_resolution']
         self.angular_resolutions = kwargs['angular_resolutions']
+        self.structure_initialization_type = kwargs.get(
+            'structure_initialization_type', 'concentric_ellipsoids'
+        )
         self.trainable_kernel_structure = kwargs['trainable_kernel_structure']
         self.trainable_kernel_sizes = kwargs['trainable_kernel_sizes']
         # Neural network architecture specifications
@@ -50,16 +53,12 @@ class RBFNet(Architecture, ABC):
         self.tnet_kernel_initializer = kwargs.get(
             'tnet_kernel_initializer', 'glorot_normal'
         )
-        self.enhanced_dim = kwargs.get('enhanced_dim', 1024)
+        self.enhanced_dim = kwargs.get('enhanced_dim', [16, 128, 1024])
         self.enhancement_kernel_initializer = kwargs.get(
             'enhancement_kernel_initializer', 'glorot_normal'
         )
-        self.after_features_MLPs = kwargs.get(
-            'after_features_MLPs', [512, 128, 1]
-        )
-        self.after_features_kernel_initializer = kwargs.get(
-            'after_features_kernel_initializer', 'glorot_normal'
-        )
+        # Initialize cache-like attributes
+        self.rbf_layer, self.rbf_layer_output_tensor = None, None
 
     # ---   ARCHITECTURE METHODS   --- #
     # -------------------------------- #
@@ -95,36 +94,27 @@ class RBFNet(Architecture, ABC):
             kernel_initializer=self.tnet_kernel_initializer
         )
         # RBF feature extraction layer
-        x = RBFFeatExtractLayer(
+        self.rbf_layer = RBFFeatExtractLayer(
             max_radii=self.max_radii,
             radii_resolution=self.radii_resolution,
             angular_resolutions=self.angular_resolutions,
+            structure_initialization_type=self.structure_initialization_type,
             trainable_Q=self.trainable_kernel_structure,
             trainable_omega=self.trainable_kernel_sizes
-        )(x)
+        )
+        x = self.rbf_layer(x)
+        self.rbf_layer_output_tensor = x
         # TODO Rethink : BatchNormalization might be necessary here
         # TODO Rethink : Activation (e.g., ReLU) might be necessary here
         # Apply enhancement if requested
-        if self.enhanced_dim > 0:
-            x = PointNet.build_mlp_block(
-                x,
-                self.enhanced_dim,
-                'enhancement',
-                self.enhancement_kernel_initializer
-            )
-        # Pooling
-        x = tf.keras.layers.MaxPooling1D(
-            self.num_points,
-            name=f'after_feats_pooling'
-        )(x)
-        # MLPs
-        for i, dim in enumerate(self.after_features_MLPs):
-            x = PointNet.build_mlp_block(
-                x,
-                dim,
-                f'after_feats_MLP{i+1}',
-                self.after_features_kernel_initializer
-            )
+        if self.enhanced_dim is not None:
+            for i, enhanced_dim in enumerate(self.enhanced_dim):
+                x = PointNet.build_mlp_block(
+                    x,
+                    enhanced_dim,
+                    f'enhancement{i+1}',
+                    self.enhancement_kernel_initializer
+                )
         # Return
         return x
 
@@ -141,14 +131,17 @@ class RBFNet(Architecture, ABC):
         state = super().__getstate__()
         # Add RBFNet's attributes to state dictionary
         state['num_points'] = self.num_points
+        state['max_radii'] = self.max_radii
+        state['radii_resolution'] = self.radii_resolution
+        state['angular_resolutions'] = self.angular_resolutions
+        state['trainable_kernel_structure'] = self.trainable_kernel_structure
+        state['trainable_kernel_sizes'] = self.trainable_kernel_sizes
         state['enhanced_dim'] = self.enhanced_dim
         state['enhancement_kernel_initializer'] = \
             self.enhancement_kernel_initializer
-        state['after_features_MLPs'] = self.after_features_MLPs
-        state['after_features_kernel_initializer'] = \
-            self.after_features_kernel_initializer
         state['tnet_pre_filters_spec'] = self.tnet_pre_filters_spec
         state['tnet_post_filters_spec'] = self.tnet_post_filters_spec
+        state['tnet_kernel_initializer'] = self.tnet_kernel_initializer
         # Return
         return state
 
@@ -163,13 +156,16 @@ class RBFNet(Architecture, ABC):
         """
         # Assign RBFNet's attributes from state dictionary
         self.num_points = state['num_points']
+        self.max_radii = state['max_radii']
+        self.radii_resolution = state['radii_resolution']
+        self.angular_resolutions = state['angular_resolutions']
+        self.trainable_kernel_structure = state['trainable_kernel_structure']
+        self.trainable_kernel_sizes = state['trainable_kernel_sizes']
         self.enhanced_dim = state['enhanced_dim']
         self.enhancement_kernel_initializer = \
             state['enhancement_kernel_initializer']
-        self.after_features_MLPs = state['after_features_MLPs']
-        self.after_features_kernel_initializer = \
-            self.after_features_kernel_initializer
         self.tnet_pre_filters_spec = state['tnet_pre_filters_spec']
         self.tnet_post_filters_spec = state['tnet_post_filters_spec']
+        self.tnet_kernel_initializer = state['tnet_kernel_initializer']
         # Call parent's set state
         super().__setstate__(state)

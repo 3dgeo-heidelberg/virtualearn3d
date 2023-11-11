@@ -40,6 +40,7 @@ class KernelPointStructureInitializer(Initializer):
     # ---------------- #
     def __init__(
         self,
+        initialization_type='concentric_ellipsoids',
         max_radii=(1, 1, 1),
         radii_resolution=4,
         angular_resolutions=(1, 2, 4, 8),
@@ -56,6 +57,7 @@ class KernelPointStructureInitializer(Initializer):
         # Call parent's init
         super().__init__()
         # Assign attributes
+        self.initialization_type = initialization_type
         self.max_radii = np.array(max_radii)
         self.radii_resolution = int(radii_resolution)
         self.angular_resolutions = np.array(angular_resolutions, dtype=int)
@@ -92,8 +94,27 @@ class KernelPointStructureInitializer(Initializer):
             :math:`\pmb{Q} \in \mathbb{R}^{K \times n_x}`.
         :rtype: :class:`tf.Tensor`
         """
+        # Prepare initialization
+        init_type = self.initialization_type.lower()
+        num_kernel_points = self.compute_num_kernel_points()
+        structure_dim = 3
+        Q = None
+        # Initialize kernel structure
+        if init_type == 'concentric_ellipsoids':
+            Q = self.sample_concentric_ellipsoids()
+        elif init_type == 'concentric_rectangulars':
+            Q = self.sample_concentric_rectangulars()
+        elif init_type == 'zeros':
+            Q = np.zeros((num_kernel_points, structure_dim))
+        # Handle unexpected initialization type
+        else:
+            raise DeepLearningException(
+                'KernelPointStructureInitializer received an unexpected '
+                f'initialization type: "{self.initialization_type}"'
+            )
+        # Return initialized kernel structure as tensor
         return tf.Variable(
-            self.sample_concentric_ellipsoids(),
+            Q,
             dtype=dtype,
             trainable=self.trainable,
             name=self.name
@@ -151,10 +172,11 @@ class KernelPointStructureInitializer(Initializer):
         :rtype: :class:`tf.Tensor`
         """
         # Generate kernel's structure
+        dimensions=3
         Q = []
         for k in range(self.radii_resolution):
             if k == 0:  # Center point
-                Q.append(np.zeros(3))
+                Q.append(np.zeros(dimensions))
                 continue
             # Concentric ellipsoid
             radii = k/(self.radii_resolution-1)*self.max_radii
@@ -173,7 +195,49 @@ class KernelPointStructureInitializer(Initializer):
         if Q.shape[0] != self.compute_num_kernel_points():
             raise DeepLearningException(
                 'KernelPointStructureInitializer generated an unexpected '
-                'number of kernel points.'
+                'number of kernel points for concentric ellipsoids.'
+            )
+        # Return
+        return Q
+
+    def sample_concentric_rectangulars(self):
+        """
+        In the concentric rectangular prisms strategy the angular resolution
+        is understood as the edge resolution :math:`r_e`.
+
+        One rectangular prism will be generated for each radius in the radii
+        resolution specification. More concretely, each rectangular prism will
+        have a length side of twice the radius and a number of points equal
+        to :math:`r_e^3` for the 3D case. Note that a radius is given for each
+        axis such that rectangular prisms are supported in general, not only
+        voxels (those correspond to all axis having the same radius).
+
+        :return: Points sampled from concentric rectangular prisms.
+        :rtype: :class:`tf.Tensor`
+        """
+        # Generate kernel's structure
+        dimensions = 3
+        Q = []
+        for k in range(self.radii_resolution):
+            if k == 0:  # Center point
+                Q.append(np.zeros(3))
+                continue
+            # Concentric rectangular prism
+            radii = k/(self.radii_resolution-1)*self.max_radii
+            edge_resolution = self.angular_resolutions[k]
+            tx = np.linspace(-radii[0], radii[0], edge_resolution)
+            ty = np.linspace(-radii[1], radii[1], edge_resolution)
+            tz = np.linspace(-radii[2], radii[2], edge_resolution)
+            for x in tx:
+                for y in ty:
+                    for z in tz:
+                        Q.append(np.array([x, y, z]))
+        Q = np.array(Q)
+        # Validate
+        if Q.shape[0] != self.compute_num_kernel_points():
+            raise DeepLearningException(
+                'KernelPointStructureInitializer generated an unexpected '
+                'number of kernel points for concentric rectangulars'
             )
         # Return
         return Q
@@ -188,4 +252,13 @@ class KernelPointStructureInitializer(Initializer):
         :return: Expected number of support points.
         :rtype: int
         """
-        return int(np.sum(np.power(self.angular_resolutions, 2)))
+        init_type = self.initialization_type.lower()
+        if init_type == 'concentric_ellipsoids' or init_type == 'zeros':
+            return int(np.sum(np.power(self.angular_resolutions, 2)))
+        elif init_type == 'concentric_rectangulars':
+            return int(np.sum(np.power(self.angular_resolutions, 3)))
+        raise DeepLearningException(
+            'KernelPointStructureInitializer could not compute the number '
+            'of kernel points for a kernel structure of type '
+            f'"{self.initialization_type}"'
+        )

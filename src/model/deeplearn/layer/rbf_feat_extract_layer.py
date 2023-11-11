@@ -1,11 +1,19 @@
 # ---   IMPORTS   --- #
 # ------------------- #
+import time
+
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
 from src.model.deeplearn.layer.layer import Layer
 from src.model.deeplearn.initializer.kernel_point_structure_initializer import\
     KernelPointStructureInitializer
+from src.report.features_structuring_layer_report import \
+    FeaturesStructuringLayerReport
+from src.plot.features_structuring_layer_plot import \
+    FeaturesStructuringLayerPlot
+import src.main.main_logger as LOGGING
 import tensorflow as tf
 import numpy as np
+import os
 
 
 # ---   CLASS   --- #
@@ -45,6 +53,9 @@ class RBFFeatExtractLayer(Layer):
     The :math:`\pmb{Y}` matrix can be understood as a feature matrix extracted
     from the :math:`m` input points through its interaction with the kernel.
 
+    :ivar structure_initialization_type: The type of initialization strategy
+        for the kernel's structure space.
+    :vartype structure_initialization_type: str
     :ivar max_radii: The radius of the last ellipsoid along each axis
         :math:`\pmb{r}^* \in \mathbb{R}^{n_x}`.
     :vartype max_radii: :class:`np.ndarray` of float
@@ -82,6 +93,7 @@ class RBFFeatExtractLayer(Layer):
         max_radii,
         radii_resolution=4,
         angular_resolutions=(1, 2, 4, 8),
+        structure_initialization_type='concentric_ellipsoids',
         structure_dimensionality=3,
         trainable_Q=True,
         trainable_omega=True,
@@ -95,6 +107,7 @@ class RBFFeatExtractLayer(Layer):
         # Call parent's init
         super().__init__(**kwargs)
         # Assign attributes
+        self.structure_initialization_type = structure_initialization_type
         self.max_radii = np.array(max_radii)
         self.radii_resolution = int(radii_resolution)
         self.angular_resolutions = np.array(angular_resolutions, dtype=int)
@@ -105,6 +118,7 @@ class RBFFeatExtractLayer(Layer):
             radii_resolution=self.radii_resolution,
             angular_resolutions=self.angular_resolutions,
             trainable=self.trainable_Q,
+            initialization_type=self.structure_initialization_type,
             name='Q'
         )
         self.num_kernel_points = \
@@ -176,7 +190,7 @@ class RBFFeatExtractLayer(Layer):
         # Build the kernel's sizes (if not yet)
         if not self.built_omega:
             self.omega = tf.Variable(
-                np.ones(self.num_kernel_points)*np.max(self.max_radii),
+                np.random.uniform(0.01, 1, self.num_kernel_points),
                 dtype='float32',
                 trainable=self.trainable_omega,
                 name='omega'
@@ -256,3 +270,52 @@ class RBFFeatExtractLayer(Layer):
         )
         # Return deserialized layer
         return rfel
+
+    # ---  PLOTS and REPORTS  --- #
+    # --------------------------- #
+    def export_representation(self, dir_path, out_prefix=None, Qpast=None):
+        """
+        Export a set of files representing the state of the kernel's structure.
+
+        :param dir_path: The directory where the representation files will be
+            exported.
+        :type dir_path: str
+        :param out_prefix: The output prefix to name the output files.
+        :type out_prefix: str
+        :param Qpast: The structure matrix of the layer in the past.
+        :type Qpast: :class:`np.ndarray` or :class:`tf.Tensor` or None
+        :return: Nothing at all, but the representation is exported as a set
+            of files inside the given directory.
+        """
+        # Check dir_path has been given
+        if dir_path is None:
+            LOGGING.LOGGER.debug(
+                'RBFFeatExtractLayer.export_representation received no '
+                'dir_path.'
+            )
+            return
+        # Export the values (report) and the plots
+        LOGGING.LOGGER.debug(
+            'Exporting representation of RBF feature extraction layer to '
+            f'"{dir_path}" ...'
+        )
+        start = time.perf_counter()
+        # Export report
+        FeaturesStructuringLayerReport(
+            np.array(self.Q), None, np.array(self.omega),
+            QXpast=np.array(Qpast) if Qpast is not None else None,
+            QX_name='Q',
+            omegaD_name='omega'
+        ).to_file(dir_path, out_prefix=out_prefix)
+        # Export plots
+        FeaturesStructuringLayerPlot(
+            omegaD=np.array(self.omega),
+            xmax=np.max(self.max_radii),
+            path=os.path.join(dir_path, 'figure.svg'),
+            omegaD_name='$\\omega_{i}$'
+        ).plot(out_prefix=out_prefix)
+        end = time.perf_counter()
+        LOGGING.LOGGER.debug(
+            'Representation of RBF feature extraction layer exported to '
+            f'"{dir_path}" in {end-start:.3f} seconds.'
+        )

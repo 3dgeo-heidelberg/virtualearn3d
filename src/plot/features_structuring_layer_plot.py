@@ -26,6 +26,10 @@ class FeaturesStructuringLayerPlot(MplPlot):
     :ivar xmax: The maximum value for the distance domain (defines the x-axis
         for omegaD plots).
     :vartype xmax: float
+    :ivar omegaD_name: The name of the omegaD vector (typically omegaD but it
+        can be overriden to reutilize the report by a
+        :class:`.RBFFeatExtractLayer`.
+    :vartype omegaD_name: str
     """
     # ---   INIT   --- #
     # ---------------- #
@@ -42,6 +46,8 @@ class FeaturesStructuringLayerPlot(MplPlot):
         self.omegaD = kwargs.get('omegaD', None)
         self.omegaF = kwargs.get('omegaF', None)
         self.xmax = kwargs.get('xmax', 1)
+        # Might be overriden to reuse the report
+        self.omegaD_name = kwargs.get('omegaD_name', 'omegaD')
 
     # ---   PLOT METHODS   --- #
     # ------------------------ #
@@ -70,7 +76,7 @@ class FeaturesStructuringLayerPlot(MplPlot):
                 dQ = np.exp(-(x*x)/(omegaDi*omegaDi))
                 ax.plot(x, dQ, lw=1)
             ax.set_title(
-                'Kernel distance for each $\\omega_{Di}$',
+                f'Kernel distance for each {self.omegaD_name}',
                 fontsize=14
             )
             ax.set_xlabel('$x$ (distance)', fontsize=12)

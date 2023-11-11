@@ -282,7 +282,6 @@ class PointNetPwiseClassifModel(ClassificationModel):
                 ] + '_ANOVA.csv'
             )
 
-
     # ---  PREDICTION METHODS  --- #
     # ---------------------------- #
     def _predict(self, X, F=None, y=None, zout=None):
