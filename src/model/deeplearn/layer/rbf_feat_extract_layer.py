@@ -233,6 +233,7 @@ class RBFFeatExtractLayer(Layer):
         # Update config with custom attributes
         config.update({
             # Base attributes
+            'structure_initialization_type': self.structure_initialization_type,
             'max_radii': self.max_radii,
             'radii_resolution': self.radii_resolution,
             'angular_resolutions': self.angular_resolutions,

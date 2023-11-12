@@ -56,6 +56,7 @@ class RBFNetPwiseClassif(RBFNet):
                     fun_name == 'class_weighted_binary_crossentropy'
         # Initialize cache-like attributes
         self.prepool_feats_tensor = None
+        self.global_feats_tensor = None
 
     # ---   ARCHITECTURE METHODS   --- #
     # -------------------------------- #
@@ -184,7 +185,7 @@ class RBFNetPwiseClassif(RBFNet):
         self.after_features_type = state['after_features_type']
         self.after_features_dim = state['after_features_dim']
         self.after_features_kernel_initializer = \
-            self.after_features_kernel_initializer
+            state['after_features_kernel_initializer']
         self.output_kernel_initializer = state['output_kernel_initializer']
         self.binary_crossentropy = state['binary_crossentropy']
         # Call parent's set state
