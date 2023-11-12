@@ -70,7 +70,7 @@ class RBFNetPwiseClassif(RBFNet):
         :param x: The input layer for the first hidden layer.
         :type x: :class:`tf.Tensor`
         :return: The last hidden layer
-        :rtype: :class:`tf.Tensor
+        :rtype: :class:`tf.Tensor`
         """
         # Call parent's build hidden
         x = super().build_hidden(x, **kwargs)

@@ -102,7 +102,7 @@ class RBFFeatExtractLayer(Layer):
         **kwargs
     ):
         """
-        See :class:`.Layer` and :meth:`deeplearn.layer.layer.Layer.__init__`.
+        See :class:`.Layer` and :meth:`layer.Layer.__init__`.
         """
         # Call parent's init
         super().__init__(**kwargs)
@@ -146,7 +146,7 @@ class RBFFeatExtractLayer(Layer):
         representing the kernel's sizes (think about curvature).
 
         The :math:`\pmb{Q}` matrix represents the disposition of the kernel's
-        points while the :math:`\pmb{\omega}' vector represents the size of
+        points while the :math:`\pmb{\omega}` vector represents the size of
         each radial basis function. The size of a radial basis function for
         typical Gaussian kernels can be seen as the parameter governing the
         curvature of the exponential.
@@ -190,7 +190,8 @@ class RBFFeatExtractLayer(Layer):
         # Build the kernel's sizes (if not yet)
         if not self.built_omega:
             self.omega = tf.Variable(
-                np.random.uniform(0.01, 1, self.num_kernel_points),
+                np.max(self.radii_resolution) *
+                    np.random.uniform(0.01, 1, self.num_kernel_points),
                 dtype='float32',
                 trainable=self.trainable_omega,
                 name='omega'
@@ -202,12 +203,10 @@ class RBFFeatExtractLayer(Layer):
         The computation of the :math:`\pmb{Y} \in \mathbb{R}^{m \times K}`
         matrix of output features.
 
-        # TODO Rethink : Finish this doc with eqs? Otherwise write eqs in class doc
-
-
         :return: The extracted output features.
         :rtype: :class:`tf.Tensor`
         """
+        # TODO Rethink : Finish this doc with eqs? Otherwise write eqs in class doc
         # Extract input
         X = inputs  # Input structure space matrix
         # Compute the tensor of q-x diffs for any q in Q for any x in X

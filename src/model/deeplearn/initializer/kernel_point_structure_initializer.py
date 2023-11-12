@@ -106,6 +106,10 @@ class KernelPointStructureInitializer(Initializer):
             Q = self.sample_concentric_rectangulars()
         elif init_type == 'concentric_grids':
             Q = self.sample_concentric_grids()
+        elif init_type == 'concentric_cylinders':
+            Q = self.sample_concentric_cylinders()
+        elif init_type == 'cone':
+            Q = self.sample_cone()
         elif init_type == 'zeros':
             Q = np.zeros((num_kernel_points, structure_dim))
         # Handle unexpected initialization type
@@ -203,7 +207,7 @@ class KernelPointStructureInitializer(Initializer):
         return Q
 
     def sample_concentric_grids(self):
-        """
+        r"""
         In the concentric grids strategy the angular resolution
         is understood as the edge resolution :math:`r_e`.
 
@@ -245,8 +249,8 @@ class KernelPointStructureInitializer(Initializer):
         return Q
 
     def sample_concentric_rectangulars(self):
-        """
-        In the concentric rectangulars strategy the angular resolution
+        r"""
+        In the concentric rectangular prisms strategy the angular resolution
         is understood as the edge resolution :math:`r_e`.
 
         One rectangular prism will be generated for each radius in the radii
@@ -256,7 +260,7 @@ class KernelPointStructureInitializer(Initializer):
         for each axis such that rectangular prisms are supported in general,
         not only voxels (those correspond to all axis having the same radius).
 
-        :return: Points sampled from concentric grids.
+        :return: Points sampled from concentric rectangular prisms.
         :rtype: :class:`tf.Tensor`
         """
         # Generate kernel's structure
@@ -266,7 +270,7 @@ class KernelPointStructureInitializer(Initializer):
             if k == 0:  # Center point
                 Q.append(np.zeros(3))
                 continue
-            # Concentric grids
+            # Concentric rectangular prisms
             radii = k/(self.radii_resolution-1)*self.max_radii
             edge_resolution = self.angular_resolutions[k]
             tx = np.linspace(-radii[0], radii[0], edge_resolution)
@@ -295,6 +299,108 @@ class KernelPointStructureInitializer(Initializer):
         # Return
         return Q
 
+    def sample_concentric_cylinders(self):
+        r"""
+        In the concentric cylinders strategy the angular resolution
+        :math:`r_a` is used directly to sample along the :math:`z`-axis.
+
+        One cylinder will be generated for each radius in the radii
+        resolution specification. More concretely, each cylinder will
+        have a number of points equal to :math:`r_a^2r_r` where
+        :math:`r_r` is the radius of the disk for the current cylinder.
+
+        :return: Points sampled from concentric cylinders.
+        :rtype: :class:`tf.Tensor`
+        """
+        # Generate kernel's structure
+        dimensions = 3
+        Q = []
+        for k in range(self.radii_resolution):
+            if k == 0:  # Center point
+                Q.append(np.zeros(3))
+                continue
+            # Concentric cylinders
+            radii = k/(self.radii_resolution-1)*self.max_radii
+            angular_resolution = self.angular_resolutions[k]
+            circle_resolution = int(np.ceil(
+                angular_resolution * np.max(radii[:2])
+            ))
+            tz = np.linspace(-radii[2], radii[2], angular_resolution)
+            for z in tz:
+                for circle_step in range(circle_resolution):
+                    theta = 2*np.pi*circle_step/circle_resolution
+                    Q.append(np.array([
+                        radii[0]*np.cos(theta),
+                        radii[1]*np.sin(theta),
+                        z
+                    ]))
+        Q = np.array(Q)
+        # Validate
+        if Q.shape[0] != self.compute_num_kernel_points():
+            raise DeepLearningException(
+                'KernelPointStructureInitializer generated an unexpected '
+                'number of kernel points for concentric cylinders.'
+            )
+        # Return
+        return Q
+
+    def sample_cone(self):
+        r"""
+        In the cone strategy angular resolution
+        :math:`r_a` is used directly to sample along the :math:`z`-axis.
+
+        The cone will be generated as parametric circles which angular
+        resolution and radius increases as they get far from the zero.
+
+
+        More concretely, the cone will have a number of points as shown below:
+
+        .. math::
+
+            1 + \sum_{i=1}^{r_a}{\left\lceil
+                r_a  \dfrac{\lvert{z_i}\rvert}{z^*}
+            \right\rceil}
+
+        Where :math:`z^*` is the maximum height for the cone.
+
+        :return: Points sampled from concentric cones.
+        :rtype: :class:`tf.Tensor`
+        """
+        # Generate kernel's structure
+        dimensions = 3
+        Q = []
+        for k in range(self.radii_resolution):
+            if k == 0:  # Center point
+                Q.append(np.zeros(3))
+                continue
+            # Concentric cones
+            radii = k/(self.radii_resolution-1)*self.max_radii
+            angular_resolution = self.angular_resolutions[k]
+            tz = np.linspace(-radii[2], radii[2], angular_resolution)
+            z_ratio = np.abs(tz)/np.max(tz)
+            for j, z in enumerate(tz):
+                circle_resolution = int(
+                    np.ceil(angular_resolution * z_ratio[j])
+                )
+                for circle_step in range(circle_resolution):
+                    theta = 2*np.pi*circle_step/circle_resolution
+                    Q.append(np.array([
+                        z_ratio[j]*radii[0]*np.cos(theta),
+                        z_ratio[j]*radii[1]*np.sin(theta),
+                        z
+                    ]))
+        Q = np.array(Q)
+        # Validate
+        if Q.shape[0] != self.compute_num_kernel_points():
+            print(f'Q.shape[0] = {Q.shape[0]}')  # TODO Remove
+            print(f'expected {self.compute_num_kernel_points()}')  # TODO Remove
+            raise DeepLearningException(
+                'KernelPointStructureInitializer generated an unexpected '
+                'number of kernel points for concentric cones.'
+            )
+        # Return
+        return Q
+
     # ---   UTIL METHODS   --- #
     # ------------------------ #
     def compute_num_kernel_points(self):
@@ -316,6 +422,33 @@ class KernelPointStructureInitializer(Initializer):
             ))
         elif init_type == 'concentric_grids':
             return int(np.sum(np.power(self.angular_resolutions, 3)))
+        elif init_type == 'concentric_cylinders':
+            return int(1 + np.sum([
+                self.angular_resolutions[k]*(
+                    int(np.ceil(
+                        self.angular_resolutions[k] *
+                        np.max(
+                            (
+                                k/(self.radii_resolution-1)*self.max_radii
+                            )[:2]
+                        )
+                    ))
+                )
+                for k in range(1, self.radii_resolution)
+            ]))
+        elif init_type == 'cone':
+            z = np.linspace(
+                -self.max_radii[2],
+                self.max_radii[2],
+                self.angular_resolutions[1]
+            )
+            return int(1 + np.sum([
+                np.ceil(
+                    self.angular_resolutions[1] *
+                    np.abs(z[i])/self.max_radii[2]
+                )
+                for i in range(self.angular_resolutions[1])
+            ]))
         raise DeepLearningException(
             'KernelPointStructureInitializer could not compute the number '
             'of kernel points for a kernel structure of type '

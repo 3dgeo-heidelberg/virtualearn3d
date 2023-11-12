@@ -81,6 +81,26 @@
 				{
 					"max_radii": [1.5, 1.5, 1.5],
 					"radii_resolution": 5,
+					"angular_resolutions": [1, 6, 8, 10, 12],
+					"structure_initialization_type": "concentric_cylinders",
+					"trainable_kernel_structure": true,
+					"trainable_kernel_sizes": true,
+					"batch_normalization": false,
+					"activation": null
+				},
+				{
+					"max_radii": [1.5, 1.5, 1.5],
+					"radii_resolution": 2,
+					"angular_resolutions": [1, 15],
+					"structure_initialization_type": "concentric_cylinders",
+					"trainable_kernel_structure": true,
+					"trainable_kernel_sizes": true,
+					"batch_normalization": false,
+					"activation": null
+				},
+				{
+					"max_radii": [1.5, 1.5, 1.5],
+					"radii_resolution": 5,
 					"angular_resolutions": [1, 2, 4, 8, 16],
 					"structure_initialization_type": "concentric_ellipsoids",
 					"trainable_kernel_structure": true,
@@ -100,6 +120,16 @@
 				},
 				{
 					"max_radii": [1.5, 1.5, 1.5],
+					"radii_resolution": 2,
+					"angular_resolutions": [1, 20],
+					"structure_initialization_type": "cone",
+					"trainable_kernel_structure": true,
+					"trainable_kernel_sizes": true,
+					"batch_normalization": false,
+					"activation": null
+				},
+				{
+					"max_radii": [1.5, 1.5, 1.5],
 					"radii_resolution": 1,
 					"angular_resolutions": [1],
 					"structure_initialization_type": "zeros",
@@ -111,8 +141,8 @@
 			],
 			"tnet_pre_filters_spec": [64, 128, 256],
 			"tnet_post_filters_spec": [128, 64, 32],
-			"enhanced_dim": [16, 128, 512],
-			"after_features_dim": [512, 256, 128],
+			"enhanced_dim": [32, 64, 128],
+			"after_features_dim": [256, 256, 128],
 			"after_features_type": "Conv1D",
 			"model_handling": {
 				"summary_report_path": "*/model_summary.log",
