@@ -67,6 +67,11 @@ class RBFFeatExtractLayer(Layer):
     :ivar angular_resolutions: How many angles consider for each ellipsoid
         :math:`(m_1, \ldots, m_n)`.
     :vartype angular_resolutions: :class:`np.ndarray` of int
+    :ivar kernel_function_type: The type of kernel function to be used
+        (e.g., "Gaussian" or "Markov").
+    :vartype kernel_function_type: str
+    :ivar kernel_function: The kernel function to be used.
+    :vartype kernel_function: function
     :ivar num_kernel_points: The number of points representing the kernel
         :math:`K \in \mathbb{Z}_{>0}`.
     :vartype num_kernel_points: int
@@ -83,9 +88,6 @@ class RBFFeatExtractLayer(Layer):
     :ivar built_omega: Flag to control whether omega has been built or not.
     :vartype built_omega: bool
     """
-    # TODO Rethink : Finish doc
-    # TODO Rethink : Implement
-
     # ---   INIT   --- #
     # ---------------- #
     def __init__(
@@ -93,6 +95,7 @@ class RBFFeatExtractLayer(Layer):
         max_radii,
         radii_resolution=4,
         angular_resolutions=(1, 2, 4, 8),
+        kernel_function_type='Gaussian',
         structure_initialization_type='concentric_ellipsoids',
         structure_dimensionality=3,
         trainable_Q=True,
@@ -124,6 +127,18 @@ class RBFFeatExtractLayer(Layer):
         self.num_kernel_points = \
             self.Q_initializer.compute_num_kernel_points()
         self.trainable_omega = trainable_omega
+        # Handle kernel function type
+        self.kernel_function_type = kernel_function_type
+        kft_low = self.kernel_function_type.lower()
+        if kft_low == 'gaussian':
+            self.kernel_function = self.compute_gaussian_kernel
+        elif kft_low == 'markov':
+            self.kernel_function = self.compute_markov_kernel
+        else:
+            raise DeepLearningException(
+                'RBFFeatExtractLayer does not support a kernel function of '
+                f'type "{self.kernel_function_type}"'
+            )
         # Initialize to None attributes (derived when building)
         self.Q = None  # Kernel's structure matrix
         self.built_Q = built_Q  # True if built, false otherwise
@@ -190,8 +205,8 @@ class RBFFeatExtractLayer(Layer):
         # Build the kernel's sizes (if not yet)
         if not self.built_omega:
             self.omega = tf.Variable(
-                np.max(self.radii_resolution) *
-                    np.random.uniform(0.01, 1, self.num_kernel_points),
+                np.max(self.max_radii) *
+                    np.random.uniform(0.01, 1.0, self.num_kernel_points),
                 dtype='float32',
                 trainable=self.trainable_omega,
                 name='omega'
@@ -216,12 +231,51 @@ class RBFFeatExtractLayer(Layer):
         )
         SUB = tf.subtract(tf.expand_dims(X, 1), SUBTRAHEND)
         # Compute kernel-pcloud distance matrix
-        omega_squared = self.omega * self.omega
         D_squared = tf.reduce_sum(SUB*SUB, axis=-1)
-        # Compute the output features
-        Y = tf.exp(-tf.transpose(D_squared, [0, 2, 1]) / omega_squared)
-        # Return
-        return Y
+        # Compute and return output features
+        return self.kernel_function(D_squared)
+
+    # ---   KERNEL FUNCTIONS   --- #
+    # ---------------------------- #
+    def compute_gaussian_kernel(self, D_squared):
+        r"""
+        Compute a Gaussian kernel function.
+
+        .. math::
+
+            y_{ij} = \exp\left(
+                - \dfrac{
+                    \lVert{\pmb{x_{i*}}} - \pmb{q_{j*}}\rVert^2
+                }{
+                    \omega_{j}^2
+                }
+            \right)
+
+        :return: The computed Gaussian kernel function.
+        :rtype: :class:`tf.Tensor`
+        """
+        omega_squared = self.omega * self.omega
+        return tf.exp(-tf.transpose(D_squared, [0, 2, 1]) / omega_squared)
+
+    def compute_markov_kernel(self, D_squared):
+        r"""
+        Compute a Markov kernel function.
+
+        .. math::
+
+            y_{ij} = \exp\left(
+                - \dfrac{
+                    \lVert{\pmb{x_{i*}}} - \pmb{q_{j*}}\rVert
+                }{
+                    \omega_{j}^2
+                }
+            \right)
+
+        :return: The computed Markov kernel function.
+        :rtype: :class:`tf.Tensor`
+        """
+        omega_squared = self.omega * self.omega
+        return tf.exp(-tf.transpose(D_squared, [0, 2, 1]) / omega_squared)
 
     # ---   SERIALIZATION   --- #
     # ------------------------- #
@@ -236,6 +290,7 @@ class RBFFeatExtractLayer(Layer):
             'max_radii': self.max_radii,
             'radii_resolution': self.radii_resolution,
             'angular_resolutions': self.angular_resolutions,
+            'kernel_function_type': self.kernel_function_type,
             'structure_dimensionality': self.structure_dimensionality,
             'num_kernel_points': self.num_kernel_points,
             # Building attributes
@@ -312,7 +367,8 @@ class RBFFeatExtractLayer(Layer):
             omegaD=np.array(self.omega),
             xmax=np.max(self.max_radii),
             path=os.path.join(dir_path, 'figure.svg'),
-            omegaD_name='$\\omega_{i}$'
+            omegaD_name='$\\omega_{i}$',
+            kernel_type=self.kernel_function_type
         ).plot(out_prefix=out_prefix)
         end = time.perf_counter()
         LOGGING.LOGGER.debug(

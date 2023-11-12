@@ -93,6 +93,7 @@ class RBFNet(Architecture, ABC):
                 max_radii=rbf['max_radii'],
                 radii_resolution=rbf['radii_resolution'],
                 angular_resolutions=rbf['angular_resolutions'],
+                kernel_function_type=rbf['kernel_function_type'],
                 structure_initialization_type=rbf['structure_initialization_type'],
                 trainable_Q=rbf['trainable_kernel_structure'],
                 trainable_omega=rbf['trainable_kernel_sizes'],
