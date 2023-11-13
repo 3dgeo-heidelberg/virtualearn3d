@@ -18,6 +18,9 @@ from src.utils.dict_utils import DictUtils
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
 import src.main.main_logger as LOGGING
 import tensorflow as tf
+from tensorflow.python.framework.errors_impl import ResourceExhaustedError as \
+    TFResourceExhaustedError
+
 from sklearn.preprocessing import LabelBinarizer
 import numpy as np
 import copy
@@ -235,10 +238,22 @@ class SimpleDLModelHandler(DLModelHandler):
         """
         # Softmax scores
         X_rf = self.arch.run_pre({'X': X, 'support_points': True})
-        zhat_rf = self.compiled.predict(X_rf, batch_size=self.batch_size)
+        try:
+            zhat_rf = self.compiled.predict(X_rf, batch_size=self.batch_size)
+        except TFResourceExhaustedError as resexherr:
+            LOGGING.LOGGER.debug(
+                'SimpleDLModelHandler could not compute predictions for '
+                f'{X_rf.shape} points using the GPU.\n'
+                'Trying CPU instead ...'
+            )
+            with tf.device("cpu:0"):
+                zhat_rf = self.compiled.predict(
+                    X_rf, batch_size=self.batch_size
+                )
         zhat = self.arch.run_post({'X': X, 'z': zhat_rf})
         if zout is not None:  # When z is not None it must be a list
             zout.append(zhat)  # Append propagated zhat to z list
+
         # Final predictions
         yhat = np.argmax(zhat, axis=1) if len(zhat.shape) > 1 \
             else np.round(zhat)

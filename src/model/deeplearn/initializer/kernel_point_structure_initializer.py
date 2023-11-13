@@ -392,8 +392,6 @@ class KernelPointStructureInitializer(Initializer):
         Q = np.array(Q)
         # Validate
         if Q.shape[0] != self.compute_num_kernel_points():
-            print(f'Q.shape[0] = {Q.shape[0]}')  # TODO Remove
-            print(f'expected {self.compute_num_kernel_points()}')  # TODO Remove
             raise DeepLearningException(
                 'KernelPointStructureInitializer generated an unexpected '
                 'number of kernel points for concentric cones.'

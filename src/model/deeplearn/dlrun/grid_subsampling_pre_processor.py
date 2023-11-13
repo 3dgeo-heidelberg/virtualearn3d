@@ -1,6 +1,7 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.utils.ptransf.receptive_field_gs import ReceptiveFieldGS
+from src.utils.ptransf.receptive_field_fps import ReceptiveFieldFPS
 from src.model.deeplearn.dlrun.receptive_field_pre_processor import \
     ReceptiveFieldPreProcessor
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
@@ -208,6 +209,7 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
     def build_support_points(
         X, separation_factor, sphere_radius,
         y=None, class_distr=None, center_on_X=False,
+        support_strategy='grid', support_strategy_num_points=1000,
         nthreads=1
     ):
         r"""
@@ -226,9 +228,15 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
         :param y: The vector of point-wise labels (OPTIONAL).
         :param class_distr: The vector of class-wise distribution (OPTIONAL).
         :param center_on_X: When True, the support points will be points taken
-            from X (as the nereast neighbors of the initial support points).
+            from X (as the nearest neighbors of the initial support points).
             Otherwise, they will be automatically computed such that they
             do not necessarily correspond to points in X.
+        :param support_strategy: By default, "grid", which means the support
+            points will be taken by grid sampling. It can be "fps" to apply
+            furthest point sampling. The support strategy will be ignored if
+            class_distr is given.
+        :param support_strategy_num_points: The number of points to be
+            considered when using a furthest point sampling support strategy.
         :param nthreads: How many threads use for parallel computations, if
             any.
         :return: The support points as a matrix where rows are support points
@@ -263,21 +271,39 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
         LOGGING.LOGGER.debug(
             'Support points are built without considering point-wise classes.'
         )
-        xmin, xmax = np.min(X, axis=0), np.max(X, axis=0)
-        l = separation_factor * sphere_radius  # Cell size
-        G = np.meshgrid(
-            *[
-                np.concatenate([
-                    np.arange(xmin[j], xmax[j], l), [xmax[j]]
-                ])
-                for j in range(X.shape[1])
-            ]
-        )
+        # Grid of support points strategy
+        support_strategy_low = support_strategy.lower()
+        if support_strategy_low == 'grid':
+            xmin, xmax = np.min(X, axis=0), np.max(X, axis=0)
+            l = separation_factor * sphere_radius  # Cell size
+            sup_X = np.meshgrid(
+                *[
+                    np.concatenate([
+                        np.arange(xmin[j], xmax[j], l), [xmax[j]]
+                    ])
+                    for j in range(X.shape[1])
+                ]
+            )
+            sup_X = np.array([Gi.flatten() for Gi in sup_X]).T
+        # Support points by furthest point sampling
+        elif support_strategy_low == 'fps':
+            # Compute the FPS
+            sup_X = ReceptiveFieldFPS.compute_fps_on_3D_pcloud(
+                X,
+                num_points=support_strategy_num_points,
+                fast=support_strategy_num_points > 10000
+            )
+            center_on_X = False  # Not necessary when using FPS
+        else:
+            raise DeepLearningException(
+                'Support points cannot be built with support strategy '
+                f'"{support_strategy}".'
+            )
+        # Post-process
         if center_on_X:  # Support points must correspond to points in X
             LOGGING.LOGGER.debug(
                 'Support points are centered on the point cloud.'
             )
-            sup_X = np.array([Gi.flatten() for Gi in G]).T
             kdt = KDT(X)
             D, I = kdt.query(
                 sup_X,
@@ -289,7 +315,7 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             I = np.unique(I[mask])
             return X[I]
         # Return original support points (dont need to match points in X)
-        return np.array([Gi.flatten() for Gi in G]).T
+        return sup_X
 
     @staticmethod
     def clean_support_neighborhoods(sup_X, I):

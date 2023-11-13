@@ -1,14 +1,14 @@
 {
   "in_pcloud": [
-	"https://3dweb.geog.uni-heidelberg.de/trees_leafwood/PinSyl_KA09_T048_2019-08-20_q1_TLS-on_c_t.laz"
+	"/hei/Hessigheim_Benchmark/Epoch_March2018/LiDAR/Mar18_val.laz"
   ],
   "out_pcloud": [
-    "out/Geometric_RBFNet_on_PinSyl_KA10_03/prediction/*"
+    "out/Geometric_RBFNet_on_HessigMarch2018/validation/*"
   ],
   "sequential_pipeline": [
     {
       "predict": "PredictivePipeline",
-	  "model_path": "out/Geometric_RBFNet_on_PinSyl_KA10_03/pipe/Rect3D_1.5m_T1.pipe" 
+	  "model_path": "out/Geometric_RBFNet_on_HessigMarch2018/pipe/Rect3D_5m_T1.pipe" 
     },
 	{
 	  "writer": "ClassifiedPcloudWriter",
@@ -20,7 +20,7 @@
 	},
 	{
 	  "eval": "ClassificationEvaluator",
-	  "class_names": ["Wood", "Leaf"],
+	  "class_names": ["Low vegetation", "Impervious surface", "Vehicle", "Urban furniture", "Roof", "Facade", "Shrub", "Tree", "Soil/Gravel", "Vertical surface", "Chimney"],
 	  "metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
       "class_metrics": ["P", "R", "F1", "IoU"],
 	  "report_path": "*report/global_eval.log",
@@ -32,7 +32,7 @@
 	},
 	{
 		"eval": "ClassificationUncertaintyEvaluator",
-		"class_names": ["Wood", "Leaf"],
+		"class_names": ["Low vegetation", "Impervious surface", "Vehicle", "Urban furniture", "Roof", "Facade", "Shrub", "Tree", "Soil/Gravel", "Vertical surface", "Chimney"],
 		"include_probabilities": true,
 		"include_weighted_entropy": true,
 		"include_clusters": true,

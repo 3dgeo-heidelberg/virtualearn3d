@@ -132,23 +132,11 @@ class ReceptiveFieldFPS(ReceptiveField):
         self.x = x
         X = self.center_and_scale(X)
         # Compute the FPS "centroids"
-        o3d_cloud = open3d.geometry.PointCloud()
-        o3d_cloud.points = open3d.utility.Vector3dVector(X)
-        if self.fast:
-            step = X.shape[0] // self.num_points
-            o3d_cloud = o3d_cloud.uniform_down_sample(step)
-        o3d_cloud = o3d_cloud.farthest_point_down_sample(self.num_points)
-        if len(o3d_cloud.points) != self.num_points:
-            raise ValueError(
-                f'ReceptiveFieldFPS failed to sample {self.num_points}. Only '
-                f'{len(o3d_cloud.points)} samples were taken for a given '
-                f'input of {X.shape[0]} points.' +(
-                    '' if len(o3d_cloud.points) >= X.shape[0] else
-                    '\nFarthest point down sample might discard points under '
-                    'some circumstances, e.g., repeated points.'
-                )
-            )
-        self.Y = np.asarray(o3d_cloud.points)
+        self.Y = ReceptiveFieldFPS.compute_fps_on_3D_pcloud(
+            X,
+            fast=self.fast,
+            num_points=self.num_points
+        )
         # Find the indexing matrix N
         kdt = KDT(X)
         self.N = kdt.query(self.Y, k=self.num_encoding_neighbors)[1]
@@ -257,3 +245,42 @@ class ReceptiveFieldFPS(ReceptiveField):
         but without scaling, i.e., only centering.
         """
         return X + self.x
+
+    @staticmethod
+    def compute_fps_on_3D_pcloud(X, num_points=None, fast=False):
+        r"""
+        Compute the furthest point sampling (FPS) algorithm on the point cloud
+        represented by the input 3D matrix
+        :math:`\pmb{X} \in \mathbb{R}^{m \times 3}`. The result is an output
+        matrix :math:`\pmb{Y} \in \mathbb{R}^{R \times 3}`.
+
+        :param X: The input 3D matrix (rows are points, columns dimensions).
+        :type X: :class:`np.ndarray`
+        :param num_points: The number of points :math:`R` selected through the
+            furthest point sampling method.
+        :type num_points: int
+        :param fast: Whether to use a fast approximation of FPS (True) or
+            the exact computation (False). The fast approximation is computed
+            through uniform down sample.
+        :type fast: bool
+        :return: The subsampled point cloud.
+        :rtype: :class:`np.ndarray`
+        """
+        o3d_cloud = open3d.geometry.PointCloud()
+        o3d_cloud.points = open3d.utility.Vector3dVector(X)
+        if fast:
+            step = X.shape[0] // num_points
+            o3d_cloud = o3d_cloud.uniform_down_sample(step)
+        o3d_cloud = o3d_cloud.farthest_point_down_sample(num_points)
+        if len(o3d_cloud.points) != num_points:
+            raise ValueError(
+                f'ReceptiveFieldFPS failed to sample {num_points}. Only '
+                f'{len(o3d_cloud.points)} samples were taken for a given '
+                f'input of {X.shape[0]} points.' +(
+                    '' if len(o3d_cloud.points) >= X.shape[0] else
+                    '\nFarthest point down sample might discard points under '
+                    'some circumstances, e.g., repeated points.'
+                )
+            )
+        return np.asarray(o3d_cloud.points)
+
