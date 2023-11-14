@@ -45,7 +45,7 @@ class RBFFeatExtractLayer(Layer):
 
         \pmb{Y} \in \mathbb{R}^{m \times K} \;\text{s.t.}\;
             y_{ij} = \exp\biggl({ - \dfrac{
-                \lVert{\pmb{x}_{i*}-\pmb{q}_{j*}}\rVert^2
+                \lVert{\pmb{x_{i*}}-\pmb{q_{j*}}}\rVert^2
             }{
                 \omega_{j}^2
             }}\biggr)
@@ -216,12 +216,23 @@ class RBFFeatExtractLayer(Layer):
     def call(self, inputs, training=False, mask=False):
         r"""
         The computation of the :math:`\pmb{Y} \in \mathbb{R}^{m \times K}`
-        matrix of output features.
+        matrix of output features. For example, for a Gaussian kernel this
+        matrix would be:
+
+        .. math::
+
+            y_{ij} = \exp\left(-\dfrac{
+                \lVert{\pmb{x_{i*}} - \pmb{q_{j*}}}\rVert^2
+            }{
+                \omega_j^2
+            }\right)
+
+        Where :math:`\pmb{x_{i*}}` is the i-th input point and
+        :math:`\pmb{q_{j*}}` is the j-th kernel point.
 
         :return: The extracted output features.
         :rtype: :class:`tf.Tensor`
         """
-        # TODO Rethink : Finish this doc with eqs? Otherwise write eqs in class doc
         # Extract input
         X = inputs  # Input structure space matrix
         # Compute the tensor of q-x diffs for any q in Q for any x in X
