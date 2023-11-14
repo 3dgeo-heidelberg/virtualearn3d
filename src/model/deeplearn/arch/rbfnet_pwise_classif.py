@@ -35,6 +35,9 @@ class RBFNetPwiseClassif(RBFNet):
         self.after_features_kernel_initializer = kwargs.get(
             'after_features_kernel_initializer', 'glorot_normal'
         )
+        self.include_prepooling_features = kwargs.get(
+            'include_prepooling_features', True
+        )
         # Neural network architecture specifications
         self.output_kernel_initializer = kwargs.get(
             'output_kernel_initializer', 'glorot_normal'
@@ -86,11 +89,12 @@ class RBFNetPwiseClassif(RBFNet):
             name='global_feats'
         )
         # Concatenate features for point-wise classification
+        gathered_tensors = []
+        if self.include_prepooling_features:
+            gathered_tensors.append(self.prepool_feats_tensor)
+        gathered_tensors.append(self.global_feats_tensor)
         x = tf.keras.layers.Concatenate(name='full_feats')(
-            self.rbf_output_tensors + [
-                self.prepool_feats_tensor,
-                self.global_feats_tensor
-            ]
+            self.rbf_output_tensors + gathered_tensors
         )
         if self.after_features_type.lower() == 'mlp':
             # After features MLPs
@@ -165,6 +169,7 @@ class RBFNetPwiseClassif(RBFNet):
         state['after_features_dim'] = self.after_features_dim
         state['after_features_kernel_initializer'] = \
             self.after_features_kernel_initializer
+        state['include_prepooling_features'] = self.include_prepooling_features
         state['output_kernel_initializer'] = self.output_kernel_initializer
         state['binary_crossentropy'] = self.binary_crossentropy
         # Return
@@ -186,6 +191,9 @@ class RBFNetPwiseClassif(RBFNet):
         self.after_features_dim = state['after_features_dim']
         self.after_features_kernel_initializer = \
             state['after_features_kernel_initializer']
+        self.include_prepooling_features = state.get(  # get 4 backward compat.
+            'include_prepooling_features', True
+        )
         self.output_kernel_initializer = state['output_kernel_initializer']
         self.binary_crossentropy = state['binary_crossentropy']
         # Call parent's set state
