@@ -21,6 +21,14 @@ class ReceptiveFieldPreProcessor:
     See :class:`.GridSubsamplingPreProcessor`
     See :class:`.FurthestPointSubsamplingPreProcessor`
 
+    :ivar support_strategy: The strategy to be used to compute the support
+        points when no training class distribution has been given. It can be
+        "grid" (default) to get support points through grid sampling, or "fps"
+        to use furthest point sampling.
+    :vartype support_strategy: str
+    :ivar support_strategy_num_points: The number of points to consider when
+        using a furthest point sampling strategy to compute the support points.
+    :vartype support_strategy_num_points: int
     :ivar support_chunk_size: The number of supports per chunk :math:`n`.
         If zero, all support points are considered at once.
         If greater than zero, the support points will be considered in chunks
@@ -74,6 +82,11 @@ class ReceptiveFieldPreProcessor:
             ReceptiveFieldPreProcessor.
         """
         # Assign attributes
+        self.support_strategy = kwargs.get('support_strategy', 'grid')
+        self.support_strategy_num_points = kwargs.get(
+            'support_strategy_num_points', 1000
+        )
+        self.support_strategy_fast = kwargs.get('support_strategy_fast', False)
         self.support_chunk_size = kwargs.get('support_chunk_size', 0)
         self.training_class_distribution = kwargs.get(
             'training_class_distribution', None
@@ -126,6 +139,12 @@ class ReceptiveFieldPreProcessor:
         """
         spec_keys = spec.keys()
         # Overwrite the attributes of the furth. pt. subsampling pre-processor
+        if 'support_strategy' in spec_keys:
+            self.support_strategy = spec['support_strategy']
+        if 'support_strategy_num_points' in spec_keys:
+            self.support_strategy_num_points = spec[
+                'support_strategy_num_points'
+            ]
         if 'support_chunk_size' in spec_keys:
             self.support_chunk_size = spec['support_chunk_size']
         if 'training_class_distribution' in spec_keys:
@@ -179,6 +198,9 @@ class ReceptiveFieldPreProcessor:
         """
         # Return pre-processor state (cache to None)
         return {
+            'support_strategy': self.support_strategy,
+            'support_strategy_num_points': self.support_strategy_num_points,
+            'support_strategy_fast': self.support_strategy_fast,
             'support_chunk_size': self.support_chunk_size,
             'training_class_distribution': self.training_class_distribution,
             'center_on_pcloud': self.center_on_pcloud,
@@ -207,6 +229,11 @@ class ReceptiveFieldPreProcessor:
         :return: Nothing, but modifies the internal state of the object.
         """
         # Assign member attributes from state
+        self.support_strategy = state.get('support_strategy', 'grid')
+        self.support_strategy_num_points = state.get(
+            'support_strategy_num_points', 1000
+        )
+        self.support_strategy_fast = state.get('support_strategy_fast', False)
         self.support_chunk_size = state.get('support_chunk_size', 0)
         self.training_class_distribution = state['training_class_distribution']
         self.center_on_pcloud = state['center_on_pcloud']
@@ -221,4 +248,3 @@ class ReceptiveFieldPreProcessor:
         self.support_points_report_path = None
         self.last_call_neighborhoods = None
         self.last_call_neighborhoods = None
-

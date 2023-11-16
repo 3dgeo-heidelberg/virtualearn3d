@@ -75,7 +75,7 @@ class DLModelHandler:
         """
         pass
 
-    def predict(self, X, F=None, y=None, zout=None):
+    def predict(self, X, F=None, y=None, zout=None, plots_and_reports=True):
         """
         Compute predictions for the given input data.
 
@@ -98,15 +98,21 @@ class DLModelHandler:
             zout does not necessarily return the softmax output, it can be
             defined to consider different output layers or metrics for some
             potential model.
+        :param plots_and_reports: Control whether to compute and export the
+            plots and reports associated to the computation of predictions
+            (True) or not (False).
+        :type plots_and_reports: bool
         :return: The predictions.
         :rtype: :class:`np.ndarray`
         """
         if not self.is_compiled():
             self.compile(X=X, F=F)
-        return self._predict(X, F=F, y=y, zout=zout)
+        return self._predict(
+            X, F=F, y=y, zout=zout, plots_and_reports=plots_and_reports
+        )
 
     @abstractmethod
-    def _predict(self, X, F=None, y=None, zout=None):
+    def _predict(self, X, F=None, y=None, zout=None, plots_and_reports=True):
         """
         This method must be overriden by any concrete derived class to provide
         the predictive logic assuming the model has been compiled. It

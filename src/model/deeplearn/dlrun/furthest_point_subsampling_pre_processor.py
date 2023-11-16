@@ -103,22 +103,23 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             )
         self.last_call_neighborhoods = I
         # Export support points if requested
-        if(
-            inputs.get('training_support_points', False) and
-            self.training_support_points_report_path is not None
-        ):
-            GridSubsamplingPreProcessor.support_points_to_file(
-                sup_X,
-                self.training_support_points_report_path
-            )
-        if(
-            inputs.get('support_points', False) and
-            self.support_points_report_path
-        ):
-            GridSubsamplingPreProcessor.support_points_to_file(
-                sup_X,
+        if inputs.get('plots_and_reports', True):
+            if(
+                inputs.get('training_support_points', False) and
+                self.training_support_points_report_path is not None
+            ):
+                GridSubsamplingPreProcessor.support_points_to_file(
+                    sup_X,
+                    self.training_support_points_report_path
+                )
+            if(
+                inputs.get('support_points', False) and
                 self.support_points_report_path
-            )
+            ):
+                GridSubsamplingPreProcessor.support_points_to_file(
+                    sup_X,
+                    self.support_points_report_path
+                )
         # Prepare receptive field
         self.last_call_receptive_fields = [
             ReceptiveFieldFPS(
@@ -270,6 +271,9 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
                 X2D,
                 self.neighborhood_spec['separation_factor'],
                 self.neighborhood_spec['radius'],
+                support_strategy=self.support_strategy,
+                support_strategy_num_points=self.support_strategy_num_points,
+                support_strategy_fast=self.support_strategy_fast,
                 y=y,
                 class_distr=class_distr,
                 center_on_X=self.center_on_pcloud,
@@ -285,6 +289,8 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
                 X,
                 self.neighborhood_spec['separation_factor'],
                 self.neighborhood_spec['radius'],
+                support_strategy=self.support_strategy,
+                support_strategy_num_points=self.support_strategy_num_points,
                 y=y,
                 class_distr=class_distr,
                 center_on_X=self.center_on_pcloud,
@@ -303,6 +309,8 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
                 X2D,
                 self.neighborhood_spec['separation_factor'],
                 np.min(radius),
+                support_strategy=self.support_strategy,
+                support_strategy_num_points=self.support_strategy_num_points,
                 y=y,
                 class_distr=class_distr,
                 center_on_X=self.center_on_pcloud,
@@ -335,6 +343,8 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
                 X,
                 self.neighborhood_spec['separation_factor'],
                 np.min(radius),
+                support_strategy=self.support_strategy,
+                support_strategy_num_points=self.support_strategy_num_points,
                 y=y,
                 class_distr=class_distr,
                 center_on_X=self.center_on_pcloud,

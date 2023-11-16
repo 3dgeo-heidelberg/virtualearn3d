@@ -6,6 +6,8 @@ from src.eval.classification_uncertainty_evaluation import \
 from src.model.classification_model import ClassificationModel
 from src.model.deeplearn.point_net_pwise_classif_model import \
     PointNetPwiseClassifModel
+from src.model.deeplearn.rbf_net_pwise_classif_model import \
+    RBFNetPwiseClassifModel
 import src.main.main_logger as LOGGING
 from src.utils.dict_utils import DictUtils
 from sklearn.cluster import MiniBatchKMeans
@@ -264,14 +266,17 @@ class ClassificationUncertaintyEvaluator(Evaluator):
             )
         # Determine input type from model
         X = None
-        if isinstance(model, PointNetPwiseClassifModel):
+        if isinstance(
+            model,
+            (PointNetPwiseClassifModel, RBFNetPwiseClassifModel)
+        ):
             X = pcloud.get_coordinates_matrix()
         else:
             X = pcloud.get_features_matrix(fnames=model.fnames)
         # Obtain predictions and probabilities
         start = time.perf_counter()
         zout = []
-        yhat = model._predict(X, zout=zout)
+        yhat = model._predict(X, zout=zout, plots_and_reports=False)
         Zhat = zout[-1]
         end = time.perf_counter()
         LOGGING.LOGGER.info(

@@ -1,8 +1,8 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.model.classification_model import ClassificationModel
-from src.model.deeplearn.arch.point_net_pwise_classif import \
-    PointNetPwiseClassif
+from src.model.deeplearn.arch.rbfnet_pwise_classif import \
+    RBFNetPwiseClassif
 from src.model.deeplearn.handle.dl_model_handler import \
     DLModelHandler
 from src.model.deeplearn.handle.simple_dl_model_handler import \
@@ -24,15 +24,15 @@ import time
 
 # ---   CLASS   --- #
 # ----------------- #
-class PointNetPwiseClassifModel(ClassificationModel):
+class RBFNetPwiseClassifModel(ClassificationModel):
     """
     :author: Alberto M. Esmoris Pena
 
-    PointNet model for point-wise classification tasks.
+    RBFNet model for point-wise classification tasks.
     See :class:`.ClassificationModel`.
 
     :ivar model: The deep learning model wrapped by the corresponding handler,
-        i.e., the :class:`.PointNetPwiseClassif` model wrapped by a
+        i.e., the :class:`.RBFNetPwiseClassif` model wrapped by a
         :class:`.SimpleDLModelHandler` handler.
     :vartype model: :class:`.DLModelHandler`
     """
@@ -43,15 +43,15 @@ class PointNetPwiseClassifModel(ClassificationModel):
     def extract_model_args(spec):
         """
         Extract the arguments to initialize/instantiate a
-        PointNetPwiseClassifModel from a key-word specification.
+        RBFNetPwiseClassifModel from a key-word specification.
 
         :param spec: The key-word specification containing the arguments.
         :return: The arguments to initialize/instantiate a
-            PointNetPwiseClassifModel.
+            RBFNetPwiseClassifModel.
         """
         # Initialize from parent
         kwargs = ClassificationModel.extract_model_args(spec)
-        # Extract particular arguments for PointNetPwiseClassif models
+        # Extract particular arguments for RBFNetPwiseClassif models
         kwargs['training_activations_path'] = spec.get(
             'training_activations_path', None
         )
@@ -64,14 +64,14 @@ class PointNetPwiseClassifModel(ClassificationModel):
     # ---------------- #
     def __init__(self, **kwargs):
         """
-        Initialize an instance of PointNetPwiseClassifModel.
+        Initialize an instance of RBFNetPwiseClassifModel.
 
-        :param kwargs: The attributes for the PointNetPwiseClassifModel that
+        :param kwargs: The attributes for the RBFNetPwiseClassifModel that
             will also be passed to the parent.
         """
         # Call parent init
         super().__init__(**kwargs)
-        # Basic attributes of the PointNetPwiseClassifModel
+        # Basic attributes of the RBFNetPwiseClassifModel
         self.model = None  # By default, internal model is not instantiated
         self.training_activations_path = kwargs.get(
             'training_activations_path', None
@@ -87,24 +87,24 @@ class PointNetPwiseClassifModel(ClassificationModel):
 
     def prepare_model(self):
         """
-        Prepare a PointNet point-wise classifier with current model arguments.
+        Prepare a RBFNet point-wise classifier with current model arguments.
 
         :return: The prepared model itself. Note it is also assigned as the
             model attribute of the object/instance.
-        :rtype: :class:`.PointNetPwiseClassif`
+        :rtype: :class:`.RBFNetPwiseClassif`
         """
         # Instantiate model
         if self.model is None:
             if self.model_args is not None:
-                self.model = PointNetPwiseClassif(**self.model_args)
+                self.model = RBFNetPwiseClassif(**self.model_args)
             else:
                 LOGGING.LOGGER.debug(
-                    'Preparing a PointNetPwiseClassifModel with no model_args.'
+                    'Preparing a RBFNetPwiseClassifModel with no model_args.'
                 )
-                self.model = PointNetPwiseClassif()
+                self.model = RBFNetPwiseClassif()
         else:
             LOGGING.LOGGER.debug(
-                'Preparing a pretrained PointNetPwiseClassifModel.'
+                'Preparing a pretrained RBFNetPwiseClassifModel.'
             )
             return self.model
         # Wrap model with handler
@@ -129,7 +129,7 @@ class PointNetPwiseClassifModel(ClassificationModel):
         if 'model_args' in spec_keys:
             if not isinstance(self.model, DLModelHandler):
                 raise DeepLearningException(
-                    'PointNetPwiseClassifModel cannot overwrite model handler '
+                    'RBFNetPwiseClassifModel cannot overwrite model handler '
                     'because it is not a DLModelHandler.'
                 )
             self.model.overwrite_pretrained_model(spec['model_args'])
@@ -147,8 +147,6 @@ class PointNetPwiseClassifModel(ClassificationModel):
                 model_handling['summary_report_path']
             self.model.training_history_dir = \
                 model_handling['training_history_dir']
-            self.model.feat_struct_repr_dir = \
-                model_handling['features_structuring_representation_dir']
             self.model.checkpoint_path = model_handling['checkpoint_path']
             if self.model.arch is not None:
                 self.model.arch.architecture_graph_path = \
@@ -178,13 +176,13 @@ class PointNetPwiseClassifModel(ClassificationModel):
                     pre_processor.support_points_report_path = \
                         preproc['support_points_report_path']
 
-    def predict(self, pcloud, X=None, F=None):
+    def predict(self, pcloud, X=None, F=None, plots_and_reports=True):
         """
         Use the model to compute predictions on the input point cloud.
 
         The behavior of the base implementation (see
         :meth:`model.Model.predict`) is extended to account for X as a
-        coordinates matrix and to ignore F. In other words, this PointNet
+        coordinates matrix and to ignore F. In other words, this RBFNet
         implementation does not support input features.
 
         :param X: The input matrix of coordinates where each row represents a
@@ -198,7 +196,9 @@ class PointNetPwiseClassifModel(ClassificationModel):
         y = None
         if pcloud.has_classes():
             y = pcloud.get_classes_vector()
-        return self._predict(X, y=y, F=None)
+        return self._predict(
+            X, y=y, F=None, plots_and_reports=plots_and_reports
+        )
 
     def get_input_from_pcloud(self, pcloud):
         """
@@ -210,7 +210,7 @@ class PointNetPwiseClassifModel(ClassificationModel):
     # ---------------------------- #
     def training(self, X, y, F=None, info=True):
         """
-        The fundamental training logic to train a PointNet-based point-wise
+        The fundamental training logic to train a RBFNet-based point-wise
         classifier.
 
         See :class:`.ClassificationModel` and :class:`.Model`.
@@ -236,7 +236,7 @@ class PointNetPwiseClassifModel(ClassificationModel):
             zhat = zhat[-1]
         end = time.perf_counter()
         LOGGING.LOGGER.info(
-            'PointNet point-wise classification on training point cloud '
+            'RBFNet point-wise classification on training point cloud '
             f'computed in {end-start:.3f} seconds.'
         )
         # Training evaluation
@@ -254,7 +254,7 @@ class PointNetPwiseClassifModel(ClassificationModel):
             activations = self.compute_pwise_activations(X)
             end = time.perf_counter()
             LOGGING.LOGGER.info(
-                'PointNet point-wise activations computed in '
+                'RBFNet point-wise activations computed in '
                 f'{end-start:.3f} seconds.'
             )
             PwiseActivationsReport(
@@ -267,7 +267,7 @@ class PointNetPwiseClassifModel(ClassificationModel):
             Fval, pval = f_classif(activations, y)
             end = time.perf_counter()
             LOGGING.LOGGER.info(
-                'ANOVA computed on PointNet point-wise activations in '
+                'ANOVA computed on RBFNet point-wise activations in '
                 f'{end-start:.3f} seconds.'
             )
             BestScoreSelectionReport(
@@ -278,8 +278,8 @@ class PointNetPwiseClassifModel(ClassificationModel):
                 selected_features=None
             ).to_file(
                 path=self.training_activations_path[
-                    :self.training_activations_path.rfind('.')
-                ] + '_ANOVA.csv'
+                     :self.training_activations_path.rfind('.')
+                     ] + '_ANOVA.csv'
             )
 
     # ---  PREDICTION METHODS  --- #
@@ -303,7 +303,7 @@ class PointNetPwiseClassifModel(ClassificationModel):
     def compute_pwise_activations(self, X):
         """
         Compute the point wise activations of the last layer before the
-        output softmax layer in the PointNet-based point-wise classification
+        output softmax layer in the RBFNet-based point-wise classification
         model.
 
         :param X: The matrix of coordinates representing the point cloud.
@@ -337,7 +337,7 @@ class PointNetPwiseClassifModel(ClassificationModel):
                 )
             )
         # Propagate activations to original dimensionality
-        rf = self.model.arch.pre_runnable.pre_processor\
+        rf = self.model.arch.pre_runnable.pre_processor \
             .last_call_receptive_fields
         propagated_activations = joblib.Parallel(
             n_jobs=self.model.arch.pre_runnable.pre_processor.nthreads
@@ -350,7 +350,7 @@ class PointNetPwiseClassifModel(ClassificationModel):
             for i, rfi in enumerate(rf)
         )
         # Reduce overlapping propagations to mean
-        I = self.model.arch.pre_runnable.pre_processor\
+        I = self.model.arch.pre_runnable.pre_processor \
             .last_call_neighborhoods
         activations = GridSubsamplingPostProcessor.pwise_reduce(
             X.shape[0], activations.shape[-1], I, propagated_activations

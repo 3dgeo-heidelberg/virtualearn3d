@@ -238,9 +238,9 @@ class PointNetPwiseClassif(PointNet):
                 out_prefix=cache_map['out_prefix'],
                 QXpast=None
             )
-            cache_map['QXpast'] = self.fsl_layer.QX
+            cache_map['QXpast'] = np.array(self.fsl_layer.QX)
         # Prefit logic for freeze training
-        if (
+        if(
             self.features_structuring_layer is not None and
             self.features_structuring_layer.get('freeze_training', False)
         ):
@@ -250,7 +250,6 @@ class PointNetPwiseClassif(PointNet):
                 layer.trainable = False
             LOGGING.LOGGER.debug(msg)
             cache_map['compilef'](cache_map['y_rf'])  # Recomp. to make effect.
-
 
     def posfit_logic_callback(self, cache_map):
         """

@@ -18,6 +18,9 @@ from src.utils.dict_utils import DictUtils
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
 import src.main.main_logger as LOGGING
 import tensorflow as tf
+from tensorflow.python.framework.errors_impl import ResourceExhaustedError as \
+    TFResourceExhaustedError
+
 from sklearn.preprocessing import LabelBinarizer
 import numpy as np
 import copy
@@ -84,6 +87,9 @@ class SimpleDLModelHandler(DLModelHandler):
         self.training_history_dir = kwargs.get('training_history_dir', None)
         self.feat_struct_repr_dir = kwargs.get(
             'features_structuring_representation_dir', None
+        )
+        self.rbf_feat_extract_repr_dir = kwargs.get(
+            'rbf_feature_extraction_representation_dir', None
         )
         self.out_prefix = kwargs.get('out_prefix', None)
         self.training_epochs = kwargs.get('training_epochs', 100)
@@ -196,6 +202,7 @@ class SimpleDLModelHandler(DLModelHandler):
         # Map for caching stuff during fit logic
         fit_cache_map = {
             'fsl_dir_path': self.feat_struct_repr_dir,
+            'rbf_dir_path': self.rbf_feat_extract_repr_dir,
             'out_prefix': self.out_prefix,
             'X': X,
             'y_rf': y_rf,
@@ -224,26 +231,43 @@ class SimpleDLModelHandler(DLModelHandler):
             self.history = fit_cache_map['history']
         return self.history
 
-    def _predict(self, X, F=None, y=None, zout=None):
+    def _predict(self, X, F=None, y=None, zout=None, plots_and_reports=True):
         """
         See :class:`.DLModelHandler` and
         :meth:`dl_model_handler.DLModelHandler._predict`.
         """
         # Softmax scores
-        X_rf = self.arch.run_pre({'X': X, 'support_points': True})
-        zhat_rf = self.compiled.predict(X_rf, batch_size=self.batch_size)
+        X_rf = self.arch.run_pre({
+            'X': X,
+            'support_points': True,
+            'plots_and_reports': plots_and_reports
+        })
+        try:
+            zhat_rf = self.compiled.predict(X_rf, batch_size=self.batch_size)
+        except TFResourceExhaustedError as resexherr:
+            LOGGING.LOGGER.debug(
+                'SimpleDLModelHandler could not compute predictions for '
+                f'{X_rf.shape} points using the GPU.\n'
+                'Trying CPU instead ...'
+            )
+            with tf.device("cpu:0"):
+                zhat_rf = self.compiled.predict(
+                    X_rf, batch_size=self.batch_size
+                )
         zhat = self.arch.run_post({'X': X, 'z': zhat_rf})
         if zout is not None:  # When z is not None it must be a list
             zout.append(zhat)  # Append propagated zhat to z list
+
         # Final predictions
         yhat = np.argmax(zhat, axis=1) if len(zhat.shape) > 1 \
             else np.round(zhat)
         # Do plots and reports
-        self.handle_receptive_fields_plots_and_reports(
-            X_rf=X_rf,
-            zhat_rf=zhat_rf,
-            y=y
-        )
+        if plots_and_reports:
+            self.handle_receptive_fields_plots_and_reports(
+                X_rf=X_rf,
+                zhat_rf=zhat_rf,
+                y=y
+            )
         # Return
         return yhat
 
@@ -654,6 +678,7 @@ class SimpleDLModelHandler(DLModelHandler):
         state['summary_report_path'] = self.summary_report_path
         state['training_history_dir'] = self.training_history_dir
         state['feat_struct_repr_dir'] = self.feat_struct_repr_dir
+        state['rbf_feat_extract_repr_dir'] = self.rbf_feat_extract_repr_dir
         state['out_prefix'] = self.out_prefix
         state['training_epochs'] = self.training_epochs
         state['batch_size'] = self.batch_size
@@ -682,6 +707,9 @@ class SimpleDLModelHandler(DLModelHandler):
         self.summary_report_path = state['summary_report_path']
         self.training_history_dir = state['training_history_dir']
         self.feat_struct_repr_dir = state.get('feat_struct_repr_dir', None)
+        self.rbf_feat_extract_repr_dir = state.get(
+            'rbf_feat_extract_repr_dir', None
+        )
         self.out_prefix = state['out_prefix']
         self.training_epochs = state['training_epochs']
         self.batch_size = state['batch_size']

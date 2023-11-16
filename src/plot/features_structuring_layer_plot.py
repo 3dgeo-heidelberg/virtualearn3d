@@ -1,6 +1,7 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.plot.mpl_plot import MplPlot
+from src.plot.plot import PlotException
 import src.main.main_logger as LOGGING
 from matplotlib import pyplot as plt
 import numpy as np
@@ -26,6 +27,13 @@ class FeaturesStructuringLayerPlot(MplPlot):
     :ivar xmax: The maximum value for the distance domain (defines the x-axis
         for omegaD plots).
     :vartype xmax: float
+    :ivar kernel_type: The type of kernel to use (e.g., "Gaussian" or
+        "Markov").
+    :vartype kernel_type:
+    :ivar omegaD_name: The name of the omegaD vector (typically omegaD but it
+        can be overriden to reutilize the report by a
+        :class:`.RBFFeatExtractLayer`.
+    :vartype omegaD_name: str
     """
     # ---   INIT   --- #
     # ---------------- #
@@ -42,6 +50,9 @@ class FeaturesStructuringLayerPlot(MplPlot):
         self.omegaD = kwargs.get('omegaD', None)
         self.omegaF = kwargs.get('omegaF', None)
         self.xmax = kwargs.get('xmax', 1)
+        self.kernel_type = kwargs.get('kernel_type', 'Gaussian')
+        # Might be overriden to reuse the report
+        self.omegaD_name = kwargs.get('omegaD_name', 'omegaD')
 
     # ---   PLOT METHODS   --- #
     # ------------------------ #
@@ -67,10 +78,20 @@ class FeaturesStructuringLayerPlot(MplPlot):
             ax = fig.add_subplot(1, 3, 2)
             x = np.linspace(0, self.xmax, 300)
             for omegaDi in self.omegaD:
-                dQ = np.exp(-(x*x)/(omegaDi*omegaDi))
+                kt_low = self.kernel_type.lower()
+                if kt_low == 'gaussian':
+                    dQ = np.exp(-(x*x)/(omegaDi*omegaDi))
+                elif kt_low == 'markov':
+                    dQ = np.exp(-x/(omegaDi*omegaDi))
+                else:
+                    raise PlotException(
+                        'FeaturesStructuringLayerPlot does not support '
+                        f'"{self.kernel_type}" as kernel type.'
+                    )
                 ax.plot(x, dQ, lw=1)
             ax.set_title(
-                'Kernel distance for each $\\omega_{Di}$',
+                f'Kernel ({self.kernel_type}) distance for each '
+                f'{self.omegaD_name}',
                 fontsize=14
             )
             ax.set_xlabel('$x$ (distance)', fontsize=12)
