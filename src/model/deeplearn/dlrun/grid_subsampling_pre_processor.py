@@ -210,6 +210,7 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
         X, separation_factor, sphere_radius,
         y=None, class_distr=None, center_on_X=False,
         support_strategy='grid', support_strategy_num_points=1000,
+        support_strategy_fast=False,
         nthreads=1
     ):
         r"""
@@ -291,7 +292,7 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             sup_X = ReceptiveFieldFPS.compute_fps_on_3D_pcloud(
                 X,
                 num_points=support_strategy_num_points,
-                fast=support_strategy_num_points > 10000
+                fast=support_strategy_fast
             )
             center_on_X = False  # Not necessary when using FPS
         else:

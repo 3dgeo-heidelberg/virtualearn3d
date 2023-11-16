@@ -86,6 +86,7 @@ class ReceptiveFieldPreProcessor:
         self.support_strategy_num_points = kwargs.get(
             'support_strategy_num_points', 1000
         )
+        self.support_strategy_fast = kwargs.get('support_strategy_fast', False)
         self.support_chunk_size = kwargs.get('support_chunk_size', 0)
         self.training_class_distribution = kwargs.get(
             'training_class_distribution', None
@@ -199,6 +200,7 @@ class ReceptiveFieldPreProcessor:
         return {
             'support_strategy': self.support_strategy,
             'support_strategy_num_points': self.support_strategy_num_points,
+            'support_strategy_fast': self.support_strategy_fast,
             'support_chunk_size': self.support_chunk_size,
             'training_class_distribution': self.training_class_distribution,
             'center_on_pcloud': self.center_on_pcloud,
@@ -231,6 +233,7 @@ class ReceptiveFieldPreProcessor:
         self.support_strategy_num_points = state.get(
             'support_strategy_num_points', 1000
         )
+        self.support_strategy_fast = state.get('support_strategy_fast', False)
         self.support_chunk_size = state.get('support_chunk_size', 0)
         self.training_class_distribution = state['training_class_distribution']
         self.center_on_pcloud = state['center_on_pcloud']

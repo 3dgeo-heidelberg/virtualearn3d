@@ -276,7 +276,7 @@ class ClassificationUncertaintyEvaluator(Evaluator):
         # Obtain predictions and probabilities
         start = time.perf_counter()
         zout = []
-        yhat = model._predict(X, zout=zout)
+        yhat = model._predict(X, zout=zout, plots_and_reports=False)
         Zhat = zout[-1]
         end = time.perf_counter()
         LOGGING.LOGGER.info(

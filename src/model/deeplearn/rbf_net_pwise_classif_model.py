@@ -176,7 +176,7 @@ class RBFNetPwiseClassifModel(ClassificationModel):
                     pre_processor.support_points_report_path = \
                         preproc['support_points_report_path']
 
-    def predict(self, pcloud, X=None, F=None):
+    def predict(self, pcloud, X=None, F=None, plots_and_reports=True):
         """
         Use the model to compute predictions on the input point cloud.
 
@@ -196,7 +196,9 @@ class RBFNetPwiseClassifModel(ClassificationModel):
         y = None
         if pcloud.has_classes():
             y = pcloud.get_classes_vector()
-        return self._predict(X, y=y, F=None)
+        return self._predict(
+            X, y=y, F=None, plots_and_reports=plots_and_reports
+        )
 
     def get_input_from_pcloud(self, pcloud):
         """
@@ -282,7 +284,7 @@ class RBFNetPwiseClassifModel(ClassificationModel):
 
     # ---  PREDICTION METHODS  --- #
     # ---------------------------- #
-    def _predict(self, X, F=None, y=None, zout=None):
+    def _predict(self, X, F=None, y=None, zout=None, plots_and_reports=True):
         """
         Extend the base _predict method.
 
@@ -292,7 +294,9 @@ class RBFNetPwiseClassifModel(ClassificationModel):
             predictions on training data to generate a thorough representation
             of the receptive fields.
         """
-        return self.model.predict(X, y=y, zout=zout)
+        return self.model.predict(
+            X, y=y, zout=zout, plots_and_reports=plots_and_reports
+        )
 
     # ---  POINT NET PWISE CLASSIF METHODS  --- #
     # ----------------------------------------- #

@@ -231,13 +231,17 @@ class SimpleDLModelHandler(DLModelHandler):
             self.history = fit_cache_map['history']
         return self.history
 
-    def _predict(self, X, F=None, y=None, zout=None):
+    def _predict(self, X, F=None, y=None, zout=None, plots_and_reports=True):
         """
         See :class:`.DLModelHandler` and
         :meth:`dl_model_handler.DLModelHandler._predict`.
         """
         # Softmax scores
-        X_rf = self.arch.run_pre({'X': X, 'support_points': True})
+        X_rf = self.arch.run_pre({
+            'X': X,
+            'support_points': True,
+            'plots_and_reports': plots_and_reports
+        })
         try:
             zhat_rf = self.compiled.predict(X_rf, batch_size=self.batch_size)
         except TFResourceExhaustedError as resexherr:
@@ -258,11 +262,12 @@ class SimpleDLModelHandler(DLModelHandler):
         yhat = np.argmax(zhat, axis=1) if len(zhat.shape) > 1 \
             else np.round(zhat)
         # Do plots and reports
-        self.handle_receptive_fields_plots_and_reports(
-            X_rf=X_rf,
-            zhat_rf=zhat_rf,
-            y=y
-        )
+        if plots_and_reports:
+            self.handle_receptive_fields_plots_and_reports(
+                X_rf=X_rf,
+                zhat_rf=zhat_rf,
+                y=y
+            )
         # Return
         return yhat
 

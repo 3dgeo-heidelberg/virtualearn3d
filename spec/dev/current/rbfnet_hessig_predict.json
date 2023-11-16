@@ -44,7 +44,7 @@
 		"class_names": ["Ground", "Vegetation", "Structure", "Vehicle"],
 		"include_probabilities": true,
 		"include_weighted_entropy": true,
-		"include_clusters": true,
+		"include_clusters": false,
 		"weight_by_predictions": false,
 		"num_clusters": 10,
 		"clustering_max_iters": 128,
