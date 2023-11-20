@@ -19,19 +19,33 @@ class HeightFeatsMiner(Miner):
     Basic height features miner.
     See :class:`.Miner`.
 
-    :ivar radius: The radius (often in meters) attribute. Radius is 100 by
-        default. The radius can describe either the disk of a cylinder or
-        half the side of a rectangular region along the vertical axis.
-    :vartype radius: float
+    :ivar support_chunk_size: How many tasks (support points) per chunk must
+        be considered when computing the support neighborhoods (i.e., the
+        neighborhoods centered at the support points). If it is zero, then
+        all the points are considered at once.
+    :vartype support_chunk_size: int
+    :ivar support_subchunk_size: How many support neighborhoods inside a given
+        chunk must be considered when computing the features in parallel. It
+        must be at least one, i.e., :math:`>0`.
+    :vartype support_subchunk_size: int
+    :ivar pwise_chunk_size: How many tasks (points) per chunk must be
+        considered when computing the height features for each point in the
+        point cloud. If it is zero, then all the points are considered at
+        once.
+    :vartype pwise_chunk_size: int
     :ivar neighborhood: The neighborhood definition. For example:
 
         .. code-block:: json
 
             {
                 "type": "cylinder",
-                "radius": 100,
-                "separation_factor": 0.8
+                "radius": 50,
+                "separation_factor": 0.7
             }
+
+        In this definition, the radius (often in meters) describes either the
+        disk of a cylinder or half the side of a rectangular region along
+        the vertical axis.
 
     :vartype neighborhood: dict
     :ivar outlier_filter: The outlier filter to be applied (if any).
@@ -62,11 +76,13 @@ class HeightFeatsMiner(Miner):
         # Initialize
         kwargs = {
             'support_chunk_size': spec.get('support_chunk_size', None),
+            'support_subchunk_size': spec.get('support_subchunk_size', None),
+            'pwise_chunk_size': spec.get('pwise_chunk_size', None),
             'neighborhood': spec.get('neighborhood', None),
             'outlier_filter': spec.get('outlier_filter', None),
             'fnames': spec.get('fnames', None),
             'frenames': spec.get('frenames', None),
-            'nthreads': spec.get('nthreads', None),
+            'nthreads': spec.get('nthreads', None)
         }
         # Delete keys with None value
         kwargs = DictUtils.delete_by_val(kwargs, None)
@@ -91,12 +107,14 @@ class HeightFeatsMiner(Miner):
         super().__init__(**kwargs)
         # Basic attributes of the HeightFeatsMiner
         self.support_chunk_size = kwargs.get('support_chunk_size', 0)
+        self.support_subchunk_size = kwargs.get('support_subchunk_size', 1)
+        self.pwise_chunk_size = kwargs.get('pwise_chunk_size', 0)
         self.neighborhood = kwargs.get(
             'neighborhood',
             {
                 'type': 'cylinder',
-                'radius': 100.0,
-                'separation_factor': 0.8
+                'radius': 50.0,
+                'separation_factor': 0.7
             }
         )
         self.outlier_filter = kwargs.get('outlier_filter', None)
@@ -107,7 +125,7 @@ class HeightFeatsMiner(Miner):
             self.frenames = [
                 fname +
                 f'_r{self.neighborhood["radius"]}' +
-                f'_r{self.neighborhood["separation_factor"]}'
+                f'_sep{self.neighborhood["separation_factor"]}'
                 for fname in self.fnames
             ]
 
@@ -149,7 +167,7 @@ class HeightFeatsMiner(Miner):
         """
         # Compute support points
         sup_X = GridSubsamplingPreProcessor.build_support_points(
-            X=X,
+            X=X[:, :2],
             separation_factor=self.neighborhood['separation_factor'],
             sphere_radius=self.neighborhood['radius'],
             center_on_X=False,
@@ -158,12 +176,12 @@ class HeightFeatsMiner(Miner):
         )
         # Compute height features for each support neighborhood
         kdt = KDT(X[:, :2])
-        sup_feats = self.compute_height_features_on_support(X, sup_X, kdt)
+        sup_X, sup_F = self.compute_height_features_on_support(X, sup_X, kdt)
         # Propagate support features to point cloud
         kdt = KDT(sup_X)
-        feats = self.compute_pwise_height_features(X, sup_X, sup_feats, kdt)
+        F = self.compute_pwise_height_features(X, sup_X, sup_F, kdt)
         # Return point-wise height features
-        return feats
+        return F
 
     def compute_height_features_on_support(self, X, sup_X, kdt):
         """
@@ -173,8 +191,9 @@ class HeightFeatsMiner(Miner):
         :param sup_X: The center point for each support neighborhood.
         :param kdt: The KDTree representing the input point cloud on (x, y)
             only (i.e., 2D).
-        :return: The height features for each support point.
-        :rtype: :class:`np.ndarray`
+        :return: The support points for non-empty neighborhoods and the height
+            features for each support point of a non-empty neighborhood.
+        :rtype: tuple (:class:`np.ndarray`, :class:`np.ndarrray`)
         """
         # Function to compute height features for a given support neighborhood
         def compute_pwise_support_feats(z, height_functions):
@@ -201,29 +220,61 @@ class HeightFeatsMiner(Miner):
         num_chunks, chunk_size = 1, len(sup_X)
         if self.support_chunk_size > 0:
             chunk_size = self.support_chunk_size
-            num_chunks = int(np.ceil(len(sup_X)))
-        height_functions = self.select_height_functions()
-        F = []
+            num_chunks = int(np.ceil(len(sup_X)/chunk_size))
+        height_functions = self.select_support_height_functions()
+        non_empty_sup_X, F = [], []
         # Process each chunk
         for chunk_idx in range(num_chunks):
             # Extract chunk
             sup_idx_a = chunk_idx * chunk_size
             sup_idx_b = min((chunk_idx+1)*chunk_size, len(sup_X))
             chunk_sup_X = sup_X[sup_idx_a:sup_idx_b, :2]
-            # Find neighbors of support points in point cloud
-            I = KDT(chunk_sup_X[:, :2]).query_ball_tree(
-                kdt, self.neighborhood['radius']
-            )
-            # Compute height features for each neighborhood
-            Z = [X[Ii][:, 2] for Ii in I]
-            F = F + joblib.Parallel(n_jobs=self.nthreads)(
-                joblib.delayed(compute_pwise_support_feats)(
-                    Zi, height_functions
+            # Find neighbors of support points in point cloud : cylinder
+            if self.neighborhood['type'].lower() == 'cylinder':
+                I = KDT(chunk_sup_X[:, :2]).query_ball_tree(
+                    kdt, self.neighborhood['radius']
                 )
-                for Zi in Z
-            )
+            # Find neighbors of support points in point cloud : rectangular 2D
+            elif self.neighborhood['type'].lower() == 'rectangular2d':
+                # Compute the min cylinder that contains the rectangular prism
+                radius = self.neighborhood['radius']
+                boundary_radius = np.sqrt(2*radius*radius)
+                I = KDT(chunk_sup_X[:, :2]).query_ball_tree(
+                    kdt, boundary_radius
+                )
+                # Discard points outside the 2D rectangular boundary
+                XY = [X[Ii][:, 0:2] - chunk_sup_X[i] for i, Ii in enumerate(I)]
+                mask = [
+                    (XYi[:, 0] >= -radius) * (XYi[:, 0] <= radius) *
+                    (XYi[:, 1] >= -radius) * (XYi[:, 1] <= radius)
+                    for XYi in XY
+                ]
+                I = [np.array(Ii)[mask[i]].tolist() for i, Ii in enumerate(I)]
+            else:
+                raise MinerException(
+                    'HeightFeatsMiner does not support neighborhoods of type '
+                    f'"{self.neighborhood["type"]}".'
+                )
+            # Discard empty neighborhoods
+            chunk_sup_X = [
+                chunk_sup_X[i]
+                for i in range(len(chunk_sup_X)) if len(I[i]) > 0
+            ]
+            I = [Ii for Ii in I if len(Ii) > 0]
+            if len(I) > 0:
+                non_empty_sup_X.append(chunk_sup_X)
+                # Compute height features for each neighborhood
+                Z = [X[Ii][:, 2] for Ii in I]
+                F = F + joblib.Parallel(n_jobs=self.nthreads)(joblib.delayed(
+                    lambda Zi: np.vstack([
+                        compute_pwise_support_feats(Zi[k], height_functions)
+                        for k in range(len(Zi))
+                    ])
+                )(
+                    Z[i:i+self.support_subchunk_size]
+                ) for i in range(0, len(Z), self.support_subchunk_size))
         # Return
-        return np.array(F)
+        return np.vstack(non_empty_sup_X), np.vstack(F)
 
     def compute_pwise_height_features(self, X, sup_X, sup_F, kdt):
         """
@@ -236,27 +287,47 @@ class HeightFeatsMiner(Miner):
         :return: The height features for each point in the point cloud.
         :rtype: :class:`np.ndarray`
         """
-        # TODO Rethink : Implement
-        # Find neighborhoods of X in support
-        I = kdt.query(X, k=1)[1]
+        # Find neighborhoods of X in support (nearest neighbor for each point)
+        I = kdt.query(X[:, :2], k=1)[1]
+        # Compute features for each point in the pcloud from nearest neighbor
+        pwise_chunk_size = self.pwise_chunk_size
+        if pwise_chunk_size == 0:
+            pwise_chunk_size = len(X)
+        height_functions = self.select_height_functions()
+        F = joblib.Parallel(n_jobs=self.nthreads)(
+            joblib.delayed(lambda pz, sf: np.vstack([
+                height_function(pz, sf[:, k])
+                for k, height_function in enumerate(height_functions)
+            ]).T)(
+                X[i:i+pwise_chunk_size, 2], sup_F[I[i:i+pwise_chunk_size]]
+            )
+            for i in range(0, len(X), pwise_chunk_size)
+        )
+        # Return
+        return np.vstack(F)
 
     # ---  UTIL FUNCTIONS  --- #
     # ------------------------ #
-    def select_height_functions(self):
+    def select_support_height_functions(self):
         """
-        Select height functions from specified feature names (fnames). Always
-        includes the computation of the floor and ceil coordinates.
+        Select height functions from specified feature names (fnames).
+        These functions will be computed on the vertical coordinates of the
+        neighborhood for each support point.
 
         :return: List of functions to extract height features from a vector of
             vertical coordinates. Each feature is a map from a vector of
-            arbtirary dimensionality representing height coordinates to a
+            arbitrary dimensionality representing height coordinates to a
             single scalar.
         :rtype: list
         """
-        height_functions = [np.min, np.max]
+        height_functions = []
         for fname in self.fnames:
             fname_low = fname.lower()
-            if fname_low == 'height_range':
+            if fname_low=='floor_coordinate' or fname_low=='floor_distance':
+                height_functions.append(np.min)
+            elif fname_low=='ceil_coordinate' or fname_low=='ceil_distance':
+                height_functions.append(np.max)
+            elif fname_low == 'height_range':
                 height_functions.append(lambda z: np.max(z)-np.min(z))
             elif fname_low == 'mean_height':
                 height_functions.append(np.mean)
@@ -278,12 +349,41 @@ class HeightFeatsMiner(Miner):
                 height_functions.append(scipy.stats.skew)
             elif fname_low == 'height_kurtosis':
                 height_functions.append(scipy.stats.kurtosis)
-            elif fname_low not in [
-                'floor_coordinate',
-                'floor_distance',
-                'ceil_coordinate',
-                'ceil_distance'
-            ]:
+            else:
+                raise MinerException(
+                    f'HeightFeatsMiner does not support the feature "{fname}".'
+                )
+        return height_functions
+
+    def select_height_functions(self):
+        """
+        Select height functions from specified feature names (fnames). Some
+        of these features are taken directly from the support neighborhood,
+        others are derived as a function of the point and the corresponding
+        support neighborhood.
+
+        :return: List of functions to extract height features from a pair of
+            values. The first value represents the vertical coordinate of the
+            point in the point cloud and the second value represents a
+            given height feature corresponding to the closest support point.
+        :rtype: list
+        """
+        height_functions = []
+        direct_features = [
+            'floor_coordinate', 'ceil_coordinate', 'height_range',
+            'mean_height', 'median_height', 'height_quartiles',
+            'height_deciles', 'height_variance', 'height_stdev',
+            'height_skewness', 'height_kurtosis'
+        ]
+        for fname in self.fnames:
+            fname_low = fname.lower()
+            if fname_low == 'floor_distance':
+                height_functions.append(lambda pz, sf: pz-sf)
+            elif fname_low == 'ceil_distance':
+                height_functions.append(lambda pz, sf: sf-pz)
+            elif fname_low in direct_features:
+                height_functions.append(lambda pz, sf: sf)
+            else:
                 raise MinerException(
                     f'HeightFeatsMiner does not support the feature "{fname}".'
                 )

@@ -416,7 +416,7 @@ class Model:
     # ---  PREDICTION METHODS  --- #
     # ---------------------------- #
     @abstractmethod
-    def _predict(self, X):
+    def _predict(self, X, **kwargs):
         """
         Predict the points represented by the matrix X. Typically, it will be
         a matrix of features.
