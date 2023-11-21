@@ -7,6 +7,7 @@ from src.inout.io_utils import IOUtils
 from src.mining.geom_feats_miner import GeomFeatsMiner
 from src.mining.covar_feats_miner import CovarFeatsMiner
 from src.mining.height_feats_miner import HeightFeatsMiner
+from src.mining.hsv_from_rgb_miner import HSVFromRGBMiner
 import os
 import time
 
@@ -122,6 +123,7 @@ class MainMine:
             return CovarFeatsMiner
         if miner_low == 'heightfeatures':
             return HeightFeatsMiner
-
+        if miner_low == 'hsvfromrgb':
+            return HSVFromRGBMiner
         # An unknown miner was specified
         raise ValueError(f'There is no known miner "{miner}"')
