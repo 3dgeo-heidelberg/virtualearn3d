@@ -86,10 +86,11 @@ class GeomFeatsMiner(Miner):
     # ----------------------- #
     def mine(self, pcloud):
         """
-        Mine geometric features from the given pcloud.
+        Mine geometric features from the given point cloud.
         See :class:`.Miner` and :meth:`mining.Miner.mine`.
 
         :param pcloud: The point cloud to be mined.
+        :type pcloud: :class:`.PointCloud`
         :return: The point cloud extended with geometric features.
         :rtype: :class:`.PointCloud`
         """

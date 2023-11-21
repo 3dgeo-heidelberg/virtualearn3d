@@ -98,6 +98,18 @@ class PointCloud:
             if x not in ['X', 'Y', 'Z']
         ]
 
+    def has_given_features(self, fnames):
+        """
+        Check whether the point cloud contains the features represented by
+        the given feature names.
+
+        :param fnames: The names of the features to be checked.
+        :return: True if all the features specified in fnames are available,
+            False otherwise.
+        """
+        pcloud_fnames = self.get_features_names()
+        return all(fname in pcloud_fnames for fname in fnames)
+
     def get_classes_vector(self):
         r"""
         Obtain a vector which components represent the point-wise classes of
