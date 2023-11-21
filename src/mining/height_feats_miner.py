@@ -4,6 +4,7 @@ from src.mining.miner import Miner, MinerException
 from src.model.deeplearn.dlrun.grid_subsampling_pre_processor import \
     GridSubsamplingPreProcessor
 from src.utils.dict_utils import DictUtils
+import src.main.main_logger as LOGGING
 from scipy.spatial import KDTree as KDT
 import scipy
 import numpy as np
@@ -122,9 +123,14 @@ class HeightFeatsMiner(Miner):
         self.frenames = kwargs.get('frenames', None)
         self.nthreads = kwargs.get('nthreads', -1)
         if self.frenames is None:
+            r = self.neighborhood['radius']
+            if r > 1000000:
+                r = f'{int(np.round(r/1000000))}M'
+            elif r > 1000:
+                r = f'{int(np.round(r/1000))}K'
             self.frenames = [
                 fname +
-                f'_r{self.neighborhood["radius"]}' +
+                f'_r{r}' +
                 f'_sep{self.neighborhood["separation_factor"]}'
                 for fname in self.fnames
             ]
@@ -173,6 +179,9 @@ class HeightFeatsMiner(Miner):
             center_on_X=False,
             support_strategy='grid',
             nthreads=self.nthreads
+        )
+        LOGGING.LOGGER.debug(
+            f'HeightFeatsMiner computed {len(sup_X)} support points.'
         )
         # Compute height features for each support neighborhood
         kdt = KDT(X[:, :2])

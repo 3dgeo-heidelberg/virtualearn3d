@@ -1,6 +1,7 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.main.vl3d_exception import VL3DException
+import src.main.main_logger as LOGGING
 import numpy as np
 import laspy
 
@@ -180,6 +181,14 @@ class PointCloud:
         # Add extra dimensions to the output LAS
         extra_bytes = []
         for i, fname in enumerate(fnames):  # For each new feature (i)
+            if len(fname) > 32:
+                LOGGING.LOGGER.warning(
+                    'PointCloud.add_features truncated the feature name '
+                    f'"{fname}" to {fname[:32]}  because no more than 32 '
+                    'bytes are supported.'
+                )
+                fname = fname[:32]
+                fnames[i] = fname
             extra_bytes.append(
                 laspy.ExtraBytesParams(name=fname, type=ftypes[i])
             )
