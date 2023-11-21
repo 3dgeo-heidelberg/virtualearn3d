@@ -59,6 +59,7 @@ class SmoothFeatsMiner(Miner):
     .
 
     """
+    # TODO Rethink : Doc attributes (ivar and vartype)
 
     # ---  SPECIFICATION ARGUMENTS  --- #
     # --------------------------------- #
@@ -76,9 +77,11 @@ class SmoothFeatsMiner(Miner):
             'chunk_size': spec.get('chunk_size', None),
             'subchunk_size': spec.get('subchunk_size', None),
             'neighborhood': spec.get('neighborhood', None),
+            'omega': spec.get('omega', None),
             'infnames': spec.get('infnames', None),
             'fnames': spec.get('fnames', None),
             'frenames': spec.get('frenames', None),
+            'nthreads': spec.get('nthreads', None)
         }
         # Delete keys with None value
         kwargs = DictUtils.delete_by_val(kwargs, None)
@@ -102,12 +105,13 @@ class SmoothFeatsMiner(Miner):
         # Call parent's init
         super().__init__(**kwargs)
         # Basic attributes of the SmoothFeatsMiner
-        self.chunk_size = kwargs.get('chunk_size', 100000)
-        self.subchunk_size = kwargs.get('subchunk_size', 100)
+        self.chunk_size = kwargs.get('chunk_size', 8000)
+        self.subchunk_size = kwargs.get('subchunk_size', 64)
         self.neighborhood = kwargs.get('neighborhood', {
             'type': 'knn',
             'k': 16
         })
+        self.omega = kwargs.get('omega', 1)
         self.input_fnames = kwargs.get('input_fnames', None)
         self.fnames = kwargs.get(
             'fnames',
@@ -127,6 +131,7 @@ class SmoothFeatsMiner(Miner):
                     f'{fname}_r{self.neighborhood["radius"]}'
                     for fname in self.fnames
                 ]
+        self.nthreads=  kwargs.get('nthreads', -1)
         # Validate attributes
         if self.input_fnames is None:
             raise MinerException(
@@ -139,8 +144,98 @@ class SmoothFeatsMiner(Miner):
         """
         Mine smooth features from the given point cloud.
 
-        :param pcloud: The point cloud to be miend.
+        :param pcloud: The point cloud to be mined.
         :return: The point cloud extended with smooth features.
         :rtype: :class:`.PointCloud`
         """
-        return pcloud  # TODO Rethink : Implement
+        # Obtain coordinates and features
+        X = pcloud.get_coordinates_matrix()
+        F = pcloud.get_features_matrix(self.input_fnames)
+        # Determine neighborhood function
+        # TODO Rethink : Implement
+        neighborhood_function = None
+        # Determine smooth functions
+        # TODO Rethink : Implement
+        smooth_functions = []
+        # Build KDTree
+        start = time.perf_counter()
+        kdt = KDT(X, leafsize=16, compact_nodes=True, copy_data=False)
+        end = time.perf_counter()
+        LOGGING.LOGGER.debug(
+            f'SmoothFeatsMiner built KDTree in {end-start:.3f} seconds.'
+        )
+        # Chunkify the computation of smooth features
+        m = len(X)
+        chunk_size = self.chunk_size
+        if chunk_size == 0:
+            chunk_size = m
+        LOGGING.LOGGER.debug(
+            f'SmoothFeatsMiner computing {int(np.ceil(m/chunk_size))} chunks '
+            f'of {chunk_size} points each for a total of {m} points ...'
+        )
+        Fhat = joblib.Parallel(n_jobs=self.nthreads)(joblib.delayed(
+            self.compute_smooth_features
+        )(
+            X,
+            F,
+            kdt,
+            neighborhood_function,
+            smooth_functions,
+            X[chunk_idx*chunk_size:(chunk_idx+1)*chunk_size],
+            F[chunk_idx*chunk_size:(chunk_idx+1)*chunk_size],
+            chunk_idx
+        )
+            for chunk_idx in range(0, m, chunk_size)
+        )
+        # Return point cloud extended with smooth features
+        return pcloud.add_featres(self.frenames, Fhat)
+
+    # ---  SMOOTH FEATURES METHODS  --- #
+    # --------------------------------- #
+    def compute_smooth_features(
+        self,
+        X,
+        F,
+        kdt,
+        neighborhood_f,
+        smooth_funs,
+        X_chunk,
+        F_chunk,
+        chunk_idx
+    ):
+        # TODO Rethink : Doc
+        # Report time for first chunk : start
+        if chunk_idx == 0:
+            start = time.perf_counter()
+        # Compute neighborhoods in chunks (subchunks wrt original problem)
+        Fhat_chunk = []
+        m = len(X_chunk)
+        subchunk_size = self.subchunk_size
+        if subchunk_size == 0:
+            subchunk_size = m
+        num_chunks = int(np.ceil(m/subchunk_size))
+        for subchunk_idx in range(num_chunks):
+            a_idx = subchunk_idx*subchunk_size  # Subchunk start index
+            b_idx = (subchunk_idx+1)*subchunk_size  # Subchunk end index
+            X_sub = X_chunk[a_idx:b_idx]  # Subchunk coordinates
+            I = neighborhood_f(kdt, X_sub)  # Neighborhood indices
+            #I = KDT(X_sub).query_ball_tree(kdt)  # TODO Rethink : Sphere neighborhood
+            Fhat_sub = np.array([  # Subchunk smooth features
+                smooth_f(X, F, X_sub, I) for smooth_f in smooth_funs
+            ]).T
+            # Merge subchunk smooth features with chunk smooth features
+            if Fhat_chunk is None:
+                Fhat_chunk = Fhat_sub
+            else:
+                Fhat_chunk = np.vstack([Fhat_chunk, Fhat_sub])
+        # Report time for first chunk : end
+        if chunk_idx == 0:
+            end = time.perf_counter()
+            LOGGING.LOGGER.debug(
+                f'SmoothFeatsMiner computes a chunk of {F_chunk.shape[0]} '
+                f'points with {F_chunk.shape[1]} features in '
+                f'{end-start:.3f} seconds.'
+            )
+        # Return smooth features for input chunk
+        return Fhat_chunk
+
