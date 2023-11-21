@@ -98,7 +98,7 @@ class HeightFeatsMiner(Miner):
 
         The neighborhood definition and feature names (fnames) are always
         assigned during initialization. The default neighborhood is a cylinder
-        with a disk of radius 100 and
+        with a disk of radius 50.
 
         :param kwargs: The attributes for the HeightFeatsMiner that will also
             be passed to the parent.
@@ -164,7 +164,7 @@ class HeightFeatsMiner(Miner):
     def compute_height_features(self, X):
         r"""
         Compute the height features for the given matrix of coordinates
-        :pmb:`\mathbb{X} \in \mathbb{R}^{m \times 3}`.
+        :math:`\pmb{X} \in \mathbb{R}^{m \times 3}`.
 
         :param X: The matrix of coordinates.
         :type X: :class:`np.ndarray`
