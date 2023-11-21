@@ -271,7 +271,7 @@ class Architecture:
                 nn_path,
                 overwrite=True,
                 include_optimizer=True,
-                save_format='h5'
+                save_format='keras'
             )
         # Return architecture state (for serialization)
         return {  # Must not include built architecture
