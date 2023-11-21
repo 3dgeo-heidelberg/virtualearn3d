@@ -3,7 +3,6 @@
 from src.mining.miner import Miner, MinerException
 from src.utils.dict_utils import DictUtils
 import numpy as np
-import joblib
 
 
 # ---   CLASS   --- #
@@ -16,13 +15,6 @@ class HSVFromRGBMiner(Miner):
     available Red, Green, Blue (RGB) components.
     See :class:`.Miner`.
 
-    :ivar chunk_size: How many points per chunk must be considered for
-        parallel executions.
-    :vartype chunk_size: int
-    :ivar nthreads: The number of threads to be used for the parallel
-        computation of the geometric features. Note using -1 (default value)
-        implies using as many threads as available cores.
-    :vartype nthreads: int
     :ivar frenames: Optional attribute to specify how to rename the features
         representing the HSV components. The first element corresponds to
         Hue, the second to Saturation, and the third one to Value.
@@ -41,10 +33,8 @@ class HSVFromRGBMiner(Miner):
         """
         # Initialize
         kwargs = {
-            'chunk_size': spec.get('chunk_size', None),
             'hue_unit': spec.get('hue_unit', None),
             'frenames': spec.get('frenames', None),
-            'nthreads': spec.get('nthreads', None)
         }
         # Delete keys with None value
         kwargs = DictUtils.delete_by_val(kwargs, None)
@@ -63,14 +53,11 @@ class HSVFromRGBMiner(Miner):
         # Call parent init
         super().__init__(**kwargs)
         # Basic attributes of the HSVFromRGBMiner
-        self.chunk_size = kwargs.get('chunk_size', 1000000)
         self.hue_unit = kwargs.get('hue_unit', 'radians')
         self.frenames = kwargs.get('frenames', None)
-        self.nthreads = kwargs.get('nthreads', -1)
         # Optional attribute to rename the computed features
         if self.frenames is None:
             self.frenames = ['HSV_H', 'HSV_S', 'HSV_V']
-        # TODO Rethink : Discard parallel execution (i.e., nthreads and chunk_size) ?
 
     # ---  MINER METHODS  --- #
     # ----------------------- #
@@ -97,8 +84,6 @@ class HSVFromRGBMiner(Miner):
         # Transform RGB to HSV
         H, S, V = HSVFromRGBMiner.RGB_to_HSV(
             R, G, B,
-            nthreads=self.nthreads,
-            chunk_size=self.chunk_size,
             hue_unit=self.hue_unit
         )
         HSV = np.hstack([H.reshape(-1, 1), S.reshape(-1, 1), V.reshape(-1, 1)])
@@ -108,7 +93,7 @@ class HSVFromRGBMiner(Miner):
     # ---   HSV METHODS   --- #
     # ----------------------- #
     @staticmethod
-    def RGB_to_HSV(R, G, B, nthreads=1, chunk_size=0, hue_unit='radians'):
+    def RGB_to_HSV(R, G, B, hue_unit='radians'):
         r"""
         Transform the received RGB components in :math:`[0, 1]` to HSV. If
         RGB components are given in :math:`[0, 255]` they will be automatically
@@ -118,11 +103,6 @@ class HSVFromRGBMiner(Miner):
         :param R: The red component for each point.
         :param G: The green component for each point.
         :param B: The blue component for each point.
-        :param nthreads: The number of threads to use for parallel execution
-            (-1 means as many threads as available cores).
-        :param chunk_size: The number of points per chunk for parallel
-            execution (0 means no chunks at all, hence all tasks will be run
-            in a single thread).
         :return: A tuple of three arrays representing Hue (H), Saturation (S)
             and Value (V).
         :rtype: tuple of :class:`np.ndarray`
