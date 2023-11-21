@@ -8,7 +8,9 @@
   "sequential_pipeline": [
 	{
 	  "miner": "HeightFeatures",
-	  "support_chunk_size": 2000,
+	  "support_chunk_size": 50,
+	  "support_subchunk_size": 10,
+	  "pwise_chunk_size": 1000,
 	  "nthreads": 12,
 	  "neighborhood": {	
     	"type": "cylinder",
