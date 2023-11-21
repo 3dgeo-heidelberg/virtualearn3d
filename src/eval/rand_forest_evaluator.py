@@ -80,11 +80,15 @@ class RandForestEvaluator(Evaluator):
                 f'{len(model.model.estimators_)}.'
             )
         # Evaluate : return
+        pimportance_mean, pimportance_stdev = None, None
+        if pimportance is not None:
+            pimportance_mean = pimportance['importances_mean']
+            pimportance_stdev = pimportance['importances_std']
         return RandForestEvaluation(
             fnames=model.fnames,
             importance=model.model.feature_importances_,
-            permutation_importance_mean=pimportance['importances_mean'],
-            permutation_importance_stdev=pimportance['importances_std'],
+            permutation_importance_mean=pimportance_mean,
+            permutation_importance_stdev=pimportance_stdev,
             trees=trees,
             max_tree_depth=self.max_tree_depth
         )

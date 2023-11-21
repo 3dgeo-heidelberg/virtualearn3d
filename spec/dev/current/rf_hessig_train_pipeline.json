@@ -1,0 +1,91 @@
+{
+  "in_pcloud": [
+	"/hei/Hessigheim_Benchmark/Epoch_March2018/vl3d/mined/Mar18_train_feats.laz"
+  ],
+  "out_pcloud": [
+	"out/rf_hessig/*"
+  ],
+  "sequential_pipeline": [
+	{
+	  "train": "RandomForestClassifier",
+	  "fnames": [
+		"floor_distance_r50.0_r0.35", "linearity_r0.125", "planarity_r0.125",
+		"sphericity_r0.125", "surface_variation_r0.125", "omnivariance_r0.125",
+		"verticality_r0.125", "anisotropy_r0.125", "eigenentropy_r0.125",
+		"eigenvalue_sum_r0.125", "linearity_r0.25", "planarity_r0.25",
+		"sphericity_r0.25", "surface_variation_r0.25", "omnivariance_r0.25",
+		"verticality_r0.25", "anisotropy_r0.25", "eigenentropy_r0.25",
+		"eigenvalue_sum_r0.25", "linearity_r0.5", "planarity_r0.5",
+		"sphericity_r0.5", "surface_variation_r0.5", "omnivariance_r0.5",
+		"verticality_r0.5", "anisotropy_r0.5", "eigenentropy_r0.5",
+		"eigenvalue_sum_r0.5", "linearity_r0.75", "planarity_r0.75",
+		"sphericity_r0.75", "surface_variation_r0.75", "omnivariance_r0.75",
+		"verticality_r0.75", "anisotropy_r0.75", "eigenentropy_r0.75",
+		"eigenvalue_sum_r0.75", "linearity_r1.0", "planarity_r1.0",
+		"sphericity_r1.0", "surface_variation_r1.0", "omnivariance_r1.0",
+		"verticality_r1.0", "anisotropy_r1.0", "eigenentropy_r1.0",
+		"eigenvalue_sum_r1.0", "linearity_r2.0", "planarity_r2.0",
+		"sphericity_r2.0", "surface_variation_r2.0", "omnivariance_r2.0",
+		"verticality_r2.0",	"anisotropy_r2.0", "eigenentropy_r2.0", 
+		"eigenvalue_sum_r2.0", "linearity_r3.0", "planarity_r3.0",
+		"sphericity_r3.0", "surface_variation_r3.0", "omnivariance_r3.0",
+		"verticality_r3.0", "anisotropy_r3.0", "eigenentropy_r3.0",
+		"eigenvalue_sum_r3.0", "linearity_r5.0", "planarity_r5.0",
+		"sphericity_r5.0", "surface_variation_r5.0", "omnivariance_r5.0",
+		"verticality_r5.0", "anisotropy_r5.0", "eigenentropy_r5.0",
+		"eigenvalue_sum_r5.0"
+	  ],
+	  "training_type": "autoval",
+	  "random_seed": null,
+	  "shuffle_points": true,
+	  "num_folds": 5,
+	  "model_args": {
+		"n_estimators": 360,
+		"criterion": "entropy",
+		"max_depth": 16,
+		"min_samples_split": 512,
+		"min_samples_leaf": 64,
+		"min_weight_fraction_leaf": 0.0,
+		"max_features": "sqrt",
+		"max_leaf_nodes": null,
+		"min_impurity_decrease": 0.0,
+		"bootstrap": true,
+		"oob_score": false,
+		"n_jobs": 12,
+		"warm_start": false,
+		"class_weight": "balanced_subsample",
+		"ccp_alpha": 0.0,
+		"max_samples": 0.1
+	  },
+	  "autoval_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
+	  "stratkfold_report_path": "*report/RF_stratkfold_report.log",
+	  "stratkfold_plot_path": "*plot/RF_stratkfold_plot.svg",
+	  "_hyperparameter_tuning": {
+		"tuner": "GridSearch",
+		"hyperparameters": ["n_estimators", "max_depth", "max_samples"],
+		"nthreads": -1,
+		"num_folds": 3,
+		"pre_dispatch": 4,
+		"grid": {
+			"n_estimators": [4, 32, 64],
+			"max_depth": [15, 20, 25],
+			"max_samples": [0.6, 0.9]
+		},
+		"report_path": "*report/RF_hyper_grid_search.log"
+	  },
+	  "importance_report_path": "*report/RF_importance.log",
+	  "importance_report_permutation": false,
+	  "decision_plot_path": "*plot/RF_decision.svg",
+	  "decision_plot_trees": 3,
+	  "decision_plot_max_depth": 5
+	},
+	{
+	  "writer": "PredictivePipelineWriter",
+	  "out_pipeline": "*pipe/rf_hessig.pipe",
+	  "include_writer": false,
+	  "include_imputer": false,
+	  "include_feature_transformer": false,
+	  "include_miner": false
+	}
+  ]
+}

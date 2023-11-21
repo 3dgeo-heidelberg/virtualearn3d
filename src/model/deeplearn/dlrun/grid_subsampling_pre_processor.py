@@ -275,6 +275,7 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
         # Grid of support points strategy
         support_strategy_low = support_strategy.lower()
         if support_strategy_low == 'grid':
+            # TODO Rethink : Bug (at least for cylinder-like neighborhoods)
             xmin, xmax = np.min(X, axis=0), np.max(X, axis=0)
             l = separation_factor * sphere_radius  # Cell size
             sup_X = np.meshgrid(

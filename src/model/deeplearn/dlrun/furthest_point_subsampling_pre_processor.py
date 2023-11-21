@@ -260,6 +260,8 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
         ngbhd_type_low = ngbhd_type.lower()
         class_distr = self.training_class_distribution if y is not None\
             else None
+        # TODO Rethink : Abstract the neighborhoods to another class ?
+        # Note also used in HeightFeatsMiner.compute_height_features_on_support
         if self.neighborhood_spec['radius'] == 0:
             # The neighborhood of radius 0 is said to be the entire point cloud
             I = [np.arange(len(X), dtype=int).tolist()]
@@ -324,7 +326,7 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             kdt = KDT(X2D)
             kdt_sup = KDT(sup_X)
             I = kdt_sup.query_ball_tree(kdt, boundary_radius)
-            # Discard points outside 2D rectangular boundary
+            # Discard points outside the 2D rectangular boundary
             XY = [X2D[Ii][:, 0:2] - sup_X[i] for i, Ii in enumerate(I)]
             mask = [
                 (XYi[:, 0] >= -radius[0]) * (XYi[:, 0] <= radius[0]) *
