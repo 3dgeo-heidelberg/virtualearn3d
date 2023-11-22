@@ -9,6 +9,11 @@
 	{
 	  "train": "RandomForestClassifier",
 	  "fnames": [
+	    "Reflectance", "HSV_Hrad", "HSV_Srad", "HSV_Vrad",
+		"Reflectance_mean_r0_25", "Reflectance_mean_r1", "Reflectance_mean_r3",
+		"HSV_Hrad_mean_r0_25", "HSV_Hrad_mean_r1", "HSV_Hrad_mean_r3",
+		"HSV_Srad_mean_r0_25", "HSV_Srad_mean_r1", "HSV_Srad_mean_r3",
+		"HSV_Vrad_mean_r0_25", "HSV_Vrad_mean_r1", "HSV_Vrad_mean_r3",
 		"floor_distance_r50.0_sep0.35", "linearity_r0.125", "planarity_r0.125",
 		"sphericity_r0.125", "surface_variation_r0.125", "omnivariance_r0.125",
 		"verticality_r0.125", "anisotropy_r0.125", "eigenentropy_r0.125",
@@ -42,7 +47,7 @@
 	  "model_args": {
 		"n_estimators": 360,
 		"criterion": "entropy",
-		"max_depth": 30,
+		"max_depth": 25,
 		"min_samples_split": 32,
 		"min_samples_leaf": 8,
 		"min_weight_fraction_leaf": 0.0,

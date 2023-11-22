@@ -9,6 +9,11 @@
   ],
   "sequential_pipeline": [
 	{
+	  "miner": "HSVFromRGB",
+ 	  "hue_unit": "radians",
+	  "frenames": ["HSV_Hrad", "HSV_Srad", "HSV_Vrad"]
+	},
+	{
 	  "miner": "HeightFeatures",
 	  "support_chunk_size": 50,
 	  "support_subchunk_size": 10,
@@ -22,6 +27,42 @@
 	  "outlier_filter": null,
 	  "fnames": ["floor_distance"],
 	  "_fnames": ["floor_coordinate", "floor_distance", "ceil_coordinate", "ceil_distance", "height_range", "mean_height", "median_height", "height_quartiles", "height_deciles", "height_variance", "height_stdev", "height_skewness", "height_kurtosis"]
+	},
+	{
+	  "miner": "SmoothFeatures",
+	  "chunk_size": 1000000,
+	  "subchunk_size": 1000,
+	  "neighborhood": {
+		"type": "sphere",
+		"radius": 0.25
+	  },
+	  "input_fnames": ["Reflectance", "HSV_Hrad", "HSV_Srad", "HSV_Vrad"],
+	  "fnames": ["mean"],
+	  "nthreads": 12
+	},
+	{
+	  "miner": "SmoothFeatures",
+	  "chunk_size": 1000000,
+	  "subchunk_size": 1000,
+	  "neighborhood": {
+		"type": "sphere",
+		"radius": 1.0
+	  },
+	  "input_fnames": ["Reflectance", "HSV_Hrad", "HSV_Srad", "HSV_Vrad"],
+	  "fnames": ["mean"],
+	  "nthreads": 10
+	},
+	{
+	  "miner": "SmoothFeatures",
+	  "chunk_size": 1000000,
+	  "subchunk_size": 1000,
+	  "neighborhood": {
+		"type": "sphere",
+		"radius": 3.0
+	  },
+	  "input_fnames": ["Reflectance", "HSV_Hrad", "HSV_Srad", "HSV_Vrad"],
+	  "fnames": ["mean"],
+	  "nthreads": 10
 	},	
 	{
 	  "miner": "GeometricFeatures",
