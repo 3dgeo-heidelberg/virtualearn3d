@@ -92,6 +92,11 @@ class PCATransformer(FeatureTransformer):
         See :class:`.FeatureTransformer` and
         :meth:`feature_transformer.FeatureTransformer.transform`.
         """
+        # Report feature names
+        LOGGING.LOGGER.debug(
+            'PCATransformer considers the following features:\n'
+            f'{self.fnames}'
+        )
         # Transform
         in_dim = F.shape[1]
         plot_and_report = False

@@ -339,17 +339,17 @@ below shows how to define a :class:`.SmoothFeatsMiner`:
 .. code-block:: json
 
     {
-	  "miner": "SmoothFeatures",
-	  "chunk_size": 1000000,
-	  "subchunk_size": 1000,
-	  "neighborhood": {
-		"type": "sphere",
-		"radius": 0.25
-	  },
-	  "input_fnames": ["Reflectance", "HSV_Hrad", "HSV_S", "HSV_V"],
-	  "fnames": ["mean"],
-	  "nthreads": 12
-	}
+        "miner": "SmoothFeatures",
+        "chunk_size": 1000000,
+        "subchunk_size": 1000,
+        "neighborhood": {
+            "type": "sphere",
+            "radius": 0.25
+        },
+        "input_fnames": ["Reflectance", "HSV_Hrad", "HSV_S", "HSV_V"],
+        "fnames": ["mean"],
+        "nthreads": 12
+    }
 
 The JSON above defines a :class:`.SmoothFeatsMiner` that computes the smooth
 reflectance, and HSV components considering a spherical neighborhood with

@@ -41,4 +41,15 @@ provided it satisfies the following requirements:
         interested in similar topics could benefit from your perspective.
 
 
+List of examples
+====================
+
+.. toctree::
+    :maxdepth: 1
+
+    Random forest for point-wise classification in the Hessigheim March2018 dataset <examples/example_hessig_rf>
+
+
+
+
 

@@ -9,6 +9,7 @@ from scipy.spatial import KDTree as KDT
 import scipy
 import numpy as np
 import joblib
+import time
 
 
 # ---   CLASS   --- #
@@ -184,11 +185,23 @@ class HeightFeatsMiner(Miner):
             f'HeightFeatsMiner computed {len(sup_X)} support points.'
         )
         # Compute height features for each support neighborhood
+        start = time.perf_counter()
         kdt = KDT(X[:, :2])
         sup_X, sup_F = self.compute_height_features_on_support(X, sup_X, kdt)
+        end = time.perf_counter()
+        LOGGING.LOGGER.debug(
+            f'HeightFeatsMiner computed height features for {len(sup_X)} '
+            f'support neighborhoods in {end-start:.3f} seconds.'
+        )
         # Propagate support features to point cloud
+        start = end
         kdt = KDT(sup_X)
         F = self.compute_pwise_height_features(X, sup_X, sup_F, kdt)
+        end = time.perf_counter()
+        LOGGING.LOGGER.debug(
+            f'HeightFeatsMiner computed height features for {len(F)} '
+            f'points in {end-start:.3f} seconds.'
+        )
         # Return point-wise height features
         return F
 
