@@ -4,17 +4,18 @@
 	"/hei/Hessigheim_Benchmark/Epoch_March2018/LiDAR/Mar18_val.laz"
   ],
   "out_pcloud": [
-	"/hei/Hessigheim_Benchmark/Epoch_March2018/vl3d/mined/Mar18_train_*",
-	"/hei/Hessigheim_Benchmark/Epoch_March2018/vl3d/mined/Mar18_val_*"
+	"/hei/Hessigheim_Benchmark/Epoch_March2018/vl3d/mined/Mar18_train_rect2D*",
+	"/hei/Hessigheim_Benchmark/Epoch_March2018/vl3d/mined/Mar18_val_rect2D*"
   ],
   "sequential_pipeline": [
 	{
 	  "miner": "HeightFeatures",
-	  "support_chunk_size": 2000,
-	  "support_subchunk_size": 
+	  "support_chunk_size": 50,
+	  "support_subchunk_size": 10,
+	  "pwise_chunk_size": 1000,
 	  "nthreads": 12,
 	  "neighborhood": {	
-    	"type": "cylinder",
+    	"type": "Rectangular2D",
 		"radius": 50.0,
 		"separation_factor": 0.35
 	  },

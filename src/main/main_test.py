@@ -1,5 +1,6 @@
 # ---   IMPORTS   --- #
 # ------------------- #
+from src.tests.hsv_from_rgb_test import HSVFromRGBTest
 from src.tests.keras_test import KerasTest
 from src.tests.receptive_field_test import ReceptiveFieldTest
 from src.tests.features_structuring_layer_test import \
@@ -34,6 +35,7 @@ class MainTest:
         success = True
         # ---------------------------------------------------------------------
         # Run tests
+        success = success and HSVFromRGBTest().start()
         success = success and KerasTest().start()
         success = success and ReceptiveFieldTest().start()
         success = success and FeaturesStructuringLayerTest().start()

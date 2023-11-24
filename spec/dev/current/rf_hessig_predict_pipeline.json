@@ -1,6 +1,6 @@
 {
   "in_pcloud": [
-	"/hei/Hessigheim_Benchmark/Epoch_March2018/vl3d/mined/Mar18_val_feats.laz"
+	"/hei/Hessigheim_Benchmark/Epoch_March2018/vl3d/mined/Mar18_val_rect2Dfeats.laz"
   ],
   "out_pcloud": [
 	"out/rf_hessig/validation/*"

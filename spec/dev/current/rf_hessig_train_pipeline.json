@@ -1,6 +1,6 @@
 {
   "in_pcloud": [
-	"/hei/Hessigheim_Benchmark/Epoch_March2018/vl3d/mined/Mar18_train_feats.laz"
+	"/hei/Hessigheim_Benchmark/Epoch_March2018/vl3d/mined/Mar18_train_rect2Dfeats.laz"
   ],
   "out_pcloud": [
 	"out/rf_hessig/*"
@@ -9,7 +9,7 @@
 	{
 	  "train": "RandomForestClassifier",
 	  "fnames": [
-		"floor_distance_r50.0_r0.35", "linearity_r0.125", "planarity_r0.125",
+		"floor_distance_r50.0_sep0.35", "linearity_r0.125", "planarity_r0.125",
 		"sphericity_r0.125", "surface_variation_r0.125", "omnivariance_r0.125",
 		"verticality_r0.125", "anisotropy_r0.125", "eigenentropy_r0.125",
 		"eigenvalue_sum_r0.125", "linearity_r0.25", "planarity_r0.25",
@@ -42,9 +42,9 @@
 	  "model_args": {
 		"n_estimators": 360,
 		"criterion": "entropy",
-		"max_depth": 16,
-		"min_samples_split": 512,
-		"min_samples_leaf": 64,
+		"max_depth": 30,
+		"min_samples_split": 32,
+		"min_samples_leaf": 8,
 		"min_weight_fraction_leaf": 0.0,
 		"max_features": "sqrt",
 		"max_leaf_nodes": null,
@@ -55,7 +55,7 @@
 		"warm_start": false,
 		"class_weight": "balanced_subsample",
 		"ccp_alpha": 0.0,
-		"max_samples": 0.1
+		"max_samples": 0.3
 	  },
 	  "autoval_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
 	  "stratkfold_report_path": "*report/RF_stratkfold_report.log",

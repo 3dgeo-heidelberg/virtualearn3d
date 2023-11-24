@@ -1,0 +1,21 @@
+{
+  "in_pcloud": [
+	"/hei/Hessigheim_Benchmark/Epoch_March2018/LiDAR/Mar18_train.laz"
+  ],
+  "out_pcloud": [
+	"out/color/Mar18_train_rect2D*"
+  ],
+  "sequential_pipeline": [
+	{
+	  "miner": "HSVFromRGB",
+	  "chunk_size": 0,
+ 	  "hue_unit": "radians",
+	  "frenames": ["HSV_Hrad", "HSV_Srad", "HSV_Vrad"],
+	  "nthreads": 12
+	},	
+	{
+	  "writer": "Writer",
+ 	  "out_pcloud": "*hsv.laz"
+	}
+  ]
+}
