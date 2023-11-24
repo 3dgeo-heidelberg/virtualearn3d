@@ -69,6 +69,50 @@ class SmoothFeatsMiner(Miner):
     :math:`\varphi = \sqrt{\omega^2 5^2}` as the new :math:`\omega` for the
     Gaussian RBF.
 
+    :ivar chunk_size: How many points per chunk must be considered when
+        computing the data mining in parallel.
+    :vartype chunk_size: int
+    :ivar subchunk_size: How many neighborhoods per iteration must be
+        considered when compting a chunk. It is useful to prevent memory
+        exhaustion when considering many big neighborhoods at the same time.
+    :vartype subchunk_size: int
+    :ivar neighborhood: The definition of the neighborhood to be used. It can
+        be a KNN neighborhood:
+
+        .. code-block:: json
+
+            {
+                "type": "knn",
+                "k": 16
+            }
+
+        But it can also be a spherical neighborhood:
+
+        .. code-block:: json
+
+            {
+                "type": "sphere",
+                "radius": 0.25
+            }
+
+    :vartype neighborhood: dict
+    :ivar weighted_mean_omega: The :math:`\omega` parameter for the weighted
+        mean strategy.
+    :vartype weighted_mean_omega: float
+    :ivar gaussian_rbf_omega: The :math:`\omega` parameter for the Gaussian
+        RBF strategy.
+    :vartype gaussian_rbf_omega: float
+    :ivar input_fnames: The list with the name of the input features that must
+        be smoothed.
+    :vartype input_fnames: list
+    :ivar fnames: The list with the name of the smooth strategies to be
+        computed.
+    :vartype fnames: list
+    :ivar frenames: The name of the output features.
+    :vartype frenames: list
+    :ivar nthreads: The number of threads for parallel execution (-1 means
+        as many threads as available cores).
+    :vartype: nthreads: int
     """
     # TODO Rethink : Doc attributes (ivar and vartype)
 
@@ -144,7 +188,7 @@ class SmoothFeatsMiner(Miner):
                     f'{infname}_{fname}_r{self.neighborhood["radius"]}'
                     for fname in self.fnames for infname in self.input_fnames
                 ]
-        self.nthreads=  kwargs.get('nthreads', -1)
+        self.nthreads = kwargs.get('nthreads', -1)
         # Validate attributes
         if self.input_fnames is None:
             raise MinerException(
@@ -239,7 +283,22 @@ class SmoothFeatsMiner(Miner):
         F_chunk,
         chunk_idx
     ):
-        # TODO Rethink : Doc
+        """
+        Compute the smooth features for a given chunk.
+
+        :param X: The structure space matrix (i.e., the matrix of coordinates).
+        :param F: The feature space matrix (i.e., the matrix of features).
+        :param kdt: The KDTree representing the entire point cloud.
+        :param neighborhood_f: The function to extract neighborhoods for the
+            points in the chunk.
+        :param smooth_funs: The functions to compute the requested smooth
+            features.
+        :param X_chunk: The structure space matrix of the chunk.
+        :param F_chunk: The feature space matrix of the chunk.
+        :param chunk_idx: The index of the chunk.
+        :return: The smooth features computed for the chunk.
+        :rtype: :class:`np.ndarray`
+        """
         # Report time for first chunk : start
         if chunk_idx == 0:
             start = time.perf_counter()
