@@ -66,6 +66,6 @@ class ModelIO:
         # If model is based on DL, assign path for built neuralnet arch.
         _model = getattr(model, "model", None)
         if _model is not None and isinstance(_model, DLModelHandler):
-            _model.arch.nn_path = path[:path.rfind('.')] + '.nn'
+            _model.arch.nn_path = path[:path.rfind('.')] + '.keras'
         # Write output model
         joblib.dump(model, path, compress=True)

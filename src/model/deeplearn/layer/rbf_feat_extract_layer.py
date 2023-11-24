@@ -319,7 +319,15 @@ class RBFFeatExtractLayer(Layer):
         # Obtain num_kernel_points and remove it from config
         num_kernel_points = config['num_kernel_points']
         del config['num_kernel_points']
+        # Update types if necessary (numpy arrays can be exported as dicts)
+        if isinstance(config["angular_resolutions"], dict):
+            config["angular_resolutions"] = \
+                config["angular_resolutions"]['config']['value']
+        if isinstance(config["max_radii"], dict):
+            config['max_radii'] = config['max_radii']['config']['value']
         # Instantiate layer
+        print(f'config:\n{config}\n')  # TODO Remove
+        print(f'config["angular_resolutions"]:\n{config["angular_resolutions"]}\n')  # TODO Remove
         rfel = cls(**config)
         # Placeholders so build on model load does not fail
         rfel.Q = tf.Variable(

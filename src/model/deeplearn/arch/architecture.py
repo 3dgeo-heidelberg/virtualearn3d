@@ -270,7 +270,7 @@ class Architecture:
             self.nn.save(
                 nn_path,
                 overwrite=True,
-                include_optimizer=True,
+                # include_optimizer=True,  # Not supported with Keras format
                 save_format='keras'
             )
         # Return architecture state (for serialization)
