@@ -8,6 +8,7 @@ from src.mining.geom_feats_miner import GeomFeatsMiner
 from src.mining.covar_feats_miner import CovarFeatsMiner
 from src.mining.height_feats_miner import HeightFeatsMiner
 from src.mining.hsv_from_rgb_miner import HSVFromRGBMiner
+from src.mining.smooth_feats_miner import SmoothFeatsMiner
 import os
 import time
 
@@ -125,5 +126,7 @@ class MainMine:
             return HeightFeatsMiner
         if miner_low == 'hsvfromrgb':
             return HSVFromRGBMiner
+        if miner_low == 'smoothfeatures':
+            return SmoothFeatsMiner
         # An unknown miner was specified
         raise ValueError(f'There is no known miner "{miner}"')

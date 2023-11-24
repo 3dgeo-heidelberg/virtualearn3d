@@ -4,10 +4,12 @@ from src.mining.miner import Miner, MinerException
 from src.model.deeplearn.dlrun.grid_subsampling_pre_processor import \
     GridSubsamplingPreProcessor
 from src.utils.dict_utils import DictUtils
+import src.main.main_logger as LOGGING
 from scipy.spatial import KDTree as KDT
 import scipy
 import numpy as np
 import joblib
+import time
 
 
 # ---   CLASS   --- #
@@ -97,7 +99,7 @@ class HeightFeatsMiner(Miner):
 
         The neighborhood definition and feature names (fnames) are always
         assigned during initialization. The default neighborhood is a cylinder
-        with a disk of radius 100 and
+        with a disk of radius 50.
 
         :param kwargs: The attributes for the HeightFeatsMiner that will also
             be passed to the parent.
@@ -122,9 +124,14 @@ class HeightFeatsMiner(Miner):
         self.frenames = kwargs.get('frenames', None)
         self.nthreads = kwargs.get('nthreads', -1)
         if self.frenames is None:
+            r = self.neighborhood['radius']
+            if r > 1000000:
+                r = f'{int(np.round(r/1000000))}M'
+            elif r > 1000:
+                r = f'{int(np.round(r/1000))}K'
             self.frenames = [
                 fname +
-                f'_r{self.neighborhood["radius"]}' +
+                f'_r{r}' +
                 f'_sep{self.neighborhood["separation_factor"]}'
                 for fname in self.fnames
             ]
@@ -158,7 +165,7 @@ class HeightFeatsMiner(Miner):
     def compute_height_features(self, X):
         r"""
         Compute the height features for the given matrix of coordinates
-        :pmb:`\mathbb{X} \in \mathbb{R}^{m \times 3}`.
+        :math:`\pmb{X} \in \mathbb{R}^{m \times 3}`.
 
         :param X: The matrix of coordinates.
         :type X: :class:`np.ndarray`
@@ -174,12 +181,27 @@ class HeightFeatsMiner(Miner):
             support_strategy='grid',
             nthreads=self.nthreads
         )
+        LOGGING.LOGGER.debug(
+            f'HeightFeatsMiner computed {len(sup_X)} support points.'
+        )
         # Compute height features for each support neighborhood
+        start = time.perf_counter()
         kdt = KDT(X[:, :2])
         sup_X, sup_F = self.compute_height_features_on_support(X, sup_X, kdt)
+        end = time.perf_counter()
+        LOGGING.LOGGER.debug(
+            f'HeightFeatsMiner computed height features for {len(sup_X)} '
+            f'support neighborhoods in {end-start:.3f} seconds.'
+        )
         # Propagate support features to point cloud
+        start = end
         kdt = KDT(sup_X)
         F = self.compute_pwise_height_features(X, sup_X, sup_F, kdt)
+        end = time.perf_counter()
+        LOGGING.LOGGER.debug(
+            f'HeightFeatsMiner computed height features for {len(F)} '
+            f'points in {end-start:.3f} seconds.'
+        )
         # Return point-wise height features
         return F
 

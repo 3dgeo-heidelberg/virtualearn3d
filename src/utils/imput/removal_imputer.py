@@ -34,6 +34,11 @@ class RemovalImputer(Imputer):
 
         See :class:`.Imputer` and :meth:`imputer.Imputer.impute`.
         """
+        # Report feature names
+        LOGGING.LOGGER.debug(
+            f'RemovalImputer considers the following {len(self.fnames)} '
+            f'features:\n{self.fnames}'
+        )
         start = time.perf_counter()
         # Check
         if F is None:
