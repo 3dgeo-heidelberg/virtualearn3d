@@ -114,7 +114,6 @@ class SmoothFeatsMiner(Miner):
         as many threads as available cores).
     :vartype: nthreads: int
     """
-    # TODO Rethink : Doc attributes (ivar and vartype)
 
     # ---  SPECIFICATION ARGUMENTS  --- #
     # --------------------------------- #
