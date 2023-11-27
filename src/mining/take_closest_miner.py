@@ -2,8 +2,11 @@
 # ------------------- #
 from src.mining.miner import Miner, MinerException
 from src.utils.dict_utils import DictUtils
+from src.pcloud.point_cloud_factory_facade import PointCloudFactoryFacade
+from src.pcloud.point_cloud_filter import PointCloudFilter
 import src.main.main_logger as LOGGING
 from scipy.spatial import KDTree as KDT
+from scipy.spatial import KDTree
 import numpy as np
 import time
 
@@ -21,6 +24,20 @@ class TakeClosestMiner(Miner):
     a set of mined point clouds and take just some points for training that
     have been manually labeled in the non mined point clouds (e.g., uncertainty
     point clouds, see :class:`.ClassificationUncertaintyEvaluator`).
+
+    :ivar fnames: The names of the features that must be taken from the closest
+        neighbor in the pool.
+    :vartype fnames: list of str
+    :ivar pcloud_pool: The list of paths to the point clouds composing the
+        pool.
+    :vartype pcloud_pool: list of str
+    :ivar distance_upper_bound: The max supported distance. It can be used
+        to prune tree searches to speed-up the computations.
+    :vartype distance_upper_bound: float
+    :ivar nthreads: The number of threads for the parallel closest neighbors
+        query. Using -1 implies considering as many threads as available
+        cores.
+    :vartype nthreads: int
     """
     # ---  SPECIFICATION ARGUMENTS  --- #
     # --------------------------------- #
@@ -36,7 +53,9 @@ class TakeClosestMiner(Miner):
         # Initialize
         kwargs = {
             'fnames': spec.get('fnames', None),
-            'pcloud_pool': spec.get('pcloud_pool', None)
+            'pcloud_pool': spec.get('pcloud_pool', None),
+            'distance_upper_bound': spec.get('distance_upper_bound', None),
+            'nthreads': spec.get('nthreads', None)
         }
         # Delete keys with None value
         kwargs = DictUtils.delete_by_val(kwargs, None)
@@ -58,6 +77,8 @@ class TakeClosestMiner(Miner):
         # Basic attributes of the TakeClosestMiner
         self.fnames = kwargs.get('fnames', None)
         self.pcloud_pool = kwargs.get('pcloud_pool', None)
+        self.distance_upper_bound = kwargs.get('distance_upper_bound', np.inf)
+        self.nthreads = kwargs.get('nthreads', -1)
         if isinstance(self.pcloud_pool, str):
             self.pcloud_pool = [self.pcloud_pool]
         # Validate attributes
@@ -70,3 +91,65 @@ class TakeClosestMiner(Miner):
                 'TakeClosestMiner cannot be computed without a pool of '
                 'point clouds.'
             )
+
+    # ---   MINER METHODS   --- #
+    # ------------------------- #
+    def mine(self, pcloud):
+        """
+        Mine feature from closest neighbor in pool.
+
+        :param pcloud: The point cloud to be mined.
+        :return: The point cloud extended with taken features.
+        :rtype: :class:`.PointCloud`
+        """
+        # Obtain coordinates
+        X = pcloud.get_coordinates_matrix()
+        D, F = None, None
+        # Find features from closest neighbor in pool
+        for pcloud_path in self.pcloud_pool:
+            # Read input point cloud
+            start = time.perf_counter()
+            pcloud_i = PointCloudFactoryFacade.make_from_file(pcloud_path)
+            end = time.perf_counter()
+            LOGGING.LOGGER.debug(
+                f'TakeClosestMiner read point cloud at "{pcloud_path}" '
+                f'with {pcloud_i.get_num_points()} points in {end-start:.3f} '
+                'seconds.'
+            )
+            # Extract coordinates and features
+            X_i = pcloud_i.get_coordinates_matrix()
+            F_i = pcloud_i.get_features_matrix(self.fnames)
+            # Build the KDTree
+            start = time.perf_counter()
+            kdt = KDTree(X_i, leafsize=16)
+            end = time.perf_counter()
+            LOGGING.LOGGER.debug(
+                f'TakeClosestMiner built KDTree in {end-start:.3f} seconds.'
+            )
+            # Ωuery the KDTree
+            start = time.perf_counter()
+            D_i, I_i = kdt.query(
+                X,
+                k=1,
+                distance_upper_bound=self.distance_upper_bound,
+                workers=self.nthreads
+            )
+            end = time.perf_counter()
+            LOGGING.LOGGER.debug(
+                f'TakeClosestMiner queried KDTree in {end-start:.3f} seconds.'
+            )
+            if D is None:  # Assign first time
+                D, F = D_i, F_i[I_i]
+            else:  # Update for any neigh. that is closer than previous closest
+                mask = D_i < D
+                D[mask] = D_i[mask]
+                F[mask] = F_i[I_i]
+        # Return point cloud with taken features
+        return pcloud.add_features(self.fnames, F)
+
+
+
+
+
+
+
