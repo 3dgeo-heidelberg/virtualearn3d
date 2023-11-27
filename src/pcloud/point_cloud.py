@@ -59,6 +59,14 @@ class PointCloud:
         """
         return len(self.las.X)
 
+    def get_header(self):
+        """
+        Obtain the header representing the input point cloud.
+
+        :return: Header representing the input point cloud.
+        """
+        return self.las.header
+
     def get_coordinates_matrix(self):
         """
         Obtain the matrix of coordinates representing the point cloud (supported
@@ -202,3 +210,29 @@ class PointCloud:
         self.las = las
         # Return
         return self
+
+    def preserve_mask(self, mask):
+        """
+        Preserve the points whose index in the mask corresponds to True.
+        Otherwise, the point is discarded.
+
+        :param mask: The binary mask to be applied (True means preserve,
+            False means discard).
+        :return: The point cloud after applying the mask.
+        :rtype: :class:`.PointCloud`
+        """
+        self.las.points = self.las.points[mask]
+        self.las.header.point_records_count = len(self.las.points)
+        return self
+
+    def remove_mask(self, mask):
+        """
+        Discard the points whose index in the mask corresponds to True.
+        Otherwise, the point is preserved.
+
+        :param mask: The binary mask to be applied (True means remove, False
+            means preserve).
+        :return: The point cloud after applying the mask.
+        :rtype: :class:`.PointCloud`
+        """
+        return self.preserve_mask(~np.array(mask))
