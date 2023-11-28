@@ -2,6 +2,7 @@
 # ------------------- #
 from src.main.vl3d_exception import VL3DException
 from src.pcloud.point_cloud_factory_facade import PointCloudFactoryFacade
+from src.pcloud.point_cloud import PointCloud
 from src.mining.miner import Miner
 from src.utils.imput.imputer import Imputer
 from src.utils.ftransf.feature_transformer import FeatureTransformer, \
@@ -111,9 +112,17 @@ class PipelineExecutor:
         # Load input point cloud
         in_pcloud = kwargs.get('in_pcloud', None)
         if in_pcloud is not None:
-            state.update_pcloud(
-                None, PointCloudFactoryFacade.make_from_file(in_pcloud)
-            )
+            if isinstance(in_pcloud, PointCloud):
+                state.update_pcloud(None, in_pcloud)
+            elif isinstance(in_pcloud, str):
+                state.update_pcloud(
+                    None, PointCloudFactoryFacade.make_from_file(in_pcloud)
+                )
+            else:
+                raise PipelineExecutorException(
+                    'PipelineExecutor.load_input received an unexpected '
+                    f'type for input point cloud: \"{type(in_pcloud)}\".'
+                )
         # TODO Rethink : Handle model loading (if any) ?
 
     def pre_process(self, state, comp, comp_id, comps):

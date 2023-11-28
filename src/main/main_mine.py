@@ -9,6 +9,7 @@ from src.mining.covar_feats_miner import CovarFeatsMiner
 from src.mining.height_feats_miner import HeightFeatsMiner
 from src.mining.hsv_from_rgb_miner import HSVFromRGBMiner
 from src.mining.smooth_feats_miner import SmoothFeatsMiner
+from src.mining.take_closest_miner import TakeClosestMiner
 import os
 import time
 
@@ -128,5 +129,7 @@ class MainMine:
             return HSVFromRGBMiner
         if miner_low == 'smoothfeatures':
             return SmoothFeatsMiner
+        if miner_low == 'takeclosestminer':
+            return TakeClosestMiner
         # An unknown miner was specified
         raise ValueError(f'There is no known miner "{miner}"')
