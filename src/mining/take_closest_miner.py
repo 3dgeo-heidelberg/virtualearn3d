@@ -151,14 +151,14 @@ class TakeClosestMiner(Miner):
                 f'TakeClosestMiner queried KDTree in {end-start:.3f} seconds.'
             )
             if D is None:  # Assign first time
-                D = D_i[I_i]
+                D = D_i
                 if fnames is not None:
                     F = F_i[I_i]
                 if take_classes:
                     y = y_i[I_i]
             else:  # Update for any neigh. that is closer than previous closest
-                mask = D_i[I_i] < D
-                D[mask] = D_i[I_i][mask]
+                mask = D_i < D
+                D[mask] = D_i[mask]
                 if fnames is not None:
                     F[mask] = F_i[I_i][mask]
                 if take_classes:

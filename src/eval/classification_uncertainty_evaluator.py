@@ -312,7 +312,7 @@ class ClassificationUncertaintyEvaluator(Evaluator):
         # Obtain evaluation
         ev = self.eval(Zhat, X=X, y=y, yhat=yhat, F=F)
         out_prefix = kwargs.get('out_prefix', None)
-        if ev.can_report():
+        if ev.can_report() and self.report_path is not None:
             report = ev.report()
             start = time.perf_counter()
             report.to_file(self.report_path, out_prefix=out_prefix)
@@ -321,7 +321,7 @@ class ClassificationUncertaintyEvaluator(Evaluator):
                 'The ClassificationUncertaintyEvaluator wrote the point cloud '
                 f'in {end-start:.3f} seconds.'
             )
-        if ev.can_plot():
+        if ev.can_plot() and self.plot_path is not None:
             start = time.perf_counter()
             ev.plot(path=self.plot_path).plot(out_prefix=out_prefix)
             end = time.perf_counter()
