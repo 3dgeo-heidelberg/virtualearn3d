@@ -104,7 +104,17 @@ class TakeClosestMiner(Miner):
         """
         # Obtain coordinates
         X = pcloud.get_coordinates_matrix()
-        D, F = None, None
+        D, F, y = None, None, None
+        # Prepare fnames
+        fnames = []
+        take_classes = False
+        for fname in self.fnames:
+            if fname.lower() == 'classification':
+                take_classes = True
+            else:
+                fnames.append(fname)
+        if len(fnames) < 1:
+            fnames = None
         # Find features from closest neighbor in pool
         for pcloud_path in self.pcloud_pool:
             # Read input point cloud
@@ -118,7 +128,9 @@ class TakeClosestMiner(Miner):
             )
             # Extract coordinates and features
             X_i = pcloud_i.get_coordinates_matrix()
-            F_i = pcloud_i.get_features_matrix(self.fnames)
+            F_i = pcloud_i.get_features_matrix(fnames) if fnames is not None \
+                else None
+            y_i = pcloud_i.get_classes_vector() if take_classes else None
             # Build the KDTree
             start = time.perf_counter()
             kdt = KDTree(X_i, leafsize=16)
@@ -139,13 +151,24 @@ class TakeClosestMiner(Miner):
                 f'TakeClosestMiner queried KDTree in {end-start:.3f} seconds.'
             )
             if D is None:  # Assign first time
-                D, F = D_i, F_i[I_i]
+                D = D_i[I_i]
+                if fnames is not None:
+                    F = F_i[I_i]
+                if take_classes:
+                    y = y_i[I_i]
             else:  # Update for any neigh. that is closer than previous closest
-                mask = D_i < D
-                D[mask] = D_i[mask]
-                F[mask] = F_i[I_i]
+                mask = D_i[I_i] < D
+                D[mask] = D_i[I_i][mask]
+                if fnames is not None:
+                    F[mask] = F_i[I_i][mask]
+                if take_classes:
+                    y[mask] = y_i[I_i][mask]
         # Return point cloud with taken features
-        return pcloud.add_features(self.fnames, F)
+        if take_classes:
+            pcloud = pcloud.set_classes_vector(y)
+        if fnames is not None:
+            pcloud = pcloud.add_features(self.fnames, F)
+        return pcloud
 
 
 
