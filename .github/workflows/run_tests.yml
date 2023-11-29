@@ -1,0 +1,22 @@
+name: CI/CD
+run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
+on: [push]
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    # Needed for conda
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniconda-version: "latest"
+          python-version: 3.10
+          activate-environment: vl3d
+          environment-file: vl3d_lin.yml
+          
+      - run: conda install -c conda-forge pdal python-pdal gdal
+      - run: python -m unittest tests/transformers_test.py
