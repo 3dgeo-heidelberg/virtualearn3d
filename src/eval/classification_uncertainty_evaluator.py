@@ -117,7 +117,7 @@ class ClassificationUncertaintyEvaluator(Evaluator):
         Initialize/instantiate a ClassificationUncertaintyEvaluator.
 
         :param kwargs: The attributes for the
-            ClassificationUncertaintyEvalutor.
+            ClassificationUncertaintyEvaluator.
         """
         # Call parent's init
         kwargs['problem_name'] = 'CLASSIFICATION_UNCERTAINTY'

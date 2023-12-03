@@ -7,6 +7,8 @@ import joblib
 import os
 
 
+# ---   CLASS   --- #
+# ----------------- #
 class ModelIO:
     """
     :author: Alberto M. Esmoris Pena
