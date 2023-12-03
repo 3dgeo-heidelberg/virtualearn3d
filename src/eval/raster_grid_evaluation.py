@@ -27,14 +27,26 @@ class RasterGridEvaluation(Evaluation):
         super().__init__(**kwargs)
         # Initialize attributes of RasterGridEvaluation
         self.X = kwargs.get('X', None)
-        self.F = kwargs.get('F', None)
+        self.Fgrids = kwargs.get('Fgrids', None)
+        self.onames = kwargs.get('onames', None)
         self.crs = kwargs.get('crs', None)
-        # TODO Rethink : Assign any pending attribute
+        self.xres = kwargs.get('xres', None)
+        self.yres = kwargs.get('yres', None)
         # Validate attributes
         if self.X is None:
             raise EvaluationException(
                 'RasterGridEvaluation cannot be built without point '
                 'coordinates.'
+            )
+        if self.Fgrids is None:
+            raise EvaluationException(
+                'RasterGridEvaluation cannot be built without grids of '
+                'features.'
+            )
+        if self.onames is None:
+            raise EvaluationException(
+                'RasterGridEvaluation cannot be built without output '
+                'names.'
             )
 
     # ---   EVALUATION METHODS   --- #
@@ -45,7 +57,8 @@ class RasterGridEvaluation(Evaluation):
         """
         return (
             self.X is not None and
-            self.F is not None
+            self.Fgrids is not None and
+            self.onames is not None
         )
 
     def plot(self, **kwargs):
@@ -59,6 +72,7 @@ class RasterGridEvaluation(Evaluation):
         :return: The RasterGridPlot representing the RasterGridEvaluation.
         :rtype: :class:`.RasterGridPlot`
         """
+        # Handle paths from base path and onames
         path = kwargs.get('path', None)
         if path is None:
             raise EvaluationException(
@@ -66,7 +80,10 @@ class RasterGridEvaluation(Evaluation):
             )
         return RasterGridPlot(
             X=self.X,
-            F=self.F,
+            Fgrids=self.Fgrids,
+            onames=self.onames,
             crs=self.crs,
+            xres=self.xres,
+            yres=self.yres,
             path=path
         )

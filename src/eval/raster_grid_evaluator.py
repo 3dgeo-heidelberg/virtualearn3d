@@ -2,8 +2,10 @@
 # ------------------- #
 from src.eval.evaluator import Evaluator, EvaluatorException
 from src.eval.raster_grid_evaluation import RasterGridEvaluation
+from src.inout.geotiff_io import GeoTiffIO
 from src.utils.dict_utils import DictUtils
 import src.main.main_logger as LOGGING
+from scipy.spatial import KDTree as KDT
 import numpy as np
 import time
 
@@ -39,8 +41,10 @@ class RasterGridEvaluator(Evaluator):
         # Initialize
         kwargs = {
             'plot_path': spec.get('plot_path', None),
-            'fnames': spec.get('fnames', None),
-            'crs': spec.get('crs', None)
+            'grids': spec.get('grids', None),
+            'crs': spec.get('crs', None),
+            'xres': spec.get('xres', None),
+            'yres': spec.get('yres', None)
         }
         # Delete keys with None value
         kwargs = DictUtils.delete_by_val(kwargs, None)
@@ -60,9 +64,17 @@ class RasterGridEvaluator(Evaluator):
         super().__init__(**kwargs)
         # Assign RasterGridEvaluator attributes
         self.plot_path = kwargs.get('plot_path', None)
-        self.fnames = kwargs.get('fnames', None)
+        self.grids = kwargs.get('grids', None)
         self.crs = kwargs.get('crs', None)
+        self.xres = kwargs.get('xres', None)
+        self.yres = kwargs.get('yres', None)
         # TODO Rethink : Assign any pending attribute
+        # Validate
+        if self.grids is None or len(self.grids) < 1:
+            raise EvaluatorException(
+                'RasterGridEvaluator must be built for at least one grid '
+                'specification.'
+            )
 
     # ---  EVALUATOR METHODS  --- #
     # --------------------------- #
@@ -74,12 +86,10 @@ class RasterGridEvaluator(Evaluator):
         :return:
         """
         start = time.perf_counter()
-        # Extract coordinates and features
+        # Extract coordinates
         X = pcloud.get_coordinates_matrix()
-        fnames = self.fnames
-        if fnames is None:
-            fnames = pcloud.get_features_names()
-        F = pcloud.get_features_matrix(self.fnames)
+        # Compute grids of features
+        Fgrids, onames = self.digest_grids(pcloud, X)
         # Log execution time
         end = time.perf_counter()
         LOGGING.LOGGER.info(
@@ -87,7 +97,10 @@ class RasterGridEvaluator(Evaluator):
             f'in {end-start:.3f} seconds.'
         )
         # Return
-        return RasterGridEvaluation(X=X, F=F, crs=self.crs)
+        return RasterGridEvaluation(
+            X=X, Fgrids=Fgrids, onames=onames,
+            crs=self.crs, xres=self.xres, yres=self.yres
+        )
 
     def __call__(self, pcloud, **kwargs):
         """
@@ -110,6 +123,108 @@ class RasterGridEvaluator(Evaluator):
                 'The RasterGridEvaluator wrote the raster-like plots '
                 f'in {end-start:.3f} seconds.'
             )
+
+    # ---  FEATURE GRID METHODS  --- #
+    # ------------------------------ #
+    def digest_grids(self, pcloud, X):
+        """
+        Generate the grids of features for the requested grid specifications.
+
+        :return: The generated grids of features.
+        :rtype: list of :class:`np.ndarray`
+        """
+        # Prepare spatial grid
+        width, height, window, transform, xmin, xmax, ymin, ymax = \
+            GeoTiffIO.generate_raster(X, self.xres, self.yres)
+        Xgrid = np.array(np.meshgrid(
+            np.linspace(xmin, xmax, width),
+            np.linspace(ymin, ymax, height)
+        )).T
+        # Prepare spatial queries
+        kdt = KDT(X[:, :2])
+        # Compute grids of features
+        grids = []
+        onames = []
+        for grid in self.grids:
+            grids.append(
+                self.digest_grid(pcloud, X, kdt, Xgrid, grid, width, height)
+            )
+            onames.append(grid['oname'])
+        return grids, onames
+
+    def digest_grid(self, pcloud, X, kdt, Xgrid, grid, width, height):
+        """
+        Generate the grid of features for a given grid specification.
+
+        :param pcloud: The point cloud containing the features.
+        :param X: the matrix of coordinates representing the point cloud.
+        :param kdt: The KDTree representing the X matrix.
+        :param Xgrid: The grid of (x, y) values representing the spatial
+            domain.
+        :param grid: The grid specification to be digested.
+        :param width: The width of the grid in number of cells.
+        :param height: The height of the grid in number of cells.
+        :return: The generated grid of features.
+        :rtype: :class:`np.ndarray`
+        """
+        # Obtain features
+        fnames = grid['fnames']
+        F = pcloud.get_features_matrix(fnames)
+        # Determine empty val
+        empty_val = grid.get('empty_val', np.nan)
+        if isinstance(empty_val, str):
+            if empty_val.lower() == 'nan':
+                empty_val = np.nan
+            else:
+                raise EvaluatorException(
+                    'RasterGridEvaluator received an unexpected empty value '
+                    f'specification: "{empty_val}"'
+                )
+        empty_val = [empty_val for i in range(F.shape[1])]
+        # Determine reduce function
+        reduce = grid['reduce']
+        reduce_low = reduce.lower()
+        reducef = None  # Reduce function
+        if reduce_low == 'mean':
+            reducef = lambda F, I, j, target, th: np.mean(F[I[j]], axis=0)
+        elif reduce_low == 'median':
+            reducef = lambda F, I, j, target, th: np.median(F[I[j]], axis=0)
+        elif reduce_low == 'min':
+            reducef = lambda F, I, j, target, th: np.min(F[I[j]], axis=0)
+        elif reduce_low == 'max':
+            reducef = lambda F, I, j, target, th: np.max(F[I[j]], axis=0)
+        elif reduce_low == 'binary_mask':
+            reducef = lambda F, I, j, target, th: [int(np.count_nonzero(
+                F[I[j]] == target,
+                axis=0
+            ) >= th)]
+        if reducef is None:
+            raise EvaluatorException(
+                'RasterGridEvaluator does not support grid digestion without '
+                f'a valid reduce function. The requested one \"{reduce}\" is '
+                'not acceptable.'
+            )
+        # Determine target value and threshold
+        target = grid.get('target_val', None)
+        threshold = grid.get('count_threshold', None)
+        # Prepare spatial queries
+        radius = max(self.xres, self.yres)
+        # Compute grid of features
+        # TODO Rethink : Move the queries outside the loop and iterate over the
+        # TODO Rethink : reduce functions directly (save many many queries)
+        Fgrid = []
+        for i in range(width):  # Iterate over rows
+            print(f'Processing row {i+1} of {width}')  # TODO Remove
+            Xi = Xgrid[i]
+            I = KDT(Xi).query_ball_tree(kdt, radius)
+            Fgrid.append(
+                [
+                    reducef(F, I, j, target, threshold) if len(I[j]) > 0 else \
+                    empty_val
+                    for j in range(height)
+                ]
+            )
+        return np.array(Fgrid).T
 
     # ---  PIPELINE METHODS  --- #
     # -------------------------- #

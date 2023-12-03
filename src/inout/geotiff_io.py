@@ -22,7 +22,26 @@ class GeoTiffIO:
     # ---  READ / LOAD  --- #
     # --------------------- #
     @staticmethod
-    def write(pcloud, path, **kwargs):
+    def write(x, path, **kwargs):
+        # TODO Rethink : Doc
+        # Validate output directory
+        IOUtils.validate_path_to_directory(
+            os.path.dirname(path),
+            'The parent of the GeoTiff file path is not a directory:'
+        )
+        # Automatically choose write function depending on input format
+        if isinstance(x, PointCloud):
+            return GeoTiffIO.write_pcloud(x, path, **kwargs)
+        elif isinstance(x, tuple):
+            return GeoTiffIO.write_grid_as_geotiff(x[0], x[1], path, **kwargs)
+        else:
+            raise TypeError(
+                'GeoTiffIO does not support writing of given input type '
+                f'({type(x)}).'
+            )
+
+    @staticmethod
+    def write_pcloud(pcloud, path, **kwargs):
         """
         Write a point cloud as a GeoTiff file located at given path.
 
@@ -37,11 +56,6 @@ class GeoTiffIO:
         :type kwargs: dict
         :return: Nothing
         """
-        # Validate output directory
-        IOUtils.validate_path_to_directory(
-            os.path.dirname(path),
-            'The parent of the GeoTiff file path is not a directory:'
-        )
         # Validate point cloud
         if not isinstance(pcloud, PointCloud):
             X = kwargs.get('X', None)
@@ -93,32 +107,14 @@ class GeoTiffIO:
         crs = kwargs.get('crs', None)
         if crs is None and pcloud is not None:
             crs = pcloud.get_crs()
-        if crs is None:
-            raise ValueError(
-                'GeoTiff will not be written because the coordinate reference '
-                'system (CRS) is not known.'
-            )
         xres = kwargs.get('xres', None)
         yres = kwargs.get('yres', None)
-        xres, yres = 1.0, 1.0  # TODO Remove
         # Validate GeoTiff specification
-        if driver is None:
-            raise ValueError(
-                'GeoTiff cannot be written with None driver.'
-            )
-        if crs is None:
-            raise ValueError(
-                'GeoTiff cannot be written with None coordinate reference '
-                'system.'
-            )
-        if xres is None:
-            raise ValueError(
-                'GeoTiff cannot be written with None horizontal (x) '
-                'resolution.'
-            )
+        GeoTiffIO.validate_geotiff_spec(crs, driver, xres, yres)
         # Write
-        GeoTiffIO._write_pcloud_as_geotiff(X, F, path, driver, crs, xres, yres)
-        return X, F
+        GeoTiffIO._write_pcloud_as_geotiff(
+            X, F, path, driver, crs, xres, yres
+        )
 
     @staticmethod
     def _write_pcloud_as_geotiff(X, F, path, driver, crs, xres, yres):
@@ -127,20 +123,9 @@ class GeoTiffIO:
 
         :return: Nothing, but writes the GeoTiff file.
         """
-        # Extract 2D bounding box
-        X2D = X[:, :2]
-        xmin, ymin = np.min(X2D, axis=0)
-        xmax, ymax = np.max(X2D, axis=0)
-        # Compute raster dimensions
-        width = int((xmax-xmin) / xres)
-        height = int((ymax-ymin) / yres)
-        # Create transformation
-        transform = rasterio.transform.from_origin(xmin, ymax, xres, yres)
-        # Compute point-wise indices
-        Icol = ((X[:, 0] - xmin) / xres).astype(int)  # Column indices
-        Irow = ((ymax - X[:, 1]) / yres).astype(int)  # Row indices
-        # Determine the indexed window
-        window = ((min(Irow), max(Irow)), (min(Icol), max(Icol)))
+        # Generate raster
+        width, height, window, transform, xmin, xmax, ymin, ymax = \
+            GeoTiffIO.generate_raster(X, xres, yres)
         # Bands
         count = 1 if len (F.shape) == 1 else F.shape[1]  # Num bands
         # Grid of features
@@ -148,14 +133,45 @@ class GeoTiffIO:
             np.linspace(xmin, xmax, width),
             np.linspace(ymin, ymax, height)
         )).T
-        print(f'Xgrid.shape: {Xgrid.shape}')  # TODO Remove
         Fgrid = GeoTiffIO.build_fgrid_from_pcloud(
-            Xgrid, X2D, F, width, height, xres, yres
+            Xgrid, X[:, :2], F, width, height, xres, yres
         )
         # Write the GeoTiff
         GeoTiffIO._write_grid_as_geotiff(
             Fgrid, path, driver, crs, width, height,
             window, count, str(F.dtype), transform
+        )
+
+    @staticmethod
+    def write_grid_as_geotiff(X, Fgrid, path, **kwargs):
+        # TODO Rethink : Doc
+        # Extract GeoTiff specification
+        driver = kwargs.get('driver', 'GTiff')
+        crs = kwargs.get('crs', None)
+        xres = kwargs.get('xres', None)
+        yres = kwargs.get('yres', None)
+        # Validate GeoTiff specification
+        GeoTiffIO.validate_geotiff_spec(crs, driver, xres, yres)
+        # Prepare raster
+        width, height, window, transform, xmin, xmax, ymin, ymax = \
+            GeoTiffIO.generate_raster(X, xres, yres)
+        count = 1 if len(Fgrid.shape) == 2 else Fgrid.shape[0]  # Bands
+        dtype = str(Fgrid.dtype)
+        # Validate raster is compatible with Fgrid
+        if Fgrid.shape[-2] != height:
+            raise ValueError(
+                f'GeoTiffIO received a Fgrid with {Fgrid.shape[-2]} rows '
+                f'but the raster width is {height}.'
+            )
+        if Fgrid.shape[-1] != width:
+            raise ValueError(
+                f'GeoTiffIO received a Fgrid with {Fgrid.shape[-1]} columns '
+                f'but the raster width is {width}.'
+            )
+        # Write
+        GeoTiffIO._write_grid_as_geotiff(
+            Fgrid, path, driver, crs, width, height,
+            window, count, dtype, transform
         )
 
     @staticmethod
@@ -180,7 +196,7 @@ class GeoTiffIO:
         :return: Nothing, but the GeoTiff file is written.
         """
         # Extract the indices
-        indexes = 1 if count == 1 else [i+1 for i in range(count)]
+        indexes = [1] if count == 1 else [i+1 for i in range(count)]
         # Write the GeoTiff
         with rasterio.open(
             path, 'w', driver=driver, crs=crs, width=width, height=height,
@@ -220,10 +236,58 @@ class GeoTiffIO:
         # Compute grid of features
         Fgrid = []
         for i in range(width):  # Iterate over rows
-            print(f'Processing row {i+1} of {width}')  # TODO Remove
             Xi = Xgrid[i]
             I = KDT(Xi).query_ball_tree(kdt, radius)
             Fgrid.append(
                 [np.mean(F[I[j]], axis=0) for j in range(height)]
             )
         return np.array(Fgrid).T
+
+    @staticmethod
+    def validate_geotiff_spec(crs, driver, xres, yres):
+        """
+        Validate whether the given GeoTiff specification is correct or not.
+        
+        :return: Nothing, but an Exception will be thrown if the specification
+            is not valid.
+        """
+        if driver is None:
+            raise ValueError(
+                'GeoTiff cannot be written with None driver.'
+            )
+        if crs is None:
+            raise ValueError(
+                'GeoTiff cannot be written with None coordinate reference '
+                'system.'
+            )
+        if xres is None:
+            raise ValueError(
+                'GeoTiff cannot be written with None horizontal (x) '
+                'resolution.'
+            )
+        if yres is None:
+            raise ValueError(
+                'GeoTiff cannot be written with None vertical (y) '
+                'resolution.'
+            )
+
+    @staticmethod
+    def generate_raster(X, xres, yres):
+        # TODO Rethink : Doc
+        # Extract 2D bounding box
+        X2D = X[:, :2]
+        xmin, ymin = np.min(X2D, axis=0)
+        xmax, ymax = np.max(X2D, axis=0)
+        # Compute raster dimensions
+        width = int((xmax-xmin) / xres)
+        height = int((ymax-ymin) / yres)
+        # Create transformation
+        transform = rasterio.transform.from_origin(xmin, ymax, xres, yres)
+        # Compute point-wise indices
+        Icol = ((X[:, 0] - xmin) / xres).astype(int)  # Column indices
+        Irow = ((ymax - X[:, 1]) / yres).astype(int)  # Row indices
+        # Determine the indexed window
+        window = ((min(Irow), max(Irow)), (min(Icol), max(Icol)))
+        # Return
+        return width, height, window, transform, xmin, xmax, ymin, ymax
+

@@ -32,14 +32,31 @@ class RasterGridPlot(Plot):
         super().__init__(**kwargs)
         # Initialize attributes of RasterGridPlot
         self.X = kwargs.get('X', None)
-        self.F = kwargs.get('F', None)
+        self.Fgrids = kwargs.get('Fgrids', None)
+        self.onames = kwargs.get('onames', None)
         self.crs = kwargs.get('crs', None)
+        self.xres = kwargs.get('xres', None)
+        self.yres = kwargs.get('yres', None)
         # TODO Rethink : Assign any pending attribute
         # Validate attributes
         if self.X is None:
             raise PlotException(
                 'RasterGridPlot cannot be built without point '
                 'coordinates.'
+            )
+        if self.Fgrids is None:
+            raise PlotException(
+                'RasterGridPlot cannot be built without grids of features.'
+            )
+        if self.onames is None:
+            raise PlotException(
+                'RasterGridPlot cannot be built without output names.'
+            )
+        if len(self.Fgrids) != len(self.onames):
+            raise PlotException(
+                f'RasterGridPlot received {len(self.Fgrids)} grids of '
+                f'features and {len(self.onames)} output names. '
+                'These numbers MUST be equal but they are not.'
             )
 
     # ---   PLOT METHODS   --- #
@@ -58,9 +75,15 @@ class RasterGridPlot(Plot):
             _path = prefix + _path[1:]
         # Measure time : Start
         start = time.perf_counter()
-        # Write GeoTiff
-        path = os.path.join(_path, 'general.tiff')
-        GeoTiffIO.write(None, path, X=self.X, F=self.F, crs=self.crs)
+        # Handle many paths from onames
+        paths = [_path+oname+".tiff" for oname in self.onames]
+        # Write GeoTiffs
+        for i, path in enumerate(paths):  # For each path
+            # Write GeoTiff
+            GeoTiffIO.write(
+                (self.X, self.Fgrids[i]), path,
+                crs=self.crs, xres=self.xres, yres=self.yres
+            )
         # Measure time : End
         end = time.perf_counter()
         LOGGING.LOGGER.info(
