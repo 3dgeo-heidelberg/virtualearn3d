@@ -33,6 +33,9 @@ class RasterGridEvaluator(Evaluator):
     :ivar grid_iter_step: How many rows at most must be considered per
         iteration when generating the raster-like grid.
     :vartype grid_iter_step: int
+    :ivar reverse_rows: Whether to reverse the rows of the grid (True) or not
+        (False).
+    :vartype reverse_rows: bool
     """
 
     # ---  SPECIFICATION ARGUMENTS  --- #
@@ -54,7 +57,8 @@ class RasterGridEvaluator(Evaluator):
             'crs': spec.get('crs', None),
             'xres': spec.get('xres', None),
             'yres': spec.get('yres', None),
-            'grid_iter_step': spec.get('grid_iter_step', None)
+            'grid_iter_step': spec.get('grid_iter_step', None),
+            'reverse_rows': spec.get('reverse_rows', None)
         }
         # Delete keys with None value
         kwargs = DictUtils.delete_by_val(kwargs, None)
@@ -79,6 +83,7 @@ class RasterGridEvaluator(Evaluator):
         self.xres = kwargs.get('xres', None)
         self.yres = kwargs.get('yres', None)
         self.grid_iter_step = kwargs.get('grid_iter_step', 1024)
+        self.reverse_rows = kwargs.get('reverse_rows', True)
         # Validate
         if self.grids is None or len(self.grids) < 1:
             raise EvaluatorException(
@@ -169,6 +174,9 @@ class RasterGridEvaluator(Evaluator):
             else:
                 for j in range(len(grids)):
                     grids[j] = np.vstack([grids[j].T, subgrid[j].T]).T
+        # Reverse rows if requested
+        for k, grid in enumerate(grids):
+            grids[k] = grid[:, ::-1, :]
         # Return
         return grids, onames
 
