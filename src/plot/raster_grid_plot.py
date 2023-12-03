@@ -18,7 +18,19 @@ class RasterGridPlot(Plot):
 
     See :class:`.Plot` and :class:`.RasterGridEvaluation`.
 
-    TODO Rethink : Doc ivars including vartype
+    :ivar X: The matrix of coordinates representing the rasterized point cloud.
+    :vartype X: :class:`np.ndarray`
+    :ivar Fgrids: The grids of features representing the rasterized point
+        cloud.
+    :vartype Fgrids: list of :class:`np.ndarray`
+    :ivar onames: The list of names representing each grid of features.
+    :vartype onames: list of str
+    :ivar crs: The coordinate reference system (CRS).
+    :vartype crs: str
+    :ivar xres: The cell size along the x-axis.
+    :vartype xres: float
+    :ivar yres: The cell size along the y-axis.
+    :vartype yres: float
     """
     # ---   INIT   --- #
     # ---------------- #
@@ -37,7 +49,6 @@ class RasterGridPlot(Plot):
         self.crs = kwargs.get('crs', None)
         self.xres = kwargs.get('xres', None)
         self.yres = kwargs.get('yres', None)
-        # TODO Rethink : Assign any pending attribute
         # Validate attributes
         if self.X is None:
             raise PlotException(

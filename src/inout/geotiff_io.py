@@ -23,7 +23,19 @@ class GeoTiffIO:
     # --------------------- #
     @staticmethod
     def write(x, path, **kwargs):
-        # TODO Rethink : Doc
+        """
+        Write the given data to a GeoTiff file.
+
+        :param x: It can be either a point cloud or a tuple where the first
+            element is the matrix of coordinates representing a point cloud
+            and the second element is a raster-like grid of features
+            representing the point cloud.
+        :type x: :class:`.PointCloud` or tuple
+        :param path: Path where the GeoTiff file must be written.
+        :param kwargs: The key-word arguments governing the writing of the
+            GeoTiff file.
+        :return: Nothing, but a GeoTiff file is written to the given path.
+        """
         # Validate output directory
         IOUtils.validate_path_to_directory(
             os.path.dirname(path),
@@ -144,7 +156,17 @@ class GeoTiffIO:
 
     @staticmethod
     def write_grid_as_geotiff(X, Fgrid, path, **kwargs):
-        # TODO Rethink : Doc
+        """
+        Assist the :meth:`geotiff_io.GeoTiffIO.write` method.
+
+        :param X: The matrix of coordinates representing a point cloud.
+        :param Fgrid: The raster-like grid of features representing a
+            point cloud.
+        :param path: The path where the GeoTiff file must be written.
+        :param kwargs: The key-word arguments governing the writing of the
+            GeoTiff file.
+        :return: Nothing, but a GeoTiff file is written at given path.
+        """
         # Extract GeoTiff specification
         driver = kwargs.get('driver', 'GTiff')
         crs = kwargs.get('crs', None)
@@ -224,12 +246,6 @@ class GeoTiffIO:
             coordinates and the given matrix of features.
         :rtype: :class:`np.ndarray`
         """
-        # TODO Remove section ---
-        np.savetxt(
-            '/tmp/Xgrid.xyz',
-            np.vstack(Xgrid)
-        )
-        # --- TODO Remove section
         # Prepare spatial queries
         kdt = KDT(X2D)
         radius = max(xres, yres)
@@ -273,7 +289,17 @@ class GeoTiffIO:
 
     @staticmethod
     def generate_raster(X, xres, yres):
-        # TODO Rethink : Doc
+        """
+        Generate a raster for the given point cloud considering the requested
+        cell size.
+
+        :param X: The matrix of coordinates representing the point cloud for
+            which the raster must be generated.
+        :param xres: The cell size along the x-axis.
+        :param yres: The cell size along the y-axis.
+        :return: The width, height, window, transform, xmin, xmax, ymin, and
+            ymax values defining the generated raster.
+        """
         # Extract 2D bounding box
         X2D = X[:, :2]
         xmin, ymin = np.min(X2D, axis=0)

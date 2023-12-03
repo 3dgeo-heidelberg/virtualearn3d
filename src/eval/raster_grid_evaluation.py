@@ -13,7 +13,19 @@ class RasterGridEvaluation(Evaluation):
     Class representing the result of evaluating a point cloud by transforming
     it to a convenient raster representation.
 
-    TODO Rethink : Doc ivars including vartype
+    :ivar X: The matrix of coordinates representing the evaluated point cloud.
+    :vartype X: :class:`np.ndarray`
+    :ivar Fgrids: A list of grids representing the grids of features from
+        the evaluated point cloud.
+    :vartype Fgrids: list
+    :ivar onames: The output name for each grid of features.
+    :vartype onames: list
+    :ivar crs: The coordinate reference system (CRS).
+    :vartype crs: str
+    :ivar xres: The cell size along the x-axis.
+    :vartype xres: float
+    :ivar yres: The cell size along the y-axis.
+    :vartype yres: float
     """
     # ---   INIT   --- #
     # ---------------- #

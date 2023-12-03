@@ -22,8 +22,17 @@ class RasterGridEvaluator(Evaluator):
     :vartype plot_path: str
     :ivar fnames: The name of the features to be considered.
     :vartype fnames: list of str
-
-    TODO Rethink : Doc ivars including vartype
+    :ivar grids: The many grid specifications.
+    :vartype grids: list of dict
+    :ivar crs: The coordinate reference system (CRS).
+    :vartype crs: str
+    :ivar xres: The cell size along the x-axis.
+    :vartype xres: float
+    :ivar yres: The cell size along the y-axis.
+    :vartype yres: float
+    :ivar grid_iter_step: How many rows at most must be considered per
+        iteration when generating the raster-like grid.
+    :vartype grid_iter_step: int
     """
 
     # ---  SPECIFICATION ARGUMENTS  --- #
@@ -44,7 +53,8 @@ class RasterGridEvaluator(Evaluator):
             'grids': spec.get('grids', None),
             'crs': spec.get('crs', None),
             'xres': spec.get('xres', None),
-            'yres': spec.get('yres', None)
+            'yres': spec.get('yres', None),
+            'grid_iter_step': spec.get('grid_iter_step', None)
         }
         # Delete keys with None value
         kwargs = DictUtils.delete_by_val(kwargs, None)
@@ -68,7 +78,7 @@ class RasterGridEvaluator(Evaluator):
         self.crs = kwargs.get('crs', None)
         self.xres = kwargs.get('xres', None)
         self.yres = kwargs.get('yres', None)
-        # TODO Rethink : Assign any pending attribute
+        self.grid_iter_step = kwargs.get('grid_iter_step', 1024)
         # Validate
         if self.grids is None or len(self.grids) < 1:
             raise EvaluatorException(
@@ -142,28 +152,37 @@ class RasterGridEvaluator(Evaluator):
         )).T
         # Prepare spatial queries
         kdt = KDT(X[:, :2])
+        radius = max(self.xres, self.yres)
         # Compute grids of features
-        grids = []
-        onames = []
-        for grid in self.grids:
-            grids.append(
-                self.digest_grid(pcloud, X, kdt, Xgrid, grid, width, height)
-            )
-            onames.append(grid['oname'])
+        grids = None
+        onames = [grid['oname'] for grid in self.grids]
+        for i in range(0, width, self.grid_iter_step):  # Iterate over rows
+            Xi = np.vstack(Xgrid[i:i+self.grid_iter_step])
+            I = KDT(Xi).query_ball_tree(kdt, radius)
+            subgrid = []
+            for k, grid in enumerate(self.grids):
+                subgrid.append(self.digest_grid(
+                    pcloud, grid, height, I, n_rows=len(I)//height
+                ))
+            if grids is None:
+                grids = subgrid
+            else:
+                for j in range(len(grids)):
+                    grids[j] = np.vstack([grids[j].T, subgrid[j].T]).T
+        # Return
         return grids, onames
 
-    def digest_grid(self, pcloud, X, kdt, Xgrid, grid, width, height):
+    def digest_grid(self, pcloud, grid, height, I, n_rows):
         """
         Generate the grid of features for a given grid specification.
 
         :param pcloud: The point cloud containing the features.
-        :param X: the matrix of coordinates representing the point cloud.
-        :param kdt: The KDTree representing the X matrix.
-        :param Xgrid: The grid of (x, y) values representing the spatial
-            domain.
         :param grid: The grid specification to be digested.
-        :param width: The width of the grid in number of cells.
         :param height: The height of the grid in number of cells.
+        :param I: The list of neighborhoods, where each neighborhood is
+            represented as a list of indices.
+        :param n_rows: How many rows are being considered in the chunk to
+            be digested.
         :return: The generated grid of features.
         :rtype: :class:`np.ndarray`
         """
@@ -207,23 +226,15 @@ class RasterGridEvaluator(Evaluator):
         # Determine target value and threshold
         target = grid.get('target_val', None)
         threshold = grid.get('count_threshold', None)
-        # Prepare spatial queries
-        radius = max(self.xres, self.yres)
         # Compute grid of features
-        # TODO Rethink : Move the queries outside the loop and iterate over the
-        # TODO Rethink : reduce functions directly (save many many queries)
-        Fgrid = []
-        for i in range(width):  # Iterate over rows
-            print(f'Processing row {i+1} of {width}')  # TODO Remove
-            Xi = Xgrid[i]
-            I = KDT(Xi).query_ball_tree(kdt, radius)
-            Fgrid.append(
-                [
-                    reducef(F, I, j, target, threshold) if len(I[j]) > 0 else \
-                    empty_val
-                    for j in range(height)
-                ]
-            )
+        Fgrid = [
+            [
+                reducef(F, I, i*height+j, target, threshold)
+                if len(I[i*height+j]) > 0 else empty_val
+                for j in range(height)
+            ]
+            for i in range(n_rows)
+        ]
         return np.array(Fgrid).T
 
     # ---  PIPELINE METHODS  --- #
