@@ -19,3 +19,4 @@ dependencies:
     - laspy[laszip]>=2.3.0
     - tensorflow[and-cuda]
     - jakteristics>=0.4.1
+    - rasterio>=1.3.9

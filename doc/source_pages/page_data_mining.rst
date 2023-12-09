@@ -411,3 +411,65 @@ radius, respectively. The point cloud is the March2018 validation one from the
     Figure representing the smoothed saturation for two different spherical
     neighborhoods with :math:`25\,\mathrm{cm}` and :math:`3\,\mathrm{m}`
     radius, respectively.
+
+
+
+
+Take closest miner
+=====================
+
+The :class:`.TakeClosestMiner` can be used to derive features from another
+point cloud. It works by defining a pool of point clouds such that the closest
+neighbor between the input point cloud and any point cloud in the pool will be
+considered. Then, the features for each point will be taken from its closest
+neighbor.
+
+.. code-block:: json
+
+    {
+		"miner": "TakeClosestMiner",
+		"fnames": [
+			"HSV_Hrad", "HSV_S", "HSV_V",
+			"floor_distance_r50.0_sep0.35",
+			"eigenvalue_sum_r0.3", "omnivariance_r0.3", "eigenentropy_r0.3",
+			"anisotropy_r0.3", "planarity_r0.3", "linearity_r0.3",
+			"PCA1_r0.3", "PCA2_r0.3",
+			"surface_variation_r0.3", "sphericity_r0.3", "verticality_r0.3",
+	  	],
+		"pcloud_pool": [
+			"/home/point_clouds/point_cloud_A.laz",
+			"/home/point_clouds/point_cloud_B.laz",
+			"/home/point_clouds/point_cloud_C.laz"
+		],
+		"distance_upper_bound": 0.1,
+		"nthreads": 12
+	}
+
+The JSON above defines a :class:`.TakeClosestMiner` that finds the features of
+the closest point in a pool of three point clouds. Neighbors further than
+:math:`0.1\,\mathrm{m}` will not be considered, even if they are the closest
+neighbor.
+
+
+**Arguments**
+
+-- ``fnames``
+    The names of the features that must be taken from the closest neighbor in
+    the pool.
+
+-- ``pcloud_pool``
+    A list with the paths to the point clouds composing the pool.
+
+-- ``distance_upper_bound``
+    The max distance threshold. Neighbors further than this distance will be
+    ignored.
+
+-- ``nthreads``
+    The number of threads for parallel queries.
+
+
+**Output**
+
+The generated output is a point cloud where the features correspond to the
+closest neighbor in the pool, assuming there is at least one neighbor that
+is closer than the ``distance upper bound``.
