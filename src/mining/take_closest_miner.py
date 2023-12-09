@@ -3,10 +3,8 @@
 from src.mining.miner import Miner, MinerException
 from src.utils.dict_utils import DictUtils
 from src.pcloud.point_cloud_factory_facade import PointCloudFactoryFacade
-from src.pcloud.point_cloud_filter import PointCloudFilter
 import src.main.main_logger as LOGGING
 from scipy.spatial import KDTree as KDT
-from scipy.spatial import KDTree
 import numpy as np
 import time
 
@@ -104,7 +102,13 @@ class TakeClosestMiner(Miner):
         """
         # Obtain coordinates
         X = pcloud.get_coordinates_matrix()
-        D, F, y = None, None, None
+        # Initialize distances, features, and labels matrices and vectors
+        D = np.empty(X.shape[0], dtype=float)
+        D.fill(np.inf)
+        F = np.empty((X.shape[0], len(self.fnames)), dtype=float)
+        F.fill(np.nan)
+        y = np.empty(X.shape[0], dtype=int)
+        y.fill(np.iinfo(int).max)
         # Prepare fnames
         fnames = []
         take_classes = False
@@ -133,7 +137,7 @@ class TakeClosestMiner(Miner):
             y_i = pcloud_i.get_classes_vector() if take_classes else None
             # Build the KDTree
             start = time.perf_counter()
-            kdt = KDTree(X_i, leafsize=16)
+            kdt = KDT(X_i, leafsize=16)
             end = time.perf_counter()
             LOGGING.LOGGER.debug(
                 f'TakeClosestMiner built KDTree in {end-start:.3f} seconds.'
@@ -150,19 +154,20 @@ class TakeClosestMiner(Miner):
             LOGGING.LOGGER.debug(
                 f'TakeClosestMiner queried KDTree in {end-start:.3f} seconds.'
             )
-            if D is None:  # Assign first time
-                D = D_i
+            # Update distances
+            mask = D_i < D
+            D[mask] = D_i[mask]
+            # Remove missing indices
+            miss_idx = len(X_i)
+            valid_indices = np.array(I_i) != miss_idx
+            if np.any(valid_indices):  # If at least one index is non-missing
+                I_i = I_i[valid_indices]
+                valid_mask = mask[valid_indices]
+                # Update for any neigh. that is closer than previous closest
                 if fnames is not None:
-                    F = F_i[I_i]
+                    F[mask] = F_i[I_i][valid_mask]
                 if take_classes:
-                    y = y_i[I_i]
-            else:  # Update for any neigh. that is closer than previous closest
-                mask = D_i < D
-                D[mask] = D_i[mask]
-                if fnames is not None:
-                    F[mask] = F_i[I_i][mask]
-                if take_classes:
-                    y[mask] = y_i[I_i][mask]
+                    y[mask] = y_i[I_i][valid_mask]
         # Return point cloud with taken features
         if take_classes:
             pcloud = pcloud.set_classes_vector(y)
