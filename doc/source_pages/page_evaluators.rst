@@ -437,8 +437,8 @@ likelihood in a different color channel.
     An optional specification to define the computation of the radius for the
     ball-like neighborhoods. The variable ``"l"`` represents the max cell size
     and it is the default radius expression. Note that any expression less
-    than "sqrt(2)*l/2" (half of the cell's hypotenuse) will potentially ignore
-    some points inside the cell boundary. Also, values greater than the
+    than ``"sqrt(2)*l/2"`` (half of the cell's hypotenuse) will potentially
+    ignore some points inside the cell boundary. Also, values greater than the
     previous one will increase the "smooth" effect through more overlapped
     neighborhoods.
 
