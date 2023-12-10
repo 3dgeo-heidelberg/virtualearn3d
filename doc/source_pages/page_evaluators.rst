@@ -433,6 +433,15 @@ likelihood in a different color channel.
     How many max rows per iteration. It can be tuned to improve the efficiency
     but also to prevent memory exhaustion.
 
+-- ``radius_expr``
+    An optional specification to define the computation of the radius for the
+    ball-like neighborhoods. The variable ``"l"`` represents the max cell size
+    and it is the default radius expression. Note that any expression less
+    than "sqrt(2)*l/2" (half of the cell's hypotenuse) will potentially ignore
+    some points inside the cell boundary. Also, values greater than the
+    previous one will increase the "smooth" effect through more overlapped
+    neighborhoods.
+
 -- ``grids``
     A list with potentially many grid specifications. A grid can be specified
     with a dictionary-like style:
