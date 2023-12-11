@@ -164,7 +164,7 @@ class RasterGridEvaluator(Evaluator):
         )).T
         # Prepare spatial queries
         kdt = KDT(X[:, :2])
-        l = max(self.xres, self.yres)
+        l = max(self.xres, self.yres)  # l is used when evaluating radius_expr
         radius = eval(StrUtils.to_numpy_expr(self.radius_expr))
         # Compute grids of features
         grids = None
