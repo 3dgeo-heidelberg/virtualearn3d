@@ -66,7 +66,14 @@ class PointNetPreProcessor:
             "y" was given in the inputs dictionary) the corresponding
             reference values for those points.
         """
-        return self.pre_processor(inputs)
+        # TODO Rethink : The solution of taking the coordinates only is not
+        # admissible because features must be reduced and propagated
+        # through the receptive fields too
+        X = inputs['X']
+        if isinstance(X, list):  # If many inputs, take the coordinates only
+            X = X[0]  # Coordinates are assumed to be the first array
+        _inputs = {'X': X, 'y': inputs['y']}
+        return self.pre_processor(_inputs)
 
     # ---   POINT-NET METHODS   --- #
     # ----------------------------- #

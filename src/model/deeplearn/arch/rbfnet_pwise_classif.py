@@ -93,6 +93,8 @@ class RBFNetPwiseClassif(RBFNet):
         if self.include_prepooling_features:
             gathered_tensors.append(self.prepool_feats_tensor)
         gathered_tensors.append(self.global_feats_tensor)
+        if self.fnames is not None:
+            gathered_tensors.append(self.F)  # TODO Rethink : Skiplink input features
         x = tf.keras.layers.Concatenate(name='full_feats')(
             self.rbf_output_tensors + gathered_tensors
         )

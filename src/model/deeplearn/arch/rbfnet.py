@@ -33,6 +33,7 @@ class RBFNet(Architecture, ABC):
         if kwargs.get('arch_name', None) is None:
             kwargs['arch_name'] = 'RBFNet'
         super().__init__(**kwargs)
+        self.fnames = kwargs.get('fnames', None)
         # Update the preprocessing logic
         self.pre_runnable = PointNetPreProcessor(**kwargs['pre_processing'])
         # Update the postprocessing logic
@@ -67,7 +68,18 @@ class RBFNet(Architecture, ABC):
         :return: Built layer.
         :rtype: :class:`tf.Tensor`
         """
-        return tf.keras.layers.Input(shape=(None, 3))
+        # Handle coordinates as input
+        self.X = tf.keras.layers.Input(shape=(None, 3), name='Xin')
+        # Handle input features, if any
+        if self.fnames is not None:
+            self.F = tf.keras.layers.Input(
+                shape=(None, len(self.fnames)),
+                name='Fin'
+            )
+        # Return
+        if self.F is None:
+            return self.X
+        return [self.X, self.F]
 
     def build_hidden(self, x, **kwargs):
         """
@@ -80,7 +92,7 @@ class RBFNet(Architecture, ABC):
         """
         # Input transformation block
         x = PointNet.build_transformation_block(
-            x,
+            self.X,
             num_features=3,
             name='input_transf',
             tnet_pre_filters=self.tnet_pre_filters_spec,
@@ -144,6 +156,7 @@ class RBFNet(Architecture, ABC):
         # Call parent's method
         state = super().__getstate__()
         # Add RBFNet's attributes to state dictionary
+        state['fnames'] = self.fnames
         state['num_points'] = self.num_points
         state['rbfs'] = self.rbfs
         state['enhanced_dim'] = self.enhanced_dim
@@ -165,6 +178,7 @@ class RBFNet(Architecture, ABC):
         :return: Nothing, but modifies the internal state of the object.
         """
         # Assign RBFNet's attributes from state dictionary
+        self.fnames = state.get('fnames', None)
         self.num_points = state['num_points']
         self.rbfs = state['rbfs']
         self.enhanced_dim = state['enhanced_dim']

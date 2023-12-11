@@ -227,7 +227,6 @@ class Architecture:
                 f'"{self.architecture_graph_path}"'
             )
 
-
     def overwrite_pretrained_model(self, spec):
         """
         Assist the :meth:`model.Model.overwrite_pretrained_model` method

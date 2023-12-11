@@ -70,6 +70,11 @@ class RBFNetPwiseClassifModel(ClassificationModel):
             will also be passed to the parent.
         """
         # Call parent init
+        if not 'fnames' in kwargs:
+            if 'model_args' in kwargs and 'fnames' in kwargs['model_args']:
+                kwargs['fnames'] = kwargs['model_args']['fnames']
+            else:
+                kwargs['fnames'] = []  # Avoid None fnames exception for RBFNet
         super().__init__(**kwargs)
         # Basic attributes of the RBFNetPwiseClassifModel
         self.model = None  # By default, internal model is not instantiated
@@ -204,7 +209,14 @@ class RBFNetPwiseClassifModel(ClassificationModel):
         """
         See :meth:`model.Model.get_input_from_pcloud`.
         """
-        return pcloud.get_coordinates_matrix()
+        # No features
+        if self.fnames is None:
+            return pcloud.get_coordinates_matrix()
+        # Features
+        return [
+            pcloud.get_coordinates_matrix(),
+            pcloud.get_features_matrix(self.fnames)
+        ]
 
     # ---   TRAINING METHODS   --- #
     # ---------------------------- #
