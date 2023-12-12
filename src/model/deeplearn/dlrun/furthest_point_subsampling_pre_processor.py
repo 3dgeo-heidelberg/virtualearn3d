@@ -93,7 +93,9 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
         """
         # Extract inputs
         start = time.perf_counter()
-        X, y = inputs['X'], inputs.get('y', None)
+        X, F, y = inputs['X'], None, inputs.get('y', None)
+        if isinstance(X, list):
+            X, F = X[0], X[1]
         # Extract neighborhoods
         sup_X, I = self.find_neighborhood(X, y=y)
         # Remove empty neighborhoods and corresponding support points
@@ -150,6 +152,19 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             f'{Xout.shape[0]} receptive fields of {self.num_points} points '
             'each.'
         )
+        # Features ready to be fed into the neural network
+        Fout = None
+        if F is not None and len(F) > 0:
+            Fout = np.array([
+                [
+                    self.last_call_receptive_fields[i].reduce_values(
+                        None, F[:, j]
+                    )
+                    for j in range(F.shape[1])
+                ]
+                for i in range(len(I))
+            ]).transpose([0, 2, 1])
+        # Handle labels
         if y is not None:
             yout = self.reduce_labels(Xout, y, I=I)
             end = time.perf_counter()
@@ -157,11 +172,17 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
                 f'The furthest point subsampling pre processor pre-processed '
                 f'{X.shape[0]} points for training in {end-start:.3f} seconds.'
             )
-            return Xout, yout
+            if Fout is not None:
+                return [Xout, Fout], yout
+            else:
+                return Xout, yout
         LOGGING.LOGGER.info(
             'The furthest point subsampling pre processor pre-processed '
             f'{X.shape[0]} points for predictions in {end-start:.3f} seconds.'
         )
+        # Return without labels
+        if Fout is not None:
+            return [Xout, Fout]
         return Xout
 
     # ---   POINT-NET METHODS   --- #

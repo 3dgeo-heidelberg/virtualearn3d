@@ -253,10 +253,12 @@ class RBFNetPwiseClassifModel(ClassificationModel):
         )
         # Training evaluation
         super().on_training_finished(X, y, yhat=yhat)
+        # Get the coordinates matrix even when [X, F] is given
+        _X = X[0] if isinstance(X, list) else X
         # Write classified point cloud
         if self.training_classified_point_cloud_path is not None:
             ClassifiedPcloudReport(
-                X=X, y=y, yhat=yhat, zhat=zhat, class_names=self.class_names
+                X=_X, y=y, yhat=yhat, zhat=zhat, class_names=self.class_names
             ).to_file(
                 path=self.training_classified_point_cloud_path
             )
@@ -270,7 +272,7 @@ class RBFNetPwiseClassifModel(ClassificationModel):
                 f'{end-start:.3f} seconds.'
             )
             PwiseActivationsReport(
-                X=X, activations=activations, y=y
+                X=_X, activations=activations, y=y
             ).to_file(
                 path=self.training_activations_path
             )

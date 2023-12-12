@@ -54,6 +54,7 @@ class RBFNet(Architecture, ABC):
         )
         # Initialize cache-like attributes
         self.rbf_layers, self.rbf_output_tensors = [], []
+        self.X, self.F = None, None
 
     # ---   ARCHITECTURE METHODS   --- #
     # -------------------------------- #
