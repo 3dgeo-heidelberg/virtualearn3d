@@ -3,6 +3,10 @@
 from src.model.deeplearn.arch.rbfnet import RBFNet
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
 from src.model.deeplearn.arch.point_net import PointNet
+# TODO Rethink : FSL imports ---
+from src.model.deeplearn.layer.features_structuring_layer import \
+    FeaturesStructuringLayer
+# --- TODO Rethink : FSL imports
 import tensorflow as tf
 import numpy as np
 import os
@@ -57,6 +61,8 @@ class RBFNetPwiseClassif(RBFNet):
                 self.binary_crossentropy = \
                     fun_name == 'binary_crossentropy' or \
                     fun_name == 'class_weighted_binary_crossentropy'
+        # Feature related attributes
+        self.skip_link_features = kwargs.get('skip_link_features', True)
         # Initialize cache-like attributes
         self.prepool_feats_tensor = None
         self.global_feats_tensor = None
@@ -93,8 +99,40 @@ class RBFNetPwiseClassif(RBFNet):
         if self.include_prepooling_features:
             gathered_tensors.append(self.prepool_feats_tensor)
         gathered_tensors.append(self.global_feats_tensor)
-        if self.fnames is not None:
-            gathered_tensors.append(self.F)  # TODO Rethink : Skiplink input features
+        if self.fnames is not None and self.skip_link_features:
+            # TODO Rethink : Transformed features section ---
+            Ftransf = PointNet.build_transformation_block(
+                self.F,
+                num_features=len(self.fnames),
+                name='feats_transf',
+                tnet_pre_filters=self.tnet_pre_filters_spec,
+                tnet_post_filters=self.tnet_post_filters_spec,
+                kernel_initializer=self.tnet_kernel_initializer
+            )
+            gathered_tensors.append(Ftransf)
+            # --- TODO Rethink : Transformed features section
+            # TODO Rethink : FSL section ---
+            """fsl_dim_out = 32
+            fsl = FeaturesStructuringLayer(
+                max_radii=[3.0, 3.0, 3.0],
+                radii_resolution=5,
+                angular_resolutions=(1, 3, 5, 7, 11),
+                structure_dimensionality=3,
+                dim_out=fsl_dim_out,
+                concatenation_strategy='OPAQUE',
+                trainable_QX=True,
+                trainable_QW=True,
+                trainable_omegaD=True,
+                trainable_omegaF=True
+            )([self.Xtransf, Ftransf])
+            enhanced_fsl = PointNet.build_mlp_block(
+                fsl,
+                fsl_dim_out,
+                f'fsl_enhancement',
+                self.enhancement_kernel_initializer
+            )
+            gathered_tensors.append(enhanced_fsl)"""
+            # --- TODO Rethink : FSL section
         x = tf.keras.layers.Concatenate(name='full_feats')(
             self.rbf_output_tensors + gathered_tensors
         )

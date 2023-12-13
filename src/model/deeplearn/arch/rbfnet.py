@@ -55,6 +55,7 @@ class RBFNet(Architecture, ABC):
         # Initialize cache-like attributes
         self.rbf_layers, self.rbf_output_tensors = [], []
         self.X, self.F = None, None
+        self.Xtransf = None
 
     # ---   ARCHITECTURE METHODS   --- #
     # -------------------------------- #
@@ -100,6 +101,7 @@ class RBFNet(Architecture, ABC):
             tnet_post_filters=self.tnet_post_filters_spec,
             kernel_initializer=self.tnet_kernel_initializer
         )
+        self.Xtransf = x
         # RBF feature extraction layers
         for i, rbf in enumerate(self.rbfs):
             rbf_layer = RBFFeatExtractLayer(

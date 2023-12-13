@@ -238,7 +238,9 @@ class FeaturesStructuringLayer(Layer):
         # Build the trainable weights (if not yet)
         if not self.built_omegaD:
             self.omegaD = tf.Variable(
-                np.ones(self.num_kernel_points)*np.max(self.max_radii),
+                np.ones(self.num_kernel_points)*np.max(self.max_radii),  # TODO Restore : Legacy ?
+                #np.max(self.max_radii) *
+                #    np.random.uniform(0.01, 1.0, self.num_kernel_points),  # TODO Remove : Alternative ?
                 dtype='float32',
                 trainable=self.trainable_omegaD,
                 name='omegaD'

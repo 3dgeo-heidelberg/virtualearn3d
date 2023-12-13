@@ -13,9 +13,9 @@ class RBFFeatExtractLayerTest(VL3DTest):
     """
     :author: Alberto M. Esmoris Pena
 
-    Radial basis function feature extraction layer test checks the operations
-    of a radial basis function feature extraction layer yield the expected
-    results.
+    Radial basis function feature extraction layer test checks that the
+    operations of a radial basis function feature extraction layer yield the
+    expected results.
     """
     # ---   INIT   --- #
     # ---------------- #
@@ -61,7 +61,7 @@ class RBFFeatExtractLayerTest(VL3DTest):
         with tf.device("cpu:0"):
             rfel_out = rfel.call(X)
         # Compute expected output
-        expected_out = self.computed_expected_output(
+        expected_out = self.compute_expected_output(
             X,
             np.array(rfel.Q, dtype='float32'),
             np.array(rfel.omega, dtype='float32'),
@@ -71,7 +71,7 @@ class RBFFeatExtractLayerTest(VL3DTest):
 
     # ---  UTIL METHODS  --- #
     # ---------------------- #
-    def computed_expected_output(self, X, Q, omega):
+    def compute_expected_output(self, X, Q, omega):
         """
         Compute the expected output to compare it against what is generated
         by the RBF feature extraction layer.

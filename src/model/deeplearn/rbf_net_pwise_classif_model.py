@@ -190,6 +190,8 @@ class RBFNetPwiseClassifModel(ClassificationModel):
         coordinates matrix and to ignore F. In other words, this RBFNet
         implementation does not support input features.
 
+        :param pcloud: The input point cloud
+        :type pcloud: :class:`.PointCloud`
         :param X: The input matrix of coordinates where each row represents a
             point from the point cloud: If not given, it will be retrieved
             from the point cloud.
@@ -201,8 +203,11 @@ class RBFNetPwiseClassifModel(ClassificationModel):
         y = None
         if pcloud.has_classes():
             y = pcloud.get_classes_vector()
+        F = None
+        if self.fnames is not None and len(self.fnames) > 0:
+            F = pcloud.get_features_matrix(self.fnames)
         return self._predict(
-            X, y=y, F=None, plots_and_reports=plots_and_reports
+            X, y=y, F=F, plots_and_reports=plots_and_reports
         )
 
     def get_input_from_pcloud(self, pcloud):
@@ -308,6 +313,7 @@ class RBFNetPwiseClassifModel(ClassificationModel):
             predictions on training data to generate a thorough representation
             of the receptive fields.
         """
+        X = X if F is None else [X, F]
         return self.model.predict(
             X, y=y, zout=zout, plots_and_reports=plots_and_reports
         )

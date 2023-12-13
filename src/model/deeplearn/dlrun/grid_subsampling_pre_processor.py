@@ -184,6 +184,7 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             'receptive fields. '
         )
         # Features ready to be fed into the neural network
+        # TODO Rethink : Measure with DEBUG and parallelize?
         Fout = None
         if F is not None and len(F) > 0:
             Fout = np.array([
