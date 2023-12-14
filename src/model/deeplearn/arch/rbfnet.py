@@ -10,6 +10,8 @@ from src.model.deeplearn.dlrun.point_net_post_processor import \
     PointNetPostProcessor
 from src.model.deeplearn.layer.rbf_feat_extract_layer import \
     RBFFeatExtractLayer
+from src.model.deeplearn.layer.features_structuring_layer import \
+    FeaturesStructuringLayer
 import tensorflow as tf
 
 
@@ -42,6 +44,9 @@ class RBFNet(Architecture, ABC):
         self.num_points = self.pre_runnable.get_num_input_points()
         # The specification for the RBF feature extraction layer
         self.rbfs = kwargs['rbfs']
+        # The specification for the FSL and RBFFeatProcessing layers
+        self.feature_structuring = kwargs.get('feature_structuring', None)
+        self.feature_processing = kwargs.get('feature_processing', None)
         # Neural network architecture specifications
         self.tnet_pre_filters_spec = kwargs['tnet_pre_filters_spec']
         self.tnet_post_filters_spec = kwargs['tnet_post_filters_spec']
@@ -54,8 +59,9 @@ class RBFNet(Architecture, ABC):
         )
         # Initialize cache-like attributes
         self.rbf_layers, self.rbf_output_tensors = [], []
+        self.rbf_feat_proc_layer = None
         self.X, self.F = None, None
-        self.Xtransf = None
+        self.Xtransf, self.Ftransf = None, None
 
     # ---   ARCHITECTURE METHODS   --- #
     # -------------------------------- #
@@ -104,6 +110,7 @@ class RBFNet(Architecture, ABC):
         self.Xtransf = x
         # RBF feature extraction layers
         for i, rbf in enumerate(self.rbfs):
+            # Generate RBF output
             rbf_layer = RBFFeatExtractLayer(
                 max_radii=rbf['max_radii'],
                 radii_resolution=rbf['radii_resolution'],
@@ -130,7 +137,17 @@ class RBFNet(Architecture, ABC):
                     raise DeepLearningException(
                         f'RBFNet does not support "{act}" activation for RBFs.'
                     )
+            # Store the RBF layer itself
             self.rbf_layers.append(rbf_layer)
+            # Structure RBF output
+            if self.check_feature_structuring('fsl_rbf_features_dim_out'):
+                _x = self.build_FSL_block(
+                    _x,
+                    self.feature_structuring,
+                    self.feature_structuring['fsl_rbf_features_dim_out'],
+                    f'rbf{i+1}_feats'
+                )
+            # Store RBF output
             self.rbf_output_tensors.append(_x)
         x = tf.keras.layers.Concatenate(name='rbf_concat')(
             self.rbf_output_tensors,
@@ -144,8 +161,72 @@ class RBFNet(Architecture, ABC):
                     f'enhancement{i+1}',
                     self.enhancement_kernel_initializer
                 )
+            # Structure enhanced RBF output
+            if self.check_feature_structuring(
+                'fsl_rbf_enhanced_features_dim_out'
+            ):
+                x = self.build_FSL_block(
+                    x,
+                    self.feature_structuring,
+                    self.feature_structuring['fsl_rbf_enhanced_features_dim_out'],
+                    name='rbf_enhanced_feats'
+                )
         # Return
         return x
+
+    # ---  RBFNET PWISE CLASSIF METHODS  --- #
+    # -------------------------------------- #
+    def build_FSL_block(self, F, fs, dim_out, name):
+        """
+        Assist the building of feature structuring blocks providing the common
+        operations.
+
+        See :class:`.FeaturesStructuringLayer`.
+
+        :param F: The tensor of input features.
+        :param fs: The feature structuring specification.
+        :param dim_out: The output dimensionality for the FSL block.
+        :return: The built FSL block
+        """
+        X = self.Xtransf if fs['transformed_structure'] else self.X
+        if isinstance(dim_out, str) and dim_out.lower() == 'dim_in':
+            dim_out = F.shape[-1]
+        fsl = FeaturesStructuringLayer(
+            max_radii=fs['max_radii'],
+            radii_resolution=len(fs['angular_resolutions']),
+            angular_resolutions=fs['angular_resolutions'],
+            structure_dimensionality=3,
+            dim_out=dim_out,
+            concatenation_strategy=fs['concatenation_strategy'],
+            trainable_QX=fs['trainable_QX'],
+            trainable_QW=fs['trainable_QW'],
+            trainable_omegaD=fs['trainable_omegaD'],
+            trainable_omegaF=fs['trainable_omegaF'],
+            name=f'fsl_{name}'
+        )([X, F])
+        if fs.get('enhance', False):
+            fsl = PointNet.build_mlp_block(
+                fsl,
+                dim_out,
+                f'fsl_{name}_enhancement',
+                self.enhancement_kernel_initializer
+            )
+        return fsl
+
+    def check_feature_structuring(self, dim_out_key):
+        """
+        Check whether the feature structuring specification supports the
+        given key (True) or not (False).
+
+        :param dim_out_key: The key of the output dimensionaliy element to
+            be checked to decide on the feature structuring availability.
+        :return: True if the feature structuring is supported for given key,
+            false otherwise.
+        """
+        return (
+            self.feature_structuring is not None and
+            self.feature_structuring.get(dim_out_key, 0) != 0
+        )
 
     # ---   SERIALIZATION   --- #
     # ------------------------- #
@@ -162,6 +243,8 @@ class RBFNet(Architecture, ABC):
         state['fnames'] = self.fnames
         state['num_points'] = self.num_points
         state['rbfs'] = self.rbfs
+        state['feature_structuring'] = self.feature_structuring
+        state['feature_processing'] = self.feature_processing
         state['enhanced_dim'] = self.enhanced_dim
         state['enhancement_kernel_initializer'] = \
             self.enhancement_kernel_initializer
@@ -184,6 +267,8 @@ class RBFNet(Architecture, ABC):
         self.fnames = state.get('fnames', None)
         self.num_points = state['num_points']
         self.rbfs = state['rbfs']
+        self.feature_structuring = state['feature_structuring']
+        self.feature_processing = state['feature_processing']
         self.enhanced_dim = state['enhanced_dim']
         self.enhancement_kernel_initializer = \
             state['enhancement_kernel_initializer']

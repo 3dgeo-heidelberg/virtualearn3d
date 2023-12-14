@@ -226,8 +226,8 @@ class RBFFeatProcessingLayer(Layer):
             self.num_kernels,  # Repeat for each kernel
             axis=2  # Repeat along feature axis
         )
-        M = tf.reshape(tf.transpose(self.M), shape=-1)
-        Omega = tf.reshape(tf.transpose(self.Omega), shape=-1)
+        M = tf.reshape(tf.transpose(self.M), shape=[-1])
+        Omega = tf.reshape(tf.transpose(self.Omega), shape=[-1])
         D = (F_repeated-M) / Omega
         # Return the Gaussian RBF
         return tf.exp(-tf.square(D))
