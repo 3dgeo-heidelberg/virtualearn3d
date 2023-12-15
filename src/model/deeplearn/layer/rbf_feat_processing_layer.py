@@ -157,7 +157,7 @@ class RBFFeatProcessingLayer(Layer):
         """
         # Call parent's biuld
         super().build(dim_in)
-        # Find the dimensionaly
+        # Find the dimensionality
         nf = dim_in[-1]  # Number of features
         # Validate the dimensionality
         if nf != self.num_feats:
@@ -257,3 +257,51 @@ class RBFFeatProcessingLayer(Layer):
         return tf.exp(-tf.abs(F_repeated-M)/tf.square(Omega))
 
 
+    # ---   SERIALIZATION   --- #
+    # ------------------------- #
+    def get_config(self):
+        """Return necessary data to serialize the layer"""
+        # Call parent's get_config
+        config = super().get_config()
+        # Update config with custom attributes
+        config.update({
+            # Base attributes
+            'means': self.means,
+            'stdevs': self.stdevs,
+            'num_kernels': self.num_kernels,
+            'a': self.a,
+            'b': self.b,
+            'kernel_function_type': self.kernel_function_type,
+            # Building attributes
+            'trainable_M': self.trainable_M,
+            'built_M': self.built_M,
+            'trainable_Omega': self.trainable_Omega,
+            'built_Omega': self.built_Omega
+        })
+        # Return updated config
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        """Use given config data to deserialize the layer"""
+        # Extract values of interest
+        rfpl = cls(**config)
+        num_kernels = config['num_kernels']
+        num_feats = len(config['means'])
+        # Placeholders so build on model load does not fail
+        rfpl.M = tf.Variable(
+            np.zeros((num_kernels, num_feats)),
+            dtype='float32',
+            trainable=config['trainable_M'],
+            name='M_placeholder'
+        )
+        rfpl.Omega = tf.Variable(
+            np.zeros((num_kernels, num_feats)),
+            dtype='float32',
+            trainable=config['trainable_Omega'],
+            name='Omega_placeholder'
+        )
+        # Return deserialized layer
+        return rfpl
+
+    # TODO Rethink : Plots and reports (see RBFFeatExtractLayer)

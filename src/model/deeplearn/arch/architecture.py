@@ -8,6 +8,8 @@ from src.model.deeplearn.layer.features_structuring_layer import \
     FeaturesStructuringLayer
 from src.model.deeplearn.layer.rbf_feat_extract_layer import \
     RBFFeatExtractLayer
+from src.model.deeplearn.layer.rbf_feat_processing_layer import \
+    RBFFeatProcessingLayer
 from src.inout.io_utils import IOUtils
 import src.main.main_logger as LOGGING
 import tensorflow as tf
@@ -313,7 +315,8 @@ class Architecture:
                     'FeaturesOrthogonalRegularizer':
                         FeaturesOrthogonalRegularizer,
                     'FeaturesStructuringLayer': FeaturesStructuringLayer,
-                    "RBFFeatExtractLayer": RBFFeatExtractLayer
+                    "RBFFeatExtractLayer": RBFFeatExtractLayer,
+                    'RBFFeatProcessingLayer': RBFFeatProcessingLayer
 
                 },
                 compile=False

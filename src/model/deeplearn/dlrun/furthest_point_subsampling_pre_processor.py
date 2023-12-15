@@ -143,10 +143,20 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
         )
         # Neighborhoods ready to be fed into the neural network
         # TODO Rethink : Measure with DEBUG and parallelize?
-        Xout = np.array([
-            self.last_call_receptive_fields[i].centroids_from_points(None)
-            for i in range(len(I))
-        ])
+        if self.to_unit_sphere:
+            Xout = np.array([
+                ReceptiveFieldPreProcessor.transform_to_unit_sphere(
+                    self.last_call_receptive_fields[i].centroids_from_points(
+                        None
+                    )
+                )
+                for i in range(len(I))
+            ])
+        else:
+            Xout = np.array([
+                self.last_call_receptive_fields[i].centroids_from_points(None)
+                for i in range(len(I))
+            ])
         end = time.perf_counter()
         LOGGING.LOGGER.info(
             'The furthest point subsampling pre processor generated '
