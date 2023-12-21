@@ -142,7 +142,6 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             for i, Ii in enumerate(I)
         )
         # Neighborhoods ready to be fed into the neural network
-        # TODO Rethink : Measure with DEBUG and parallelize?
         if self.to_unit_sphere:
             Xout = np.array([
                 ReceptiveFieldPreProcessor.transform_to_unit_sphere(
@@ -164,18 +163,17 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             'each.'
         )
         # Features ready to be fed into the neural network
-        # TODO Rethink : Measure with DEBUG and parallelize?
         Fout = None
         if F is not None and len(F) > 0:
-            Fout = np.array([
-                [
-                    self.last_call_receptive_fields[i].reduce_values(
-                        None, F[:, j]
-                    )
-                    for j in range(F.shape[1])
-                ]
+            rv = lambda rfi, F: [
+                rfi.reduce_values(None, F[:, j]) for j in range(F.shape[1])
+            ]
+            Fout = np.array(joblib.Parallel(n_jobs=self.nthreads)(
+                joblib.delayed(rv)(
+                    self.last_call_receptive_fields[i], F
+                )
                 for i in range(len(I))
-            ]).transpose([0, 2, 1])
+            )).transpose([0, 2, 1])
         # Handle labels
         if y is not None:
             yout = self.reduce_labels(Xout, y, I=I)

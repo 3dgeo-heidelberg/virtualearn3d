@@ -277,3 +277,8 @@ class RBFNet(Architecture, ABC):
         self.tnet_kernel_initializer = state['tnet_kernel_initializer']
         # Call parent's set state
         super().__setstate__(state)
+        self.rbf_layers = [
+            layer
+            for layer in self.nn.layers
+            if isinstance(layer, RBFFeatExtractLayer)
+        ]

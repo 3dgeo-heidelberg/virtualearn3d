@@ -181,41 +181,29 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
                     fill_centroid=not self.interpolate
                 ))
         # Neighborhoods ready to be fed into the neural network
-        # TODO Rethink : Alternative below
         Xout = np.array(joblib.Parallel(n_jobs=self.nthreads)(
             joblib.delayed(cfp)(
                 self.last_call_receptive_fields[i], X[Ii], i
             ) for i, Ii in enumerate(I)
         ))
-        # TODO Rethink : Legacy below
-        """Xout = np.array(joblib.Parallel(n_jobs=self.nthreads)(
-            joblib.delayed(
-                self.last_call_receptive_fields[i].centroids_from_points
-            )(
-                X[Ii],
-                interpolate=self.interpolate,
-                fill_centroid=not self.interpolate
-            )
-            for i, Ii in enumerate(I)
-        ))"""
         end = time.perf_counter()
         LOGGING.LOGGER.info(
             f'The grid subsampling pre processor generated {Xout.shape[0]} '
             'receptive fields. '
         )
         # Features ready to be fed into the neural network
-        # TODO Rethink : Measure with DEBUG and parallelize?
         Fout = None
         if F is not None and len(F) > 0:
-            Fout = np.array([
-                [
-                    self.last_call_receptive_fields[i].reduce_values(
-                        Xout[i], F[:, j], fill_nan=True
-                    )
-                    for j in range(F.shape[1])
-                ]
+            rv = lambda rfi, Xouti, F : [
+                rfi.reduce_values(Xouti, F[:, j], fill_nan=True)
+                for j in range(F.shape[1])
+            ]
+            Fout = np.array(joblib.Parallel(n_jobs=self.nthreads)(
+                joblib.delayed(rv)(
+                    self.last_call_receptive_fields[i], Xout[i], F
+                )
                 for i in range(len(I))
-            ]).transpose([0, 2, 1])
+            )).transpose([0, 2, 1])
         # Handle labels
         if y is not None:
             yout = self.reduce_labels(Xout, y, I=I)

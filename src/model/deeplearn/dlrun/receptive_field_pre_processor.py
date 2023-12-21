@@ -232,6 +232,7 @@ class ReceptiveFieldPreProcessor:
             'support_strategy_num_points': self.support_strategy_num_points,
             'support_strategy_fast': self.support_strategy_fast,
             'support_chunk_size': self.support_chunk_size,
+            'to_unit_sphere': self.to_unit_sphere,
             'training_class_distribution': self.training_class_distribution,
             'center_on_pcloud': self.center_on_pcloud,
             'nthreads': self.nthreads,
@@ -265,6 +266,7 @@ class ReceptiveFieldPreProcessor:
         )
         self.support_strategy_fast = state.get('support_strategy_fast', False)
         self.support_chunk_size = state.get('support_chunk_size', 0)
+        self.to_unit_sphere = state.get('to_unit_sphere', True)  # TODO Rethink : Set to False by default
         self.training_class_distribution = state['training_class_distribution']
         self.center_on_pcloud = state['center_on_pcloud']
         self.nthreads = state['nthreads']

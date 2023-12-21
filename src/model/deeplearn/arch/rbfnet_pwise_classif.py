@@ -363,5 +363,3 @@ class RBFNetPwiseClassif(RBFNet):
                     out_prefix=cache_map['out_prefix'],
                     Qpast=cache_map['Qpast'][i]
                 )
-
-
