@@ -60,7 +60,7 @@ class DLModelHandler:
         :rtype: :class:`.DLModelHandler`
         """
         if not self.is_compiled():
-            self.compile(X=X, F=F, y=y)
+            self.compile(X=X, F=F, y=y, arch_plot=True)
         return self._fit(X, y, F=F)
 
     @abstractmethod

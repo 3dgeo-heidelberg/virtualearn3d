@@ -295,6 +295,9 @@ class SimpleDLModelHandler(DLModelHandler):
         # Build architecture
         if not self.arch.is_built():
             self.arch.build()
+        elif kwargs.get('arch_plot', False):  # If not,
+            # at least plot the built architecture if requested
+            self.arch.plot()
         self.compiled = self.arch.nn
         # Determine class weights if possible
         class_weight = None
