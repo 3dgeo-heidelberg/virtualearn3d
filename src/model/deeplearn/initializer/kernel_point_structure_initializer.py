@@ -55,7 +55,7 @@ class KernelPointStructureInitializer(Initializer):
             initializer.
         """
         # Call parent's init
-        super().__init__()
+        super().__init__(**kwargs)
         # Assign attributes
         self.initialization_type = initialization_type
         self.max_radii = np.array(max_radii)

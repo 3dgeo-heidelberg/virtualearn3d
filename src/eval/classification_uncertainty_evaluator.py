@@ -8,6 +8,7 @@ from src.model.deeplearn.point_net_pwise_classif_model import \
     PointNetPwiseClassifModel
 from src.model.deeplearn.rbf_net_pwise_classif_model import \
     RBFNetPwiseClassifModel
+from src.model.deeplearn.handle.dl_model_handler import DLModelHandler
 import src.main.main_logger as LOGGING
 from src.utils.dict_utils import DictUtils
 from sklearn.cluster import MiniBatchKMeans
@@ -271,6 +272,16 @@ class ClassificationUncertaintyEvaluator(Evaluator):
             (PointNetPwiseClassifModel, RBFNetPwiseClassifModel)
         ):
             X = pcloud.get_coordinates_matrix()
+            if hasattr(model, "model") and isinstance(
+                model.model, DLModelHandler
+            ):
+                arch = model.model.arch
+                if (
+                    hasattr(arch, 'fnames') and
+                    arch.fnames is not None and
+                    len(arch.fnames) > 0
+                ):
+                    X = [X, pcloud.get_features_matrix(arch.fnames)]
         else:
             X = pcloud.get_features_matrix(fnames=model.fnames)
         # Obtain predictions and probabilities

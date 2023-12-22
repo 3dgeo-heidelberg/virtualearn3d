@@ -1,6 +1,7 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from abc import abstractmethod
+import numpy as np
 
 
 # ---   CLASS   --- #
@@ -34,6 +35,9 @@ class ReceptiveFieldPreProcessor:
         If greater than zero, the support points will be considered in chunks
         of :math:`n` points.
     :vartype support_chunk_size: int
+    :ivar to_unit_sphere: Whether to map the structure space of the receptive
+        fields to the unit sphere (True) or not (False).
+    :vartype to_unit_sphere: bool
     :ivar training_class_distribution: The target class distribution to
         consider when building the support points. The element i of this
         vector (or list) specifies how many neighborhoods centered on a point
@@ -88,6 +92,7 @@ class ReceptiveFieldPreProcessor:
         )
         self.support_strategy_fast = kwargs.get('support_strategy_fast', False)
         self.support_chunk_size = kwargs.get('support_chunk_size', 0)
+        self.to_unit_sphere = kwargs.get('to_unit_sphere', False)
         self.training_class_distribution = kwargs.get(
             'training_class_distribution', None
         )
@@ -186,6 +191,31 @@ class ReceptiveFieldPreProcessor:
                 'support_points_report_path'
             ]
 
+    @staticmethod
+    def transform_to_unit_sphere(X):
+        r"""
+        Map the points in :math:`\pmb{X} \in \mathbb{R}^{m \times n_x}` to the
+        unit sphere (typically :math:`n_x = 3`, i.e., 3D).
+
+        Let :math:`r = \max_{1 \leq i \leq m} \; \rVert{\pmb{x}_{i*}}\rVert^2`
+        where :math:`\pmb{x}_{i*}` represents the i-th row (i.e., point) in
+        the matrix :math:`\pmb{X}`. For then, the structure space transformed
+        to the unit sphere can be represented as follows:
+
+        .. math::
+
+            \pmb{X'} = \pmb{X}/r
+
+        :param X: The matrix representing a structure space such that rows
+            are points and columns are coordinates.
+        :type X: :class:`np.ndarray`
+        :return: The structure space matrix transformed to the unit sphere.
+        :rtype: :class:`np.ndarray`
+        """
+        squared_distances = np.sum(np.power(X, 2), axis=1)
+        r = np.sqrt(np.max(squared_distances))
+        return X/r
+
     # ---   SERIALIZATION   --- #
     # ------------------------- #
     def __getstate__(self):
@@ -202,6 +232,7 @@ class ReceptiveFieldPreProcessor:
             'support_strategy_num_points': self.support_strategy_num_points,
             'support_strategy_fast': self.support_strategy_fast,
             'support_chunk_size': self.support_chunk_size,
+            'to_unit_sphere': self.to_unit_sphere,
             'training_class_distribution': self.training_class_distribution,
             'center_on_pcloud': self.center_on_pcloud,
             'nthreads': self.nthreads,
@@ -235,6 +266,7 @@ class ReceptiveFieldPreProcessor:
         )
         self.support_strategy_fast = state.get('support_strategy_fast', False)
         self.support_chunk_size = state.get('support_chunk_size', 0)
+        self.to_unit_sphere = state.get('to_unit_sphere', True)  # TODO Rethink : Set to False by default
         self.training_class_distribution = state['training_class_distribution']
         self.center_on_pcloud = state['center_on_pcloud']
         self.nthreads = state['nthreads']

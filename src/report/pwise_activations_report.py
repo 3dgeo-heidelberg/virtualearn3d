@@ -5,7 +5,6 @@ from src.inout.io_utils import IOUtils
 from src.pcloud.point_cloud_factory_facade import PointCloudFactoryFacade
 from src.inout.point_cloud_io import PointCloudIO
 import src.main.main_logger as LOGGING
-import numpy as np
 import os
 
 

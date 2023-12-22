@@ -111,7 +111,9 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
 
         :param inputs: A key-word input where the key "X" gives the input
             dataset and the "y" (OPTIONALLY) gives the reference values that
-            can be used to fit/train a PointNet model.
+            can be used to fit/train a PointNet model. If "X" is a list, then
+            the first element is assumed to be the matrix X of coordinates
+            and the second the matrix F of features.
         :type inputs: dict
         :return: Either (Xout, yout) or Xout. Where Xout are the points
             representing the receptive field and yout (only given when
@@ -120,7 +122,9 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
         """
         # Extract inputs
         start = time.perf_counter()
-        X, y = inputs['X'], inputs.get('y', None)
+        X, F, y = inputs['X'], None, inputs.get('y', None)
+        if isinstance(X, list):
+            X, F = X[0], X[1]
         # Extract neighborhoods
         sup_X, I = self.find_neighborhood(X, y=y)
         # Remove empty neighborhoods and corresponding support points
@@ -163,22 +167,44 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             )
             for i, Ii in enumerate(I)
         )
+        # Centroid from points (baseline)
+        cfp = lambda rfi, XIi, i : rfi.centroids_from_points(
+            XIi,
+            interpolate=self.interpolate,
+            fill_centroid=not self.interpolate
+        )
+        if self.to_unit_sphere:  # Centroid from points (to unit sphere)
+            cfp = lambda rfi, XIi, i : ReceptiveFieldPreProcessor.\
+                transform_to_unit_sphere(rfi.centroids_from_points(
+                    XIi,
+                    interpolate=self.interpolate,
+                    fill_centroid=not self.interpolate
+                ))
         # Neighborhoods ready to be fed into the neural network
         Xout = np.array(joblib.Parallel(n_jobs=self.nthreads)(
-            joblib.delayed(
-                self.last_call_receptive_fields[i].centroids_from_points
-            )(
-                X[Ii],
-                interpolate=self.interpolate,
-                fill_centroid=not self.interpolate
-            )
-            for i, Ii in enumerate(I)
+            joblib.delayed(cfp)(
+                self.last_call_receptive_fields[i], X[Ii], i
+            ) for i, Ii in enumerate(I)
         ))
         end = time.perf_counter()
         LOGGING.LOGGER.info(
             f'The grid subsampling pre processor generated {Xout.shape[0]} '
             'receptive fields. '
         )
+        # Features ready to be fed into the neural network
+        Fout = None
+        if F is not None and len(F) > 0:
+            rv = lambda rfi, Xouti, F : [
+                rfi.reduce_values(Xouti, F[:, j], fill_nan=True)
+                for j in range(F.shape[1])
+            ]
+            Fout = np.array(joblib.Parallel(n_jobs=self.nthreads)(
+                joblib.delayed(rv)(
+                    self.last_call_receptive_fields[i], Xout[i], F
+                )
+                for i in range(len(I))
+            )).transpose([0, 2, 1])
+        # Handle labels
         if y is not None:
             yout = self.reduce_labels(Xout, y, I=I)
             end = time.perf_counter()
@@ -186,11 +212,17 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
                 f'The grid subsampling pre processor pre-processed '
                 f'{X.shape[0]} points for training in {end-start:.3f} seconds.'
             )
-            return Xout, yout
+            if Fout is not None:
+                return [Xout, Fout], yout
+            else:
+                return Xout, yout
         LOGGING.LOGGER.info(
             f'The grid subsampling pre processor pre-processed {X.shape[0]} '
             f'points for predictions in {end-start:.3f} seconds.'
         )
+        # Return without labels
+        if Fout is not None:
+            return [Xout, Fout]
         return Xout
 
     # ---   POINT-NET METHODS   --- #
@@ -389,7 +421,7 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             )(
                 X_rf[i],
                 y[Ii],
-                reduce_f=lambda x: scipy.stats.mode(x)[0][0],
+                reduce_f=lambda x: scipy.stats.mode(x)[0],
                 fill_nan=True
             ) for i, Ii in enumerate(I)
         ))

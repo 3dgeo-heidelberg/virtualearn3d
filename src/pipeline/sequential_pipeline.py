@@ -21,6 +21,7 @@ from src.utils.ctransf_utils import CtransfUtils
 from src.model.model_op import ModelOp
 from src.inout.writer import Writer
 from src.inout.writer_utils import WriterUtils
+from src.inout.predictive_pipeline_writer import PredictivePipelineWriter
 from src.inout.pipeline_io import PipelineIO
 from src.inout.model_io import ModelIO
 import numpy as np
@@ -300,7 +301,8 @@ class SequentialPipeline(Pipeline):
             if isinstance(comp, ModelOp):
                 sp.sequence.append(ModelOp(comp.model, ModelOp.OP.PREDICT))
             if isinstance(comp, Writer) and \
-                    kwargs.get('include_writer', False):
+                    kwargs.get('include_writer', False) and \
+                    not isinstance(comp, PredictivePipelineWriter):
                 sp.sequence.append(comp)
             if isinstance(comp, Imputer) and \
                     kwargs.get('include_imputer', True):
