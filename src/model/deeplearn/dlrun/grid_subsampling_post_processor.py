@@ -55,8 +55,14 @@ class GridSubsamplingPostProcessor:
             :math:`R` input predictions on the receptive field.
         """
         start = time.perf_counter()
+        _inputs = inputs
+        if isinstance(inputs['X'], list):
+            _inputs = {
+                'X': inputs['X'][0],
+                'z': inputs['z']
+            }
         z = GridSubsamplingPostProcessor.post_process(
-            inputs,
+            _inputs,
             self.gs_preproc.last_call_receptive_fields,
             self.gs_preproc.last_call_neighborhoods,
             nthreads=self.gs_preproc.nthreads

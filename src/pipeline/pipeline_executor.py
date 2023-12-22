@@ -138,7 +138,7 @@ class PipelineExecutor:
             fnames_comp = comp.model
         # Then, extract fnames
         fnames = getattr(fnames_comp, 'fnames', None)
-        if fnames is not None:  # If feature names are given
+        if fnames is not None and len(fnames) > 0:  # If feat. names are given
             if fnames[0] == "AUTO":  # If AUTO is requested
                 fnames_comp.fnames = state.fnames  # Take from state
             else:  # Otherwise

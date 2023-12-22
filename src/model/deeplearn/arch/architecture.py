@@ -8,6 +8,8 @@ from src.model.deeplearn.layer.features_structuring_layer import \
     FeaturesStructuringLayer
 from src.model.deeplearn.layer.rbf_feat_extract_layer import \
     RBFFeatExtractLayer
+from src.model.deeplearn.layer.rbf_feat_processing_layer import \
+    RBFFeatProcessingLayer
 from src.inout.io_utils import IOUtils
 import src.main.main_logger as LOGGING
 import tensorflow as tf
@@ -227,7 +229,6 @@ class Architecture:
                 f'"{self.architecture_graph_path}"'
             )
 
-
     def overwrite_pretrained_model(self, spec):
         """
         Assist the :meth:`model.Model.overwrite_pretrained_model` method
@@ -245,7 +246,6 @@ class Architecture:
             self.architecture_graph_args = spec['architecture_graph_args']
         if 'architecture_graph_path' in spec_keys:
             self.architecture_graph_path = spec['architecture_graph_path']
-            self.plot()
         # Overwrite the attributes of the pre-processor
         if self.pre_runnable is not None and 'pre_processing' in spec_keys:
             if hasattr(self.pre_runnable, 'overwrite_pretrained_model'):
@@ -314,7 +314,8 @@ class Architecture:
                     'FeaturesOrthogonalRegularizer':
                         FeaturesOrthogonalRegularizer,
                     'FeaturesStructuringLayer': FeaturesStructuringLayer,
-                    "RBFFeatExtractLayer": RBFFeatExtractLayer
+                    "RBFFeatExtractLayer": RBFFeatExtractLayer,
+                    'RBFFeatProcessingLayer': RBFFeatProcessingLayer
 
                 },
                 compile=False

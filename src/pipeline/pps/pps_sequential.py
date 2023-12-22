@@ -76,11 +76,11 @@ class PpsSequential(PipelinePredictiveStrategy):
                 )
             elif isinstance(comp, Writer):  # Handle writer
                 if comp.needs_prefix():
-                    if self.out_prefix is None:
+                    if self.out_path is None:
                         raise PipelinePredictiveStrategyException(
                             'A Writer in the sequential predictive pipeline '
                             'needs an output prefix to write. '
-                            'None was given.00'
+                            'None was given.'
                         )
                     comp.write(pcloud, prefix=self.out_path)
                 else:

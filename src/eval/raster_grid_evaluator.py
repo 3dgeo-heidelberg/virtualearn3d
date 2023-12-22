@@ -4,6 +4,7 @@ from src.eval.evaluator import Evaluator, EvaluatorException
 from src.eval.raster_grid_evaluation import RasterGridEvaluation
 from src.inout.geotiff_io import GeoTiffIO
 from src.utils.dict_utils import DictUtils
+from src.utils.str_utils import StrUtils
 import src.main.main_logger as LOGGING
 from scipy.spatial import KDTree as KDT
 import numpy as np
@@ -36,6 +37,10 @@ class RasterGridEvaluator(Evaluator):
     :ivar reverse_rows: Whether to reverse the rows of the grid (True) or not
         (False).
     :vartype reverse_rows: bool
+    :ivar radius_expr: An expression defining the radius of the neighborhood
+        centerd on each cell. In this expression, "l" represents the greatest
+        cell size, i.e., :math:`\max \; \{\mathrm{xres}, \mathrm{yres}\}`.
+    :vartype radius_expr: str
     """
 
     # ---  SPECIFICATION ARGUMENTS  --- #
@@ -58,7 +63,8 @@ class RasterGridEvaluator(Evaluator):
             'xres': spec.get('xres', None),
             'yres': spec.get('yres', None),
             'grid_iter_step': spec.get('grid_iter_step', None),
-            'reverse_rows': spec.get('reverse_rows', None)
+            'reverse_rows': spec.get('reverse_rows', None),
+            'radius_expr': spec.get('radius_expr', None)
         }
         # Delete keys with None value
         kwargs = DictUtils.delete_by_val(kwargs, None)
@@ -84,6 +90,7 @@ class RasterGridEvaluator(Evaluator):
         self.yres = kwargs.get('yres', None)
         self.grid_iter_step = kwargs.get('grid_iter_step', 1024)
         self.reverse_rows = kwargs.get('reverse_rows', True)
+        self.radius_expr = kwargs.get('radius_expr', 'l')
         # Validate
         if self.grids is None or len(self.grids) < 1:
             raise EvaluatorException(
@@ -157,7 +164,8 @@ class RasterGridEvaluator(Evaluator):
         )).T
         # Prepare spatial queries
         kdt = KDT(X[:, :2])
-        radius = max(self.xres, self.yres)
+        l = max(self.xres, self.yres)  # l is used when evaluating radius_expr
+        radius = eval(StrUtils.to_numpy_expr(self.radius_expr))
         # Compute grids of features
         grids = None
         onames = [grid['oname'] for grid in self.grids]
