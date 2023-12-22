@@ -293,13 +293,13 @@ class RBFFeatProcessingLayer(Layer):
             np.zeros((num_kernels, num_feats)),
             dtype='float32',
             trainable=config['trainable_M'],
-            name='M_placeholder'
+            name=f'{rfpl.name}_M'
         )
         rfpl.Omega = tf.Variable(
             np.zeros((num_kernels, num_feats)),
             dtype='float32',
             trainable=config['trainable_Omega'],
-            name='Omega_placeholder'
+            name=f'{rfpl.name}_Omega'
         )
         # Return deserialized layer
         return rfpl

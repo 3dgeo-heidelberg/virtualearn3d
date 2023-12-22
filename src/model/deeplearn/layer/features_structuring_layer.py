@@ -445,25 +445,25 @@ class FeaturesStructuringLayer(Layer):
             np.zeros((num_kernel_points, config['structure_dimensionality'])),
             dtype='float32',
             trainable=config['trainable_QX'],
-            name='QX_placeholder'
+            name=f'{fsl.name}_QX'
         )
         fsl.omegaD = tf.Variable(
             np.zeros(num_kernel_points),
             dtype='float32',
             trainable=config['trainable_omegaD'],
-            name='omegaD_placeholder'
+            name=f'{fsl.name}_omegaD'
         )
         fsl.omegaF = tf.Variable(
             np.zeros(num_features),
             dtype='float32',
             trainable=config['trainable_omegaF'],
-            name='omegaF_placeholder'
+            name=f'{fsl.name}_omegaF'
         )
         fsl.QW = tf.Variable(
             np.zeros((num_features, config['dim_out'])),
             dtype='float32',
             trainable=config['trainable_QW'],
-            name='QW_placeholder'
+            name=f'{fsl.name}_QW'
         )
         # Return deserialized layer
         return fsl

@@ -326,21 +326,19 @@ class RBFFeatExtractLayer(Layer):
         if isinstance(config["max_radii"], dict):
             config['max_radii'] = config['max_radii']['config']['value']
         # Instantiate layer
-        print(f'config:\n{config}\n')  # TODO Remove
-        print(f'config["angular_resolutions"]:\n{config["angular_resolutions"]}\n')  # TODO Remove
         rfel = cls(**config)
         # Placeholders so build on model load does not fail
         rfel.Q = tf.Variable(
             np.zeros((num_kernel_points, config['structure_dimensionality'])),
             dtype='float32',
             trainable=config['trainable_Q'],
-            name='Q_placeholder'
+            name=f'{rfel.name}_Q'
         )
         rfel.omega = tf.Variable(
             np.zeros(num_kernel_points),
             dtype='float32',
             trainable=config['trainable_omega'],
-            name='omega_placeholder'
+            name=f'{rfel.name}_omega'
         )
         # Return deserialized layer
         return rfel
