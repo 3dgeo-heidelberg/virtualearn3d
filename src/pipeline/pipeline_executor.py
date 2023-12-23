@@ -228,6 +228,16 @@ class PipelineExecutor:
                     out_prefix=self.out_prefix
                 )
             else:
+                # Make sure state has predictions before evaluating
+                if state.preds is None:
+                    start = time.perf_counter()
+                    state.preds = state.model.predict(state.pcloud)
+                    end = time.perf_counter()
+                    LOGGING.LOGGER.info(
+                        'Missing predictions computed before evaluation in '
+                        f'{end-start:.3f} seconds.'
+                    )
+                # Evaluate
                 comp(
                     state.preds,
                     y=state.pcloud.get_classes_vector(),
