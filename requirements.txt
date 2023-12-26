@@ -9,6 +9,7 @@ scipy>=1.10.0
 jakteristics>=0.5.0
 dill>=0.3.7
 pdal==2.4.2
+pytest>=7.4.3
 rasterio>=1.3.9
 
 # Deep learning requirements
