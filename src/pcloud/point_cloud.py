@@ -236,3 +236,16 @@ class PointCloud:
         :rtype: :class:`.PointCloud`
         """
         return self.preserve_mask(~np.array(mask))
+
+    def set_classes_vector(self, y):
+        r"""
+        Set the point-wise classes of the point cloud from the given vector
+        of classes.
+
+        :param y: The vector of classes (:math:`\pmb{y}`).
+        :type y: :class:`np.ndarray`
+        :return: The updated point cloud.
+        :rtype: :class:`.PointCloud`
+        """
+        self.las.classification = y
+        return self

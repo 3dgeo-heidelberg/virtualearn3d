@@ -8,6 +8,7 @@ from src.model.deeplearn.point_net_pwise_classif_model import \
     PointNetPwiseClassifModel
 from src.model.deeplearn.rbf_net_pwise_classif_model import \
     RBFNetPwiseClassifModel
+from src.model.deeplearn.handle.dl_model_handler import DLModelHandler
 import src.main.main_logger as LOGGING
 from src.utils.dict_utils import DictUtils
 from sklearn.cluster import MiniBatchKMeans
@@ -117,7 +118,7 @@ class ClassificationUncertaintyEvaluator(Evaluator):
         Initialize/instantiate a ClassificationUncertaintyEvaluator.
 
         :param kwargs: The attributes for the
-            ClassificationUncertaintyEvalutor.
+            ClassificationUncertaintyEvaluator.
         """
         # Call parent's init
         kwargs['problem_name'] = 'CLASSIFICATION_UNCERTAINTY'
@@ -271,6 +272,16 @@ class ClassificationUncertaintyEvaluator(Evaluator):
             (PointNetPwiseClassifModel, RBFNetPwiseClassifModel)
         ):
             X = pcloud.get_coordinates_matrix()
+            if hasattr(model, "model") and isinstance(
+                model.model, DLModelHandler
+            ):
+                arch = model.model.arch
+                if (
+                    hasattr(arch, 'fnames') and
+                    arch.fnames is not None and
+                    len(arch.fnames) > 0
+                ):
+                    X = [X, pcloud.get_features_matrix(arch.fnames)]
         else:
             X = pcloud.get_features_matrix(fnames=model.fnames)
         # Obtain predictions and probabilities
@@ -312,7 +323,7 @@ class ClassificationUncertaintyEvaluator(Evaluator):
         # Obtain evaluation
         ev = self.eval(Zhat, X=X, y=y, yhat=yhat, F=F)
         out_prefix = kwargs.get('out_prefix', None)
-        if ev.can_report():
+        if ev.can_report() and self.report_path is not None:
             report = ev.report()
             start = time.perf_counter()
             report.to_file(self.report_path, out_prefix=out_prefix)
@@ -321,7 +332,7 @@ class ClassificationUncertaintyEvaluator(Evaluator):
                 'The ClassificationUncertaintyEvaluator wrote the point cloud '
                 f'in {end-start:.3f} seconds.'
             )
-        if ev.can_plot():
+        if ev.can_plot() and self.plot_path is not None:
             start = time.perf_counter()
             ev.plot(path=self.plot_path).plot(out_prefix=out_prefix)
             end = time.perf_counter()

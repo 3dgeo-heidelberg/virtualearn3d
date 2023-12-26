@@ -327,3 +327,180 @@ activated outputs of the last layer before the softmax .
     Visualization of some features used by a PointNet-based neural network for
     point-wise classification.
 
+
+
+
+
+.. _Raster grid evaluator:
+
+Raster grid evaluator
+=====================
+
+The :class:`.RasterGridEvaluator` can be used to evaluate the point cloud on
+a grid. This grid can later be exported to a GeoTIFF file that extends the
+grid with geographic information. Therefore, the GeoTIFF can be used to
+evaluate the features or classifications in the point cloud, e.g., loading the
+GeoTIFF in a GIS software to compare the rasterized point cloud with satellite
+image or maps in general. The GeoTIFFs are generated using the
+`RasterIO library <https://rasterio.readthedocs.io/en/stable/>`_.
+
+.. code-block:: json
+
+    {
+		"eval": "RasterGridEvaluator",
+		"crs": "+proj=utm +zone=29 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs",
+		"plot_path": "*geotiff/",
+		"xres": 1.0,
+		"yres": 1.0,
+		"grid_iter_step": 1024,
+		"grids": [
+			{
+				"fnames": ["Vegetation"],
+				"reduce": "mean",
+				"empty_val": "nan",
+				"oname": "vegetation_mean"
+			},
+			{
+				"fnames": ["Vegetation"],
+				"reduce": "max",
+				"empty_val": "nan",
+				"oname": "vegetation_max"
+			},
+			{
+				"fnames": ["Prediction"],
+				"target_val": 2,
+				"reduce": "binary_mask",
+				"count_threshold": 3,
+				"empty_val": "nan",
+				"oname": "vegetation_mask"
+			},
+			{
+				"fnames": ["Ground", "Vegetation", "Other"],
+				"reduce": "mean",
+				"empty_val": "nan",
+				"oname": "GVO_mean"
+			},
+			{
+				"fnames": ["Ground", "Vegetation", "Other"],
+				"reduce": "max",
+				"empty_val": "nan",
+				"oname": "GVO_max"
+			},
+			{
+				"fnames": ["PointWiseEntropy"],
+				"reduce": "mean",
+				"empty_val": "nan",
+				"oname": "pwise_entropy_mean"
+			},
+			{
+				"fnames": ["PointWiseEntropy"],
+				"reduce": "max",
+				"empty_val": "nan",
+				"oname": "pwise_entropy_max"
+			}
+		]
+	}
+
+The JSON above defines a :class:`.RasterGridEvaluator` that generates many
+GeoTIFFs using the EPSG:25829 coordinate reference system (specified using
+PROJ syntax). The GeoTIFFs are exported to the *geotiff* subdirectory,
+considering the output prefix of the pipeline. The cell size is
+:math:`1\,\mathrm{m}` along each axis. Some GeoTIFFs use a single color channel
+to represent a continuous value. One particular GeoTIFF generates a binary
+mask for each cell with :math:`1` when there are at least :math:`3` points
+classified as vegetation and :math:`0` otherwise. The GeoTIFFs that consider
+the likelihood for Ground, Vegetation, and Other classes will export each
+likelihood in a different color channel.
+
+
+**Arguments**
+
+-- ``crs``
+    The coordinate reference system specification. See the
+    `RasterIO documentation <https://rasterio.readthedocs.io/en/latest/api/rasterio.crs.html>`_
+    for more information about CRS specification.
+
+-- ``plot_path``
+    The directory where the GeoTIFF files will be stored.
+
+-- ``xres``
+    The cell resolution along the x-axis.
+
+-- ``yres``
+    The cell resolution along the y-axis.
+
+-- ``grid_iter_step``
+    How many max rows per iteration. It can be tuned to improve the efficiency
+    but also to prevent memory exhaustion.
+
+-- ``radius_expr``
+    An optional specification to define the computation of the radius for the
+    ball-like neighborhoods. The variable ``"l"`` represents the max cell size
+    and it is the default radius expression. Note that any expression less
+    than ``"sqrt(2)*l/2"`` (half of the cell's hypotenuse) will potentially
+    ignore some points inside the cell boundary. Also, values greater than the
+    previous one will increase the "smooth" effect through more overlapped
+    neighborhoods.
+
+-- ``grids``
+    A list with potentially many grid specifications. A grid can be specified
+    with a dictionary-like style:
+
+    .. code-block:: json
+
+        {
+            "fnames": ["feat1", "feat2"],
+            "reduce": "mean",
+            "empty_val": "nan",
+            "target_val": 2,
+            "count_threshold": 3,
+            "oname": "my_geotiff"
+        }
+
+    The ``fnames`` list must specify the name of the involved features.
+
+    The ``reduce`` string must refer to a strategy to reduce many values per
+    cell to a single one, e.g., ``"mean"``, ``"median"``, ``"min"``, ``"max"``,
+    and ``"binary_mask"``.
+
+    The ``empty_val`` value will be assigned to represent the cells with no
+    points. They can be numbers or the string ``"nan"`` (not a number).
+
+    The ``target_val`` the value that must be searched when using a binary
+    mask strategy.
+
+    The ``count_threshold`` governs how many times the target value must be
+    found to consider a :math:`1` for the binary mask.
+
+    The ``oname`` name for the output GeoTIFF file corresponding to the grid
+    specification.
+
+
+-- ``reverse_rows``
+    Boolean flag to control whether to reverse the rows of the grid (True) or
+    not (False). The default is the reversed order, i.e., True.
+
+
+**Output**
+
+The output is illustrated considering some MLS points clouds acquired in the
+region of Pontevedra, Galicia, northwest Spain. The points sum up to
+:math:`6.15 \times 10^{8}` from a dataset of :math:`3.51 \times 10^{9}` points.
+
+
+.. figure:: ../img/raster_grid_qgis_eval.png
+    :scale: 35
+    :alt: Figure representing the output GeoTIFFs.
+
+    Visualization of the output GeoTIFFs on QGIS as an overlay to the
+    Openstreetmap of the region of Pontevedra in Galicia, northwest Spain.
+    The red color represents the mean ground likelihood in the neighborhood,
+    green the vegetation likelihood, and blue any other class (e.g., buildings
+    and powerlines).
+
+
+
+
+
+
+

@@ -3,6 +3,7 @@
 from src.plot.plot import PlotException
 from src.plot.mpl_plot import MplPlot
 from src.plot.plot_utils import PlotUtils
+import src.main.main_logger as LOGGING
 from matplotlib import pyplot as plt
 import numpy as np
 import os
@@ -138,10 +139,16 @@ class TrainingHistoryPlot(MplPlot):
         # Filter values if requested
         vmin, vmax = self.filter_values(values)
         # The format itself
-        ax.set_ylim(
-            vmin-0.01*(vmax-vmin),
-            vmax+0.01*(vmax-vmin)
-        )
+        try:
+            ax.set_ylim(
+                vmin-0.01*(vmax-vmin),
+                vmax+0.01*(vmax-vmin)
+            )
+        except ValueError as verr:
+            LOGGING.LOGGER.warning(
+                'TrainingHistoryPlot failed to set y-axis limits.\n\n'
+                f'{verr}\n'
+            )
         ax.grid('both')
         ax.set_axisbelow(True)
         ax.tick_params(axis='both', which='both', labelsize=18)

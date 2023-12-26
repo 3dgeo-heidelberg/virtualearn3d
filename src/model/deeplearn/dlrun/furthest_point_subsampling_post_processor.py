@@ -4,8 +4,6 @@ from src.model.deeplearn.deep_learning_exception import DeepLearningException
 from src.model.deeplearn.dlrun.grid_subsampling_post_processor import \
     GridSubsamplingPostProcessor
 import src.main.main_logger as LOGGING
-import numpy as np
-import joblib
 import time
 
 
@@ -57,8 +55,14 @@ class FurthestPointSubsamplingPostProcessor:
             :math:`R` input predictions on the receptive field.
         """
         start = time.perf_counter()
+        _inputs = inputs
+        if isinstance(inputs['X'], list):
+            _inputs = {
+                'X': inputs['X'][0],
+                'z': inputs['z']
+            }
         z = GridSubsamplingPostProcessor.post_process(
-            inputs,
+            _inputs,
             self.fps_preproc.last_call_receptive_fields,
             self.fps_preproc.last_call_neighborhoods,
             nthreads=self.fps_preproc.nthreads

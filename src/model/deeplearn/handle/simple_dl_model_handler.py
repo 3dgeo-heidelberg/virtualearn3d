@@ -15,6 +15,7 @@ from src.plot.receptive_fields_distribution_plot import \
 from src.report.training_history_report import TrainingHistoryReport
 from src.plot.training_history_plot import TrainingHistoryPlot
 from src.utils.dict_utils import DictUtils
+from src.inout.io_utils import IOUtils
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
 import src.main.main_logger as LOGGING
 import tensorflow as tf
@@ -137,12 +138,22 @@ class SimpleDLModelHandler(DLModelHandler):
         self.fit_logic(X, y_rf, callbacks)
         end = time.perf_counter()
         LOGGING.LOGGER.info(
-            f'Deep learning model trained on {X.shape[0]} cases during '
+            f'Deep learning model trained on {len(y_rf)} cases during '
             f'{self.training_epochs} epochs in {end-start:.3f} seconds.'
         )
         # Take best model from checkpoint
         if self.checkpoint_path is not None:
-            self.compiled.load_weights(self.checkpoint_path)
+            try:
+                IOUtils.validate_path_to_file(
+                    self.checkpoint_path,
+                    msg='Cannot find DL model checkpoint at:'
+                )
+                self.compiled.load_weights(self.checkpoint_path)
+            except FileNotFoundError as fnferr:
+                LOGGING.LOGGER.warning(
+                    'SimpleDLModelHandler failed to restore DL model weights '
+                    f'from "{self.checkpoint_path}".'
+                )
         # Report and plot history
         if self.training_history_dir is not None:
             report_path = os.path.join(
@@ -181,8 +192,9 @@ class SimpleDLModelHandler(DLModelHandler):
                 None
             ):
                 zhat = self.compiled.predict(X, batch_size=self.batch_size)
+                X_rf = X[0] if isinstance(X, list) else X
                 self.handle_receptive_fields_plots_and_reports(
-                    X_rf=X,
+                    X_rf=X_rf,
                     zhat_rf=zhat,
                     y=y,
                     training=True
@@ -263,8 +275,9 @@ class SimpleDLModelHandler(DLModelHandler):
             else np.round(zhat)
         # Do plots and reports
         if plots_and_reports:
+            _X_rf = X_rf[0] if isinstance(X_rf, list) else X_rf
             self.handle_receptive_fields_plots_and_reports(
-                X_rf=X_rf,
+                X_rf=_X_rf,
                 zhat_rf=zhat_rf,
                 y=y
             )
@@ -282,6 +295,9 @@ class SimpleDLModelHandler(DLModelHandler):
         # Build architecture
         if not self.arch.is_built():
             self.arch.build()
+        elif kwargs.get('arch_plot', False):  # If not,
+            # at least plot the built architecture if requested
+            self.arch.plot()
         self.compiled = self.arch.nn
         # Determine class weights if possible
         class_weight = None

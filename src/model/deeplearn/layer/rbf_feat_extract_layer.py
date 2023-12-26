@@ -1,7 +1,5 @@
 # ---   IMPORTS   --- #
 # ------------------- #
-import time
-
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
 from src.model.deeplearn.layer.layer import Layer
 from src.model.deeplearn.initializer.kernel_point_structure_initializer import\
@@ -13,6 +11,7 @@ from src.plot.features_structuring_layer_plot import \
 import src.main.main_logger as LOGGING
 import tensorflow as tf
 import numpy as np
+import time
 import os
 
 
@@ -137,7 +136,7 @@ class RBFFeatExtractLayer(Layer):
         else:
             raise DeepLearningException(
                 'RBFFeatExtractLayer does not support a kernel function of '
-                f'type "{self.kernel_function_type}"'
+                f'type "{self.kernel_function_type}".'
             )
         # Initialize to None attributes (derived when building)
         self.Q = None  # Kernel's structure matrix
@@ -285,6 +284,7 @@ class RBFFeatExtractLayer(Layer):
         :return: The computed Markov kernel function.
         :rtype: :class:`tf.Tensor`
         """
+        # TODO Rethink : Solve, it is implemented as Gaussian
         omega_squared = self.omega * self.omega
         return tf.exp(-tf.transpose(D_squared, [0, 2, 1]) / omega_squared)
 
@@ -326,21 +326,19 @@ class RBFFeatExtractLayer(Layer):
         if isinstance(config["max_radii"], dict):
             config['max_radii'] = config['max_radii']['config']['value']
         # Instantiate layer
-        print(f'config:\n{config}\n')  # TODO Remove
-        print(f'config["angular_resolutions"]:\n{config["angular_resolutions"]}\n')  # TODO Remove
         rfel = cls(**config)
         # Placeholders so build on model load does not fail
         rfel.Q = tf.Variable(
             np.zeros((num_kernel_points, config['structure_dimensionality'])),
             dtype='float32',
             trainable=config['trainable_Q'],
-            name='Q_placeholder'
+            name=f'{rfel.name}_Q'
         )
         rfel.omega = tf.Variable(
             np.zeros(num_kernel_points),
             dtype='float32',
             trainable=config['trainable_omega'],
-            name='omega_placeholder'
+            name=f'{rfel.name}_omega'
         )
         # Return deserialized layer
         return rfel

@@ -138,7 +138,7 @@ class PipelineExecutor:
             fnames_comp = comp.model
         # Then, extract fnames
         fnames = getattr(fnames_comp, 'fnames', None)
-        if fnames is not None:  # If feature names are given
+        if fnames is not None and len(fnames) > 0:  # If feat. names are given
             if fnames[0] == "AUTO":  # If AUTO is requested
                 fnames_comp.fnames = state.fnames  # Take from state
             else:  # Otherwise
@@ -228,6 +228,16 @@ class PipelineExecutor:
                     out_prefix=self.out_prefix
                 )
             else:
+                # Make sure state has predictions before evaluating
+                if state.preds is None:
+                    start = time.perf_counter()
+                    state.preds = state.model.predict(state.pcloud)
+                    end = time.perf_counter()
+                    LOGGING.LOGGER.info(
+                        'Missing predictions computed before evaluation in '
+                        f'{end-start:.3f} seconds.'
+                    )
+                # Evaluate
                 comp(
                     state.preds,
                     y=state.pcloud.get_classes_vector(),

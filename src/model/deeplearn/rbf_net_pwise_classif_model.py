@@ -70,6 +70,11 @@ class RBFNetPwiseClassifModel(ClassificationModel):
             will also be passed to the parent.
         """
         # Call parent init
+        if not 'fnames' in kwargs:
+            if 'model_args' in kwargs and 'fnames' in kwargs['model_args']:
+                kwargs['fnames'] = kwargs['model_args']['fnames']
+            else:
+                kwargs['fnames'] = []  # Avoid None fnames exception for RBFNet
         super().__init__(**kwargs)
         # Basic attributes of the RBFNetPwiseClassifModel
         self.model = None  # By default, internal model is not instantiated
@@ -185,6 +190,8 @@ class RBFNetPwiseClassifModel(ClassificationModel):
         coordinates matrix and to ignore F. In other words, this RBFNet
         implementation does not support input features.
 
+        :param pcloud: The input point cloud
+        :type pcloud: :class:`.PointCloud`
         :param X: The input matrix of coordinates where each row represents a
             point from the point cloud: If not given, it will be retrieved
             from the point cloud.
@@ -196,15 +203,25 @@ class RBFNetPwiseClassifModel(ClassificationModel):
         y = None
         if pcloud.has_classes():
             y = pcloud.get_classes_vector()
+        F = None
+        if self.fnames is not None and len(self.fnames) > 0:
+            F = pcloud.get_features_matrix(self.fnames)
         return self._predict(
-            X, y=y, F=None, plots_and_reports=plots_and_reports
+            X, y=y, F=F, plots_and_reports=plots_and_reports
         )
 
     def get_input_from_pcloud(self, pcloud):
         """
         See :meth:`model.Model.get_input_from_pcloud`.
         """
-        return pcloud.get_coordinates_matrix()
+        # No features
+        if self.fnames is None:
+            return pcloud.get_coordinates_matrix()
+        # Features
+        return [
+            pcloud.get_coordinates_matrix(),
+            pcloud.get_features_matrix(self.fnames)
+        ]
 
     # ---   TRAINING METHODS   --- #
     # ---------------------------- #
@@ -241,10 +258,12 @@ class RBFNetPwiseClassifModel(ClassificationModel):
         )
         # Training evaluation
         super().on_training_finished(X, y, yhat=yhat)
+        # Get the coordinates matrix even when [X, F] is given
+        _X = X[0] if isinstance(X, list) else X
         # Write classified point cloud
         if self.training_classified_point_cloud_path is not None:
             ClassifiedPcloudReport(
-                X=X, y=y, yhat=yhat, zhat=zhat, class_names=self.class_names
+                X=_X, y=y, yhat=yhat, zhat=zhat, class_names=self.class_names
             ).to_file(
                 path=self.training_classified_point_cloud_path
             )
@@ -258,7 +277,7 @@ class RBFNetPwiseClassifModel(ClassificationModel):
                 f'{end-start:.3f} seconds.'
             )
             PwiseActivationsReport(
-                X=X, activations=activations, y=y
+                X=_X, activations=activations, y=y
             ).to_file(
                 path=self.training_activations_path
             )
@@ -294,6 +313,7 @@ class RBFNetPwiseClassifModel(ClassificationModel):
             predictions on training data to generate a thorough representation
             of the receptive fields.
         """
+        X = X if F is None else [X, F]
         return self.model.predict(
             X, y=y, zout=zout, plots_and_reports=plots_and_reports
         )
