@@ -68,6 +68,7 @@ class PointNetPreProcessor:
         """
         return self.pre_processor(inputs)
 
+
     # ---   POINT-NET METHODS   --- #
     # ----------------------------- #
     def get_num_input_points(self):

@@ -48,6 +48,9 @@ class PredictivePipeline(Pipeline):
         # Call parent's init
         super().__init__(
             in_pcloud=kwargs.get('in_pcloud', pipeline.in_pcloud),
+            in_pcloud_concat=kwargs.get(
+                'in_pcloud_concat', pipeline.in_pcloud_concat
+            ),
             out_pcloud=kwargs.get('out_pcloud', pipeline.out_pcloud)
         )
         # Assign attributes

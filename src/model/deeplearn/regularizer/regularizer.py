@@ -34,7 +34,7 @@ class Regularizer(tf.keras.regularizers.Regularizer):
     # ------------------------------- #
     def __call__(self, x):
         """
-        The layer's computation logic.
+        The regularizer's computation logic.
 
         :param x: The input tensor.
         :return: The output scalar.

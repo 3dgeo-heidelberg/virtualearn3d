@@ -93,7 +93,9 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
         """
         # Extract inputs
         start = time.perf_counter()
-        X, y = inputs['X'], inputs.get('y', None)
+        X, F, y = inputs['X'], None, inputs.get('y', None)
+        if isinstance(X, list):
+            X, F = X[0], X[1]
         # Extract neighborhoods
         sup_X, I = self.find_neighborhood(X, y=y)
         # Remove empty neighborhoods and corresponding support points
@@ -103,22 +105,23 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             )
         self.last_call_neighborhoods = I
         # Export support points if requested
-        if(
-            inputs.get('training_support_points', False) and
-            self.training_support_points_report_path is not None
-        ):
-            GridSubsamplingPreProcessor.support_points_to_file(
-                sup_X,
-                self.training_support_points_report_path
-            )
-        if(
-            inputs.get('support_points', False) and
-            self.support_points_report_path
-        ):
-            GridSubsamplingPreProcessor.support_points_to_file(
-                sup_X,
+        if inputs.get('plots_and_reports', True):
+            if(
+                inputs.get('training_support_points', False) and
+                self.training_support_points_report_path is not None
+            ):
+                GridSubsamplingPreProcessor.support_points_to_file(
+                    sup_X,
+                    self.training_support_points_report_path
+                )
+            if(
+                inputs.get('support_points', False) and
                 self.support_points_report_path
-            )
+            ):
+                GridSubsamplingPreProcessor.support_points_to_file(
+                    sup_X,
+                    self.support_points_report_path
+                )
         # Prepare receptive field
         self.last_call_receptive_fields = [
             ReceptiveFieldFPS(
@@ -139,16 +142,39 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             for i, Ii in enumerate(I)
         )
         # Neighborhoods ready to be fed into the neural network
-        Xout = np.array([
-            self.last_call_receptive_fields[i].centroids_from_points(None)
-            for i in range(len(I))
-        ])
+        if self.to_unit_sphere:
+            Xout = np.array([
+                ReceptiveFieldPreProcessor.transform_to_unit_sphere(
+                    self.last_call_receptive_fields[i].centroids_from_points(
+                        None
+                    )
+                )
+                for i in range(len(I))
+            ])
+        else:
+            Xout = np.array([
+                self.last_call_receptive_fields[i].centroids_from_points(None)
+                for i in range(len(I))
+            ])
         end = time.perf_counter()
         LOGGING.LOGGER.info(
             'The furthest point subsampling pre processor generated '
             f'{Xout.shape[0]} receptive fields of {self.num_points} points '
             'each.'
         )
+        # Features ready to be fed into the neural network
+        Fout = None
+        if F is not None and len(F) > 0:
+            rv = lambda rfi, F: [
+                rfi.reduce_values(None, F[:, j]) for j in range(F.shape[1])
+            ]
+            Fout = np.array(joblib.Parallel(n_jobs=self.nthreads)(
+                joblib.delayed(rv)(
+                    self.last_call_receptive_fields[i], F
+                )
+                for i in range(len(I))
+            )).transpose([0, 2, 1])
+        # Handle labels
         if y is not None:
             yout = self.reduce_labels(Xout, y, I=I)
             end = time.perf_counter()
@@ -156,11 +182,17 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
                 f'The furthest point subsampling pre processor pre-processed '
                 f'{X.shape[0]} points for training in {end-start:.3f} seconds.'
             )
-            return Xout, yout
+            if Fout is not None:
+                return [Xout, Fout], yout
+            else:
+                return Xout, yout
         LOGGING.LOGGER.info(
             'The furthest point subsampling pre processor pre-processed '
             f'{X.shape[0]} points for predictions in {end-start:.3f} seconds.'
         )
+        # Return without labels
+        if Fout is not None:
+            return [Xout, Fout]
         return Xout
 
     # ---   POINT-NET METHODS   --- #
@@ -259,6 +291,8 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
         ngbhd_type_low = ngbhd_type.lower()
         class_distr = self.training_class_distribution if y is not None\
             else None
+        # TODO Rethink : Abstract the neighborhoods to another class ?
+        # Note also used in HeightFeatsMiner.compute_height_features_on_support
         if self.neighborhood_spec['radius'] == 0:
             # The neighborhood of radius 0 is said to be the entire point cloud
             I = [np.arange(len(X), dtype=int).tolist()]
@@ -270,6 +304,9 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
                 X2D,
                 self.neighborhood_spec['separation_factor'],
                 self.neighborhood_spec['radius'],
+                support_strategy=self.support_strategy,
+                support_strategy_num_points=self.support_strategy_num_points,
+                support_strategy_fast=self.support_strategy_fast,
                 y=y,
                 class_distr=class_distr,
                 center_on_X=self.center_on_pcloud,
@@ -285,6 +322,8 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
                 X,
                 self.neighborhood_spec['separation_factor'],
                 self.neighborhood_spec['radius'],
+                support_strategy=self.support_strategy,
+                support_strategy_num_points=self.support_strategy_num_points,
                 y=y,
                 class_distr=class_distr,
                 center_on_X=self.center_on_pcloud,
@@ -303,6 +342,8 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
                 X2D,
                 self.neighborhood_spec['separation_factor'],
                 np.min(radius),
+                support_strategy=self.support_strategy,
+                support_strategy_num_points=self.support_strategy_num_points,
                 y=y,
                 class_distr=class_distr,
                 center_on_X=self.center_on_pcloud,
@@ -316,7 +357,7 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             kdt = KDT(X2D)
             kdt_sup = KDT(sup_X)
             I = kdt_sup.query_ball_tree(kdt, boundary_radius)
-            # Discard points outside 2D rectangular boundary
+            # Discard points outside the 2D rectangular boundary
             XY = [X2D[Ii][:, 0:2] - sup_X[i] for i, Ii in enumerate(I)]
             mask = [
                 (XYi[:, 0] >= -radius[0]) * (XYi[:, 0] <= radius[0]) *
@@ -335,6 +376,8 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
                 X,
                 self.neighborhood_spec['separation_factor'],
                 np.min(radius),
+                support_strategy=self.support_strategy,
+                support_strategy_num_points=self.support_strategy_num_points,
                 y=y,
                 class_distr=class_distr,
                 center_on_X=self.center_on_pcloud,

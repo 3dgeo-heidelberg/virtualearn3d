@@ -282,10 +282,9 @@ class PointNetPwiseClassifModel(ClassificationModel):
                 ] + '_ANOVA.csv'
             )
 
-
     # ---  PREDICTION METHODS  --- #
     # ---------------------------- #
-    def _predict(self, X, F=None, y=None, zout=None):
+    def _predict(self, X, F=None, y=None, zout=None, plots_and_reports=True):
         """
         Extend the base _predict method.
 
@@ -295,7 +294,9 @@ class PointNetPwiseClassifModel(ClassificationModel):
             predictions on training data to generate a thorough representation
             of the receptive fields.
         """
-        return self.model.predict(X, y=y, zout=zout)
+        return self.model.predict(
+            X, y=y, zout=zout, plots_and_reports=plots_and_reports
+        )
 
     # ---  POINT NET PWISE CLASSIF METHODS  --- #
     # ----------------------------------------- #

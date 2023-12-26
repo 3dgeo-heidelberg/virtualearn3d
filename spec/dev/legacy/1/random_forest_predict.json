@@ -1,0 +1,7 @@
+{
+	"predict": "ModelLoader",
+	"in_model": "/tmp/RandomForest_QuePet_BR01.model",
+	"in_pcloud": "/home/uadmin/tmp/tmp_data/vl3d_ml/test_tree_geomfeats.laz",
+	"out_pcloud": "/tmp/test_tree_predictions.laz",
+	"out_preds": "/tmp/test_tree_predictions.lbl"
+}

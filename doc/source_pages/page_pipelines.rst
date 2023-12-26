@@ -15,6 +15,103 @@ applied to different point clouds.
 
 
 
+.. _Advanced input:
+
+Advanced input
+=================
+
+Besides from the typical input specification for pipelines that consists of a
+list of paths to point clouds such that the pipeline will be run independently
+once for each point cloud, there are alternative input specifications that
+enable more complex input strategies.
+
+
+Input point cloud concatenation
+----------------------------------
+
+The input point cloud concatenation strategy supports merging many point
+clouds into a single one, which can be useful -for example- to apply active
+learning to datasets with many point clouds. It is a list of dictionaries with
+the following **arguments** each:
+
+-- ``in_pcloud``
+    The path to the input point cloud.
+
+-- ``conditions``
+    A list of dictionary-like conditions to filter the points before
+    concatenating the point cloud. It is governed by four parameters:
+
+    ``value_name``
+
+    The name of the field to be considered (e.g., a feature name or the
+    classification label).
+
+    ``condition_type``
+
+    The type of condition, i.e., the relational to be used. It can be
+    ``"not_equals"`` (:math:`\neq`), ``"equals"`` (:math:`=`),
+    ``"less_than"`` (:math:`<`), ``"less_than_or_equal_to"`` (:math:`\leq`),
+    ``"greater_than"`` (:math:`>`), ``"greater_than_or_equal_to"``
+    (:math:`\geq`), ``"in"`` :math:`\in`, and ``"not_in"`` :math:`\notin`.
+
+    ``value_target``
+
+    The value target can be seen as the rhs of the relational when the value
+    from the point cloud is represented as the lhs. For example, if :math:`x`
+    is the value from the point cloud, a relational could be
+    :math:`x \notin S` where :math:`S` can be defined through the value target
+    as ``[0, 1, 3]``. In this case, only the points with
+    :math:`x \notin \{0, 1, 3\}` will be considered.
+
+
+    ``action``
+
+    What must be done with the considered points. It can be either
+    ``"preserve"`` so the points that match the condition are preserved or
+    ``"discard"`` to remove them.
+
+The JSON below shows an example of how to use the input point cloud
+concatenation strategy. It was used to process a massive MLS dataset with
+active learning. The training dataset was derived as the concatenation between
+the point clouds labeled by the oracle. A visualization of the results is
+available in the
+:ref:`raster grid evaluator's documentation <Raster grid evaluator>`.
+
+.. code-block:: json
+
+    "in_pcloud_concat": [
+        {
+            "in_pcloud": "/hei/lidar_data/pontevedra/vl3d/training/T4/CANICOUVA.laz",
+            "conditions": [
+                {
+                    "value_name": "classification",
+                    "condition_type": "in",
+                    "value_target": [0, 1, 2],
+                    "action": "preserve"
+                }
+            ]
+        },
+        {
+            "in_pcloud": "/hei/lidar_data/pontevedra/vl3d/training/T4/TOMEZA.laz",
+            "conditions": [
+                {
+                    "value_name": "classification",
+                    "condition_type": "in",
+                    "value_target": [0, 1, 2],
+                    "action": "preserve"
+                }
+            ]
+        }
+    ]
+
+
+
+
+
+
+
+
+
 
 .. _Sequential pipeline:
 

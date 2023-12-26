@@ -6,6 +6,10 @@ from src.inout.point_cloud_io import PointCloudIO
 from src.inout.io_utils import IOUtils
 from src.mining.geom_feats_miner import GeomFeatsMiner
 from src.mining.covar_feats_miner import CovarFeatsMiner
+from src.mining.height_feats_miner import HeightFeatsMiner
+from src.mining.hsv_from_rgb_miner import HSVFromRGBMiner
+from src.mining.smooth_feats_miner import SmoothFeatsMiner
+from src.mining.take_closest_miner import TakeClosestMiner
 import os
 import time
 
@@ -119,5 +123,13 @@ class MainMine:
             return GeomFeatsMiner
         if miner_low == "covariancefeatures":
             return CovarFeatsMiner
+        if miner_low == 'heightfeatures':
+            return HeightFeatsMiner
+        if miner_low == 'hsvfromrgb':
+            return HSVFromRGBMiner
+        if miner_low == 'smoothfeatures':
+            return SmoothFeatsMiner
+        if miner_low == 'takeclosestminer':
+            return TakeClosestMiner
         # An unknown miner was specified
         raise ValueError(f'There is no known miner "{miner}"')

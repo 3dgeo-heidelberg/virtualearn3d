@@ -1,6 +1,7 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.utils.ptransf.receptive_field_gs import ReceptiveFieldGS
+from src.utils.ptransf.receptive_field_fps import ReceptiveFieldFPS
 from src.model.deeplearn.dlrun.receptive_field_pre_processor import \
     ReceptiveFieldPreProcessor
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
@@ -110,7 +111,9 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
 
         :param inputs: A key-word input where the key "X" gives the input
             dataset and the "y" (OPTIONALLY) gives the reference values that
-            can be used to fit/train a PointNet model.
+            can be used to fit/train a PointNet model. If "X" is a list, then
+            the first element is assumed to be the matrix X of coordinates
+            and the second the matrix F of features.
         :type inputs: dict
         :return: Either (Xout, yout) or Xout. Where Xout are the points
             representing the receptive field and yout (only given when
@@ -119,7 +122,9 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
         """
         # Extract inputs
         start = time.perf_counter()
-        X, y = inputs['X'], inputs.get('y', None)
+        X, F, y = inputs['X'], None, inputs.get('y', None)
+        if isinstance(X, list):
+            X, F = X[0], X[1]
         # Extract neighborhoods
         sup_X, I = self.find_neighborhood(X, y=y)
         # Remove empty neighborhoods and corresponding support points
@@ -162,22 +167,44 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             )
             for i, Ii in enumerate(I)
         )
+        # Centroid from points (baseline)
+        cfp = lambda rfi, XIi, i : rfi.centroids_from_points(
+            XIi,
+            interpolate=self.interpolate,
+            fill_centroid=not self.interpolate
+        )
+        if self.to_unit_sphere:  # Centroid from points (to unit sphere)
+            cfp = lambda rfi, XIi, i : ReceptiveFieldPreProcessor.\
+                transform_to_unit_sphere(rfi.centroids_from_points(
+                    XIi,
+                    interpolate=self.interpolate,
+                    fill_centroid=not self.interpolate
+                ))
         # Neighborhoods ready to be fed into the neural network
         Xout = np.array(joblib.Parallel(n_jobs=self.nthreads)(
-            joblib.delayed(
-                self.last_call_receptive_fields[i].centroids_from_points
-            )(
-                X[Ii],
-                interpolate=self.interpolate,
-                fill_centroid=not self.interpolate
-            )
-            for i, Ii in enumerate(I)
+            joblib.delayed(cfp)(
+                self.last_call_receptive_fields[i], X[Ii], i
+            ) for i, Ii in enumerate(I)
         ))
         end = time.perf_counter()
         LOGGING.LOGGER.info(
             f'The grid subsampling pre processor generated {Xout.shape[0]} '
             'receptive fields. '
         )
+        # Features ready to be fed into the neural network
+        Fout = None
+        if F is not None and len(F) > 0:
+            rv = lambda rfi, Xouti, F : [
+                rfi.reduce_values(Xouti, F[:, j], fill_nan=True)
+                for j in range(F.shape[1])
+            ]
+            Fout = np.array(joblib.Parallel(n_jobs=self.nthreads)(
+                joblib.delayed(rv)(
+                    self.last_call_receptive_fields[i], Xout[i], F
+                )
+                for i in range(len(I))
+            )).transpose([0, 2, 1])
+        # Handle labels
         if y is not None:
             yout = self.reduce_labels(Xout, y, I=I)
             end = time.perf_counter()
@@ -185,11 +212,17 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
                 f'The grid subsampling pre processor pre-processed '
                 f'{X.shape[0]} points for training in {end-start:.3f} seconds.'
             )
-            return Xout, yout
+            if Fout is not None:
+                return [Xout, Fout], yout
+            else:
+                return Xout, yout
         LOGGING.LOGGER.info(
             f'The grid subsampling pre processor pre-processed {X.shape[0]} '
             f'points for predictions in {end-start:.3f} seconds.'
         )
+        # Return without labels
+        if Fout is not None:
+            return [Xout, Fout]
         return Xout
 
     # ---   POINT-NET METHODS   --- #
@@ -208,6 +241,8 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
     def build_support_points(
         X, separation_factor, sphere_radius,
         y=None, class_distr=None, center_on_X=False,
+        support_strategy='grid', support_strategy_num_points=1000,
+        support_strategy_fast=False,
         nthreads=1
     ):
         r"""
@@ -226,9 +261,15 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
         :param y: The vector of point-wise labels (OPTIONAL).
         :param class_distr: The vector of class-wise distribution (OPTIONAL).
         :param center_on_X: When True, the support points will be points taken
-            from X (as the nereast neighbors of the initial support points).
+            from X (as the nearest neighbors of the initial support points).
             Otherwise, they will be automatically computed such that they
             do not necessarily correspond to points in X.
+        :param support_strategy: By default, "grid", which means the support
+            points will be taken by grid sampling. It can be "fps" to apply
+            furthest point sampling. The support strategy will be ignored if
+            class_distr is given.
+        :param support_strategy_num_points: The number of points to be
+            considered when using a furthest point sampling support strategy.
         :param nthreads: How many threads use for parallel computations, if
             any.
         :return: The support points as a matrix where rows are support points
@@ -263,21 +304,40 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
         LOGGING.LOGGER.debug(
             'Support points are built without considering point-wise classes.'
         )
-        xmin, xmax = np.min(X, axis=0), np.max(X, axis=0)
-        l = separation_factor * sphere_radius  # Cell size
-        G = np.meshgrid(
-            *[
-                np.concatenate([
-                    np.arange(xmin[j], xmax[j], l), [xmax[j]]
-                ])
-                for j in range(X.shape[1])
-            ]
-        )
+        # Grid of support points strategy
+        support_strategy_low = support_strategy.lower()
+        if support_strategy_low == 'grid':
+            # TODO Rethink : Bug (at least for cylinder-like neighborhoods)
+            xmin, xmax = np.min(X, axis=0), np.max(X, axis=0)
+            l = separation_factor * sphere_radius  # Cell size
+            sup_X = np.meshgrid(
+                *[
+                    np.concatenate([
+                        np.arange(xmin[j], xmax[j], l), [xmax[j]]
+                    ])
+                    for j in range(X.shape[1])
+                ]
+            )
+            sup_X = np.array([Gi.flatten() for Gi in sup_X]).T
+        # Support points by furthest point sampling
+        elif support_strategy_low == 'fps':
+            # Compute the FPS
+            sup_X = ReceptiveFieldFPS.compute_fps_on_3D_pcloud(
+                X,
+                num_points=support_strategy_num_points,
+                fast=support_strategy_fast
+            )
+            center_on_X = False  # Not necessary when using FPS
+        else:
+            raise DeepLearningException(
+                'Support points cannot be built with support strategy '
+                f'"{support_strategy}".'
+            )
+        # Post-process
         if center_on_X:  # Support points must correspond to points in X
             LOGGING.LOGGER.debug(
                 'Support points are centered on the point cloud.'
             )
-            sup_X = np.array([Gi.flatten() for Gi in G]).T
             kdt = KDT(X)
             D, I = kdt.query(
                 sup_X,
@@ -289,7 +349,7 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             I = np.unique(I[mask])
             return X[I]
         # Return original support points (dont need to match points in X)
-        return np.array([Gi.flatten() for Gi in G]).T
+        return sup_X
 
     @staticmethod
     def clean_support_neighborhoods(sup_X, I):
@@ -361,7 +421,7 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             )(
                 X_rf[i],
                 y[Ii],
-                reduce_f=lambda x: scipy.stats.mode(x)[0][0],
+                reduce_f=lambda x: scipy.stats.mode(x)[0],
                 fill_nan=True
             ) for i, Ii in enumerate(I)
         ))

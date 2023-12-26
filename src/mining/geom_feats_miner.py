@@ -12,10 +12,10 @@ class GeomFeatsMiner(Miner):
     :author: Alberto M. Esmoris Pena
 
     Basic geometric features miner.
-    See :class:`.Miner`
+    See :class:`.Miner`.
 
-    :ivar radius: The radius (often in meters) attribute. Radius is 0.3 (often
-        meters) by default.
+    :ivar radius: The radius (often in meters) attribute. Radius is 0.3
+        by default.
     :vartype radius: float
     :ivar fnames: The list of feature names (fnames) attribute.
         ['linearity', 'planarity', 'sphericity'] by default.
@@ -86,10 +86,11 @@ class GeomFeatsMiner(Miner):
     # ----------------------- #
     def mine(self, pcloud):
         """
-        Mine geometric features from the given pcloud.
-        See :class:`.Miner` and :meth:`mining.Miner.mine`
+        Mine geometric features from the given point cloud.
+        See :class:`.Miner` and :meth:`mining.Miner.mine`.
 
         :param pcloud: The point cloud to be mined.
+        :type pcloud: :class:`.PointCloud`
         :return: The point cloud extended with geometric features.
         :rtype: :class:`.PointCloud`
         """

@@ -33,6 +33,11 @@ class Pipeline:
     :ivar in_pcloud: Either a string or a list of strings representing paths to
         input point clouds.
     :vartype in_pcloud: str or list
+    :ivar in_pcloud_concat: An alternative to in_pcloud that concatenates
+        many point clouds and supports conditional filters. It must be a list
+        of dictionaries each specifying an input point cloud and potentially
+        a list of conditions.
+    :vartype in_pcloud_concat: list
     :ivar out_pcloud: Either a string or a list of strings representing paths
         to output point clouds. Any output string that ends with and asterisk
         "*" will be used as a prefix for outputs specified in the components
@@ -50,12 +55,7 @@ class Pipeline:
         """
         # Input point clouds
         self.in_pcloud = kwargs.get("in_pcloud", None)
-        if self.in_pcloud is None:  # Handle non input point cloud
-            raise PipelineException(
-                'It is not possible to build a pipeline without any input '
-                'point cloud.'
-            )
-        else:  # Validate the paths to input point clouds
+        if self.in_pcloud is not None:  # Validate the paths to input point clouds
             if isinstance(self.in_pcloud, (list, tuple)):  # Many paths
                 for path in self.in_pcloud:
                     if path is None:
@@ -74,6 +74,22 @@ class Pipeline:
                     self.in_pcloud,
                     "Pipeline received an invalid input point cloud path:"
                 )
+        # Alternative : Input point clouds concatenation
+        self.in_pcloud_concat = kwargs.get('in_pcloud_concat', None)
+        if self.in_pcloud is not None and self.in_pcloud_concat is not None:
+            raise PipelineException(
+                'Pipeline received both in_pcloud and in_pcloud_concat. '
+                'This is ambiguous and thus not supported.\n'
+                'Please, choose either in_pcloud or in_pcloud_concat but '
+                'avoid using both at the same time.'
+            )
+        # TODO Rethink : Anything else to do here?
+        # Handle what happens when no input has been specified
+        if self.in_pcloud is None and self.in_pcloud_concat is None:
+            raise PipelineException(
+                'It is not possible to build a pipeline without at least one '
+                'input point cloud.'
+            )
         # Output point clouds
         self.out_pcloud = kwargs.get('out_pcloud', None)
         if self.out_pcloud is None:  # Info about no output point clouds
@@ -81,7 +97,7 @@ class Pipeline:
                 'A pipeline has been built with no output point clouds.'
             )
         else:  # Validate the paths to output point clouds
-            if isinstance(self.in_pcloud, (list, tuple)):  # Many paths
+            if isinstance(self.out_pcloud, (list, tuple)):  # Many paths
                 for path in self.out_pcloud:
                     if path is None:
                         raise PipelineException(
@@ -99,7 +115,20 @@ class Pipeline:
                     "Pipeline received an output point cloud path with an "
                     "invalid parent directory:"
                 )
-        pass
+        # Validate input and output dimensionalities match
+        num_inputs, num_outputs = 1, 1
+        if isinstance(self.in_pcloud, (list, tuple)):
+            num_inputs = len(self.in_pcloud)
+        if isinstance(self.out_pcloud, (list, tuple)):
+            num_outputs = len(self.out_pcloud)
+        if num_inputs != num_outputs:
+            raise PipelineException(
+                f'Pipeline with input dimensionality ({num_inputs}) distinct '
+                f'from output dimensionality ({num_outputs}) is not '
+                'supported.'
+            )
+
+
 
     # ---  RUN PIPELINE  --- #
     # ---------------------- #

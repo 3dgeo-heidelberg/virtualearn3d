@@ -1,0 +1,170 @@
+{
+  "in_pcloud": [
+	"https://3dweb.geog.uni-heidelberg.de/trees_leafwood/PinSyl_KA10_03_2019-07-30_q2_TLS-on_c_t.laz"
+  ],
+  "out_pcloud": [
+	"out/Geometric_PointNet_on_PinSyl_KA10_03/*"
+  ],
+  "sequential_pipeline": [
+	{
+		"train": "PointNetPwiseClassifier",
+		"fnames": ["AUTO"],
+		"training_type": "base",
+		"random_seed": null,
+		"model_args": {
+			"num_classes": 2,
+			"class_names": ["Wood", "Leaf"],
+			"num_pwise_feats": 20,
+			"pre_processing": {
+				"pre_processor": "furthest_point_subsampling",
+				"support_chunk_size": 2000,
+				"training_class_distribution": [5000, 5000],
+				"center_on_pcloud": true,
+				"num_points": 8192,
+				"num_encoding_neighbors": 1,
+				"fast": false,
+				"neighborhood": {	
+					"type": "rectangular3D",
+					"radius": 1.5,
+					"separation_factor": 0.5
+				},
+				"nthreads": 12,
+				"training_receptive_fields_distribution_report_path": "*/training_eval/training_receptive_fields_distribution.log",
+				"training_receptive_fields_distribution_plot_path": "*/training_eval/training_receptive_fields_distribution.svg",
+				"training_receptive_fields_dir": "*/training_eval/training_receptive_fields/",			
+				"receptive_fields_distribution_report_path": "*/training_eval/receptive_fields_distribution.log",
+				"receptive_fields_distribution_plot_path": "*/training_eval/receptive_fields_distribution.svg",
+				"receptive_fields_dir": "*/training_eval/receptive_fields/",
+				"training_support_points_report_path": "*/training_eval/training_support_points.laz",
+				"support_points_report_path": "*/training_eval/support_points.laz"
+			},
+			"kernel_initializer": "he_normal",
+			"pretransf_feats_spec": [
+				{
+					"filters": 128,
+					"name": "prefeats_128"
+				},
+				{
+					"filters": 256,
+					"name": "prefeats_256"
+				},
+				{
+					"filters": 512,
+					"name": "prefeats_512"
+				}
+			],
+			"postransf_feats_spec": [
+				{
+					"filters": 128,
+					"name": "posfeats_128"
+				},
+				{
+					"filters": 256,
+					"name": "posfeats_256"
+				},
+				{
+					"filters": 512,
+					"name": "posfeats_end_512"
+				}
+			],
+			"tnet_pre_filters_spec": [128, 256, 512],
+			"tnet_post_filters_spec": [256, 128],
+			"_features_structuring_layer": {
+				"max_radii": [5, 5, 5],
+				"radii_resolution": 4,
+				"angular_resolutions": [1, 2, 4, 8],
+				"concatenation_strategy": "FULL",
+				"dim_out": 16,
+				"trainable_kernel_structure": true,
+				"trainable_kernel_weights": true,
+				"trainable_distance_weights": true,
+				"trainable_feature_weights": true,
+				"batch_normalization": true,
+				"activation": "relu",
+				"freeze_training": true,
+				"freeze_training_init_learning_rate": 1e-3
+			},
+			"model_handling": {
+				"summary_report_path": "*/model_summary.log",
+				"training_history_dir": "*/training_eval/history",
+				"features_structuring_representation_dir": "*/training_eval/feat_struct_layer/",
+				"class_weight": [1, 0.6666667],
+				"training_epochs": 200,
+				"batch_size": 16,
+				"checkpoint_path": "*/checkpoint.model",
+				"checkpoint_monitor": "loss",
+				"learning_rate_on_plateau": {
+					"monitor": "loss",
+					"mode": "min",
+					"factor": 0.1,
+					"patience": 5000,
+					"cooldown": 5,
+					"min_delta": 0.01,
+					"min_lr": 1e-6
+				},
+				"early_stopping": {
+					"monitor": "loss",
+					"mode": "min",
+					"min_delta": 0.01,
+					"patience": 5000
+				}
+			},
+			"compilation_args": {
+				"optimizer": {
+					"algorithm": "SGD",
+					"_learning_rate": 1e-3,
+					"learning_rate": {
+						"schedule": "exponential_decay",
+						"schedule_args": {
+							"initial_learning_rate": 1e-2,
+							"decay_steps": 1000,
+							"decay_rate": 0.96,
+							"staircase": false
+						}
+					}
+				},
+				"loss": {
+					"function": "class_weighted_binary_crossentropy"
+				},
+				"metrics": [
+					"binary_accuracy",
+					"precision",
+					"recall"
+				]
+			},
+			"architecture_graph_path": "*/model_graph.png",
+			"architecture_graph_args": {
+				"show_shapes": true,
+				"show_dtype": true,
+				"show_layer_names": true,
+				"rankdir": "TB",
+				"expand_nested": true,
+				"dpi": 300,
+				"show_layer_activations": true
+		    }
+		},
+		"autoval_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
+		"training_evaluation_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
+	  	"training_class_evaluation_metrics": ["P", "R", "F1", "IoU"],
+		"training_evaluation_report_path": "*/training_eval/evaluation.log",
+		"training_class_evaluation_report_path": "*/training_eval/class_evaluation.log",
+		"training_confusion_matrix_report_path": "*/training_eval/confusion.log",
+		"training_confusion_matrix_plot_path": "*/training_eval/confusion.svg",
+		"training_class_distribution_report_path": "*/training_eval/class_distribution.log",
+		"training_class_distribution_plot_path": "*/training_eval/class_distribution.svg",
+		"training_classified_point_cloud_path": "*/training_eval/classified_point_cloud.laz",
+		"training_activations_path": "*/training_eval/activations.laz"
+	},
+	{
+	  "writer": "PredictivePipelineWriter",
+	  "out_pipeline": "*pipe/Rect3D_5m_T1.pipe",
+	  "include_writer": false,
+	  "include_imputer": false,
+	  "include_feature_transformer": false,
+	  "include_miner": false,
+	  "include_class_transformer": false
+	}
+  ]
+}
+
+

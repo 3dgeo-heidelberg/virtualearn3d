@@ -1,9 +1,0 @@
-{
-  "miner": "GeometricFeatures",
-  "in_pcloud": "/hei/virtualearn3d/1_data/6_realistic_ground_with_near_trees_real/train/6_train_noground.laz",
-  "out_pcloud": "/tmp/6_training_noground_geomfeats_r0_1.laz",
-  "radius": 0.1,
-  "fnames": ["linearity", "planarity", "surface_variation", "PCA1"],
-  "frenames": ["linearity_r0_1", "planarity_r0_1", "surface_variation_r0_1", "PCA1_r0_1"],
-  "nthreads": -1
-}

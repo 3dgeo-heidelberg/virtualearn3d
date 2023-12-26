@@ -1,0 +1,125 @@
+{
+  "in_pcloud": [
+	"/hei/Hessigheim_Benchmark/Epoch_March2018/LiDAR/Mar18_train.laz"
+  ],
+  "out_pcloud": [
+	"out/training/RF_Hessigheim_March2018/*"
+  ],
+  "sequential_pipeline": [
+	{
+		"class_transformer": "ClassReducer",
+		"on_predictions": false,
+		"input_class_names": ["Low vegetation", "Impervious surface", "Vehicle", "Urban furniture", "Roof", "Facade", "Shrub", "Tree", "Soil/Gravel", "Vertical surface", "Chimney"],
+		"output_class_names": ["Ground", "Vegetation", "Building", "Urban furniture", "Vehicle"],
+		"class_groups": [["Low vegetation", "Impervious surface", "Soil/Gravel"], ["Shrub", "Tree"], ["Roof", "Facade", "Vertical surface", "Chimney"], ["Urban furniture"], ["Vehicle"]],
+		"report_path": "*class_reduction.log",
+		"plot_path": "*class_reduction.svg"
+	},
+	{
+	  "miner": "GeometricFeatures",
+	  "radius": 0.1,
+	  "fnames": ["linearity", "planarity", "surface_variation", "eigenentropy", "omnivariance", "verticality", "anisotropy"]
+	},
+	{
+	  "miner": "GeometricFeatures",
+	  "radius": 0.3,
+	  "fnames": ["linearity", "planarity", "surface_variation", "eigenentropy", "omnivariance", "verticality", "anisotropy"]
+	},
+	{
+	  "miner": "GeometricFeatures",
+	  "radius": 0.5,
+	  "fnames": ["linearity", "planarity", "surface_variation", "eigenentropy", "omnivariance", "verticality", "anisotropy"]
+	},
+	{
+	  "miner": "GeometricFeatures",
+	  "radius": 1.0,
+	  "fnames": ["linearity", "planarity", "surface_variation", "eigenentropy", "omnivariance", "verticality", "anisotropy"]
+	},
+	{
+	  "writer": "Writer",
+ 	  "out_pcloud": "*pcloud/geomfeats.laz"
+	},
+	{
+	  "imputer": "UnivariateImputer",
+	  "fnames": ["AUTO"],
+	  "target_val": "NaN",
+	  "strategy": "mean",
+	  "constant_val": 0
+	},
+	{
+	  "feature_transformer": "Standardizer",
+	  "fnames": ["AUTO"],
+	  "center": true,
+	  "scale": true
+	},
+	{
+	  "feature_transformer": "PCATransformer",
+	  "out_dim": 0.99,
+	  "whiten": false,
+	  "random_seed": null,
+	  "fnames": ["AUTO"],
+	  "report_path": "*report/pca_projection.log",
+	  "plot_path": "*plot/pca_projection.svg"
+	},
+	{
+	  "writer": "Writer",
+	  "out_pcloud": "*pcloud/geomfeats_transf.laz"
+	},
+	{
+	  "train": "RandomForestClassifier",
+	  "fnames": ["AUTO"],
+	  "training_type": "stratified_kfold",
+	  "random_seed": null,
+	  "shuffle_points": true,
+	  "num_folds": 5,
+	  "model_args": {
+		"n_estimators": 4,
+		"criterion": "entropy",
+		"max_depth": 20,
+		"min_samples_split": 5,
+		"min_samples_leaf": 1,
+		"min_weight_fraction_leaf": 0.0,
+		"max_features": "sqrt",
+		"max_leaf_nodes": null,
+		"min_impurity_decrease": 0.0,
+		"bootstrap": true,
+		"oob_score": false,
+		"n_jobs": 4,
+		"warm_start": false,
+		"class_weight": null,
+		"ccp_alpha": 0.0,
+		"max_samples": 0.8
+	  },
+	  "autoval_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
+	  "stratkfold_report_path": "*report/RF_stratkfold_report.log",
+	  "stratkfold_plot_path": "*plot/RF_stratkfold_plot.svg",
+	  "hyperparameter_tuning": {
+		"tuner": "GridSearch",
+		"hyperparameters": ["n_estimators", "max_depth", "max_samples"],
+		"nthreads": -1,
+		"num_folds": 3,
+		"pre_dispatch": 8,
+		"grid": {
+			"n_estimators": [8, 16],
+			"max_depth": [15, 25],
+			"max_samples": [0.6, 0.9]
+		},
+		"report_path": "*report/RF_hyper_grid_search.log"
+	  },
+	  "importance_report_path": "*report/Training_RF_importance.log",
+	  "importance_report_permutation": true,
+	  "decision_plot_path": "*plot/Training_RF_decision.svg",
+	  "decision_plot_trees": 3,
+	  "decision_plot_max_depth": 5
+	},
+	{
+	  "writer": "PredictivePipelineWriter",
+	  "out_pipeline": "*pipe/Training_RF.pipe",
+	  "include_writer": false,
+	  "include_imputer": true,
+	  "include_feature_transformer": true,
+	  "include_miner": true,
+	  "include_class_transformer": false
+	}
+  ]
+}

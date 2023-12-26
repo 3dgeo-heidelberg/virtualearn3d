@@ -11,6 +11,7 @@ dependencies:
   - scipy>=1.10.0
   - scikit-learn>=1.2.0
   - numpy>=1.21.5
+  - dill>=0.3.7
   - pyaml>=5.4.1
   - h5py>=3.9.0
   - cudatoolkit=11.2
@@ -20,3 +21,4 @@ dependencies:
     - laspy[laszip]>=2.3.0
     - tensorflow<2.11
     - jakteristics>=0.4.1
+    - rasterio>=1.3.9

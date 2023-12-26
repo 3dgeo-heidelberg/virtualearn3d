@@ -31,13 +31,14 @@ class PointNet(Architecture, ABC):
         See :meth:`architecture.Architecture.__init__`.
         """
         # Call parent's init
-        kwargs['arch_name'] = 'PointNet'
+        if kwargs.get('arch_name', None) is None:
+            kwargs['arch_name'] = 'PointNet'
         super().__init__(**kwargs)
         # Update the preprocessing logic
         self.pre_runnable = PointNetPreProcessor(**kwargs['pre_processing'])
         # Update the postprocessing logic
         self.post_runnable = PointNetPostProcessor(self.pre_runnable)
-        # The number of points is the number of cells in the receptive fields
+        # The number of points (cells for grid, points for furth. pt. sampling)
         self.num_points = self.pre_runnable.get_num_input_points()
         # Neural network architecture specifications
         self.kernel_initializer = kwargs.get(

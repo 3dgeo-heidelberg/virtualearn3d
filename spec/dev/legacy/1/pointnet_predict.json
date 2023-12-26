@@ -1,0 +1,8 @@
+{
+	"predict": "ModelLoader",
+	"in_model": "/home/uadmin/git/virtualearn3d/out/PointnetPwiseClassifier_FPSone_weighted/pnet_pwise_classif.model",
+	"_in_pcloud": "https://3dweb.geog.uni-heidelberg.de/trees_leafwood/PinSyl_KA10_03_2019-07-30_q2_TLS-on_c_t.laz",
+	"in_pcloud": "https://3dweb.geog.uni-heidelberg.de/trees_leafwood/PinSyl_KA09_T048_2019-08-20_q1_TLS-on_c_t.laz",
+	"out_pcloud": "out/PointnetPwiseClassifier_FPSone_weighted/predict/PinSyl_KA10_03_2019-07-30_q2_TLS-on_c_t_pred.laz",
+	"out_preds": "out/PointnetPwiseClassifier_FPSone_weighted/predict/PinSyl_KA10_03_2019-07-30_q2_TLS-on_c_t_pred.lbl"
+}
