@@ -1,4 +1,4 @@
-import unittest
+import pytest
 import numpy as np
 from src.utils.ftransf.pca_transformer import PCATransformer
 from src.main.main_logger import main_logger_init
@@ -96,16 +96,18 @@ def _load_asset(asset):
     return np.loadtxt("tests/assets/" + asset, delimiter=",")
 
 
-class TestTransformers(unittest.TestCase):
+@pytest.fixture(scope="session", autouse=True)
+def execute_before_any_test():
+    main_logger_init()
+
+
+class TestTransformers:
     """
     Unit test class for the PCATransformer.
     """
 
-    def setUp(self):
-        main_logger_init()
-
     def test_standardizer(self):
-        transformer = Standardizer()
+        transformer = Standardizer(fnames=["AUTO"])
         out = transformer.transform(
             F=np.array(features), y=[], fnames=["AUTO"], out_prefix=None
         )
@@ -136,6 +138,12 @@ class TestTransformers(unittest.TestCase):
 
         assert np.allclose(out, expected_out)
 
+    def test_standardizer_invalid_input(self):
+        transformer = Standardizer(fnames=["AUTO"])
+        with pytest.raises((AttributeError, ValueError)):
+            transformer.transform(F=None, y=[], fnames=["AUTO"], out_prefix=None)
 
-if __name__ == "__main__":
-    unittest.main()
+    def test_pca_transformer_invalid_input(self):
+        transformer = PCATransformer(out_dim=0.99, whiten=False)
+        with pytest.raises((AttributeError, ValueError)):
+            transformer.transform(F=None, y=[""], fnames=["AUTO"], out_prefix=None)

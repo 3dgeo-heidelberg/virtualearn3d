@@ -16,6 +16,8 @@ dependencies:
   - h5py>=3.9.0
   - cudatoolkit=11.2
   - cudnn=8.1.0
+  - pytest>=7.4.3
+
   - pip:
     - open3d>=0.17.0
     - laspy[laszip]>=2.3.0
