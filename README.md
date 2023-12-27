@@ -2,6 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Documentation Status](https://readthedocs.org/projects/virtualearn3d/badge/?version=latest)](https://virtualearn3d.readthedocs.io/en/latest/?badge=latest)
+[![CI/CD](https://github.com/3dgeo-heidelberg/virtualearn3d/actions/workflows/run_tests.yml/badge.svg)](https://github.com/3dgeo-heidelberg/virtualearn3d/actions/workflows/run_tests.yml)
 
 
 Welcome to the VirtuaLearn3D (VL3D) framework for artificial intelligence
@@ -13,7 +14,7 @@ applied to point-wise tasks in 3D point clouds.
 ### Machine learning install
 
 Since the VL3D framework is a Python-based software, the installation is quite
-simple. It consists of three steps:
+simple. It consists of three steps (four if you are using conda/miniconda):
 
 
 1. Clone the repository.
@@ -28,11 +29,36 @@ simple. It consists of three steps:
     cd virtualearn3d
     ```
 
+#### Using pip
+
 3. Install the requirements.
 
     ```bash
     pip install -r requirements.txt
     ```
+    
+#### Using conda or miniconda
+
+3. Install the requirements.
+
+    1. In Windows
+   
+        ```bash
+        conda env create -f vl3d_win.yml
+        ```
+
+    2. In Linux.
+
+        ```bash
+        conda env create -f vl3d_lin.yml
+        ```
+
+4. Activate the environment
+
+   ```bash
+   conda activate vl3d
+   ```
+
 
 ### Deep learning install
 
