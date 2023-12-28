@@ -309,6 +309,14 @@ class ModelOp:
             model_handling['rbf_feature_extraction_representation_dir'] = \
                 ModelOp.merge_path(out_prefix, rbf_feat_extract_repr_dir)
         old_paths['rbf_feat_extract_repr_dir'] = rbf_feat_extract_repr_dir
+        # Handle rbf feature processing representation dir
+        rbf_feat_processing_repr_dir = model_handling.get(
+            'rbf_feature_processing_representation_dir', None
+        )
+        if ModelOp.path_needs_update(rbf_feat_processing_repr_dir):
+            model_handling['rbf_feature_processing_representation_dir'] = \
+                ModelOp.merge_path(out_prefix, rbf_feat_processing_repr_dir)
+        old_paths['rbf_feat_processing_repr_dir'] = rbf_feat_processing_repr_dir
         # Handle checkpoint path
         checkpoint_path = model_handling.get('checkpoint_path', None)
         if ModelOp.path_needs_update(checkpoint_path):
@@ -486,6 +494,10 @@ class ModelOp:
                 is not None:
             model_handling['rbf_feature_extraction_representation_dir'] = \
                 old_paths['rbf_feat_extract_repr_dir']
+        if model_handling.get('rbf_feature_processing_representation_dir', None)\
+                is not None:
+            model_handling['rbf_feature_processing_representation_dir'] = \
+                old_paths['rbf_feat_processing_repr_dir']
         # Restore training receptive fields distribution report path
         if preproc.get(
             'training_receptive_fields_distribution_report_path', None

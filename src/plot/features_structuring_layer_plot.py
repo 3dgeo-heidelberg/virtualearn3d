@@ -2,10 +2,8 @@
 # ------------------- #
 from src.plot.mpl_plot import MplPlot
 from src.plot.plot import PlotException
-import src.main.main_logger as LOGGING
 from matplotlib import pyplot as plt
 import numpy as np
-import os
 
 
 # ---   CLASS   --- #

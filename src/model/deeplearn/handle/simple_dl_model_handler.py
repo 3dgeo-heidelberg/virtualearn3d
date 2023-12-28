@@ -92,6 +92,9 @@ class SimpleDLModelHandler(DLModelHandler):
         self.rbf_feat_extract_repr_dir = kwargs.get(
             'rbf_feature_extraction_representation_dir', None
         )
+        self.rbf_feat_processing_repr_dir = kwargs.get(
+            'rbf_feature_processing_representation_dir', None
+        )
         self.out_prefix = kwargs.get('out_prefix', None)
         self.training_epochs = kwargs.get('training_epochs', 100)
         self.batch_size = kwargs.get('batch_size', 16)
@@ -215,6 +218,7 @@ class SimpleDLModelHandler(DLModelHandler):
         fit_cache_map = {
             'fsl_dir_path': self.feat_struct_repr_dir,
             'rbf_dir_path': self.rbf_feat_extract_repr_dir,
+            'rbf_feat_processing_dir_path': self.rbf_feat_processing_repr_dir,
             'out_prefix': self.out_prefix,
             'X': X,
             'y_rf': y_rf,
@@ -313,7 +317,7 @@ class SimpleDLModelHandler(DLModelHandler):
             )
         # Compile
         self.compiled.compile(
-            # run_eagerly=True,  # Uncomment for better debugging (but slower)
+            #run_eagerly=True,  # Uncomment for better debugging (but slower)
             **comp_args
         )
         return self
@@ -695,6 +699,8 @@ class SimpleDLModelHandler(DLModelHandler):
         state['training_history_dir'] = self.training_history_dir
         state['feat_struct_repr_dir'] = self.feat_struct_repr_dir
         state['rbf_feat_extract_repr_dir'] = self.rbf_feat_extract_repr_dir
+        state['rbf_feat_processing_repr_dir'] = \
+            self.rbf_feat_processing_repr_dir
         state['out_prefix'] = self.out_prefix
         state['training_epochs'] = self.training_epochs
         state['batch_size'] = self.batch_size
@@ -725,6 +731,9 @@ class SimpleDLModelHandler(DLModelHandler):
         self.feat_struct_repr_dir = state.get('feat_struct_repr_dir', None)
         self.rbf_feat_extract_repr_dir = state.get(
             'rbf_feat_extract_repr_dir', None
+        )
+        self.rbf_feat_processing_repr_dir = state.get(
+            'rbf_feat_processing_repr_dir', None
         )
         self.out_prefix = state['out_prefix']
         self.training_epochs = state['training_epochs']

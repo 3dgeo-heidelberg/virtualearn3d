@@ -299,7 +299,9 @@ class PointNet(Architecture, ABC):
         return tf.keras.layers.Activation("relu", name=f'{name}_relu')(x)
 
     @staticmethod
-    def build_mlp_block(x, filters, name, kernel_initializer):
+    def build_mlp_block(
+        x, filters, name, kernel_initializer, batch_normalization=True
+    ):
         """
         Build an MLP block.
 
@@ -311,15 +313,19 @@ class PointNet(Architecture, ABC):
         :type kernel_initializer: str
         :param name: The name of the block.
         :type name: str
+        :param batch_normalization: Whether to apply batch normalization (True)
+            or not (False).
+        :type batch_normalization: bool
         """
         x = tf.keras.layers.Dense(
             filters,
             kernel_initializer=kernel_initializer,
             name=f'{name}_dense'
         )(x)
-        x = tf.keras.layers.BatchNormalization(
-            momentum=0.0, name=f'{name}_bn'
-        )(x)
+        if batch_normalization:
+            x = tf.keras.layers.BatchNormalization(
+                momentum=0.0, name=f'{name}_bn'
+            )(x)
         return tf.keras.layers.Activation("relu", name=f'{name}_relu')(x)
 
     # ---   SERIALIZATION   --- #
