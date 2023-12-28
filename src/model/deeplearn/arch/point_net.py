@@ -55,14 +55,16 @@ class PointNet(Architecture, ABC):
         self.pretransf_feats_F_spec = kwargs.get(
             'pretransf_feats_F_spec', None
         )
-        self.postransf_feats_F_spec = kwargs.get('postransf_feats_spec', None)
-        self.tnet_pre_filters_F_spec = kwargs.get('tnet_pre_filters_spec', None)
+        self.postransf_feats_F_spec = kwargs.get('postransf_feats_F_spec', None)
+        self.tnet_pre_filters_F_spec = kwargs.get('tnet_pre_filters_F_spec', None)
         self.tnet_post_filters_F_spec = kwargs.get(
-            'tnet_post_filters_spec', None
+            'tnet_post_filters_F_spec', None
         )
         self.kernel_initializer_F = kwargs.get(
             'kernel_initializer_F', 'glorot_normal'
         )
+        self.skip_link_features = kwargs.get('skip_link_features', False)
+        self.full_pnet_on_features = kwargs.get('full_pnet_on_features', True)
         # Initialize cache-like attributes
         self.pretransf_feats_X, self.pretransf_feats_F = None, None
         self.postransf_feats_X, self.postransf_feats_F = None, None
@@ -128,8 +130,8 @@ class PointNet(Architecture, ABC):
         # Remove None from dictionary to prevent overriding defaults
         _kwargs = DictUtils.delete_by_val(_kwargs, None)
         # Build the PointNet block on the structure space
-        hidden_X, pretransf_feats_X, transf_feats_X, postransf_feats_X = \
-            PointNet.build_hidden_pointnet(self.X, **_kwargs)
+        hidden_X, pretransf_feats_X, transf_feats_X, postransf_feats_X, \
+            self.Xtransf = PointNet.build_hidden_pointnet(self.X, **_kwargs)
         # Update cached feature layers for the structure space
         self.pretransf_feats_X = pretransf_feats_X
         self.transf_feats_X = transf_feats_X
@@ -163,8 +165,8 @@ class PointNet(Architecture, ABC):
             if kernel_initializer_F is not None:
                 _kwargs['kernel_initializer'] = kernel_initializer_F
             # Build the PointNet block on the feature space
-            hidden_F, pretransf_feats_F, transf_feats_F, postransf_feats_F = \
-                PointNet.build_hidden_pointnet(
+            hidden_F, pretransf_feats_F, transf_feats_F, postransf_feats_F, \
+                self.Ftransf = PointNet.build_hidden_pointnet(
                     self.F,
                     **_kwargs,
                     space_dimensionality=len(self.fnames),
@@ -219,8 +221,9 @@ class PointNet(Architecture, ABC):
         :type space_dimensionality: int
         :return: Last layer of the built PointNet, the list of
             pre-transformations, the layer of transformed features, and the
-            list of post-transformations.
+            list of post-transformations. Finally, the aligned input tensor.
         :rtype: :class:`tf.Tensor` and list and :class:`tf.keras.Layer` and list
+            and :class:`tf.Tensor`
         """
         # First transformation block
         x = PointNet.build_transformation_block(
@@ -231,6 +234,7 @@ class PointNet(Architecture, ABC):
             tnet_post_filters=tnet_post_filters,
             kernel_initializer=kernel_initializer
         )
+        aligned_x = x
         # Features before the second transformation block
         pretransf_feat_layers = []
         for pretransf_feat_spec in pretransf_feats:
@@ -261,7 +265,8 @@ class PointNet(Architecture, ABC):
                 name=f'{prefix}{postransf_feat_spec["name"]}'
             )
             postransf_feat_layers.append(x)
-        return x, pretransf_feat_layers, transf_feats, postransf_feat_layers
+        return x, pretransf_feat_layers, transf_feats, postransf_feat_layers,\
+            aligned_x
 
     @staticmethod
     def build_transformation_block(
@@ -423,6 +428,13 @@ class PointNet(Architecture, ABC):
         state['postransf_feats_spec'] = self.postransf_feats_spec
         state['tnet_pre_filters_spec'] = self.tnet_pre_filters_spec
         state['tnet_post_filters_spec'] = self.tnet_post_filters_spec
+        state['kernel_initializer_F'] = self.kernel_initializer_F
+        state['pretransf_feats_F_spec'] = self.pretransf_feats_F_spec
+        state['postransf_feats_F_spec'] = self.postransf_feats_F_spec
+        state['tnet_pre_filters_F_spec'] = self.tnet_pre_filters_F_spec
+        state['tnet_post_filters_F_spec'] = self.tnet_post_filters_F_spec
+        state['skip_link_features'] = self.skip_link_features
+        state['full_pnet_on_features'] = self.full_pnet_on_features
         state['features_structuring_layer'] = self.features_structuring_layer
         # Return
         return state
@@ -445,6 +457,13 @@ class PointNet(Architecture, ABC):
         self.postransf_feats_spec = state['postransf_feats_spec']
         self.tnet_pre_filters_spec = state['tnet_pre_filters_spec']
         self.tnet_post_filters_spec = state['tnet_post_filters_spec']
+        self.kernel_initializer_F = state['kernel_initializer_F']
+        self.pretransf_feats_F_spec = state['pretransf_feats_F_spec']
+        self.postransf_feats_F_spec = state['postransf_feats_F_spec']
+        self.tnet_pre_filters_F_spec = state['tnet_pre_filters_F_spec']
+        self.tnet_post_filters_F_spec = state['tnet_post_filters_F_spec']
+        self.skip_link_features = state['skip_link_features']
+        self.full_pnet_on_features = state['full_pnet_on_features']
         self.features_structuring_layer = state.get(
             'features_structuring_layer', None
         )

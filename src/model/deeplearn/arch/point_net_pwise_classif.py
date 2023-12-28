@@ -38,6 +38,10 @@ class PointNetPwiseClassif(PointNet):
                 'the number of classes defining the problem. None was given.'
             )
         self.num_pwise_feats = kwargs.get('num_pwise_feats', 128)
+        self.final_shared_mlps = kwargs.get(
+            'final_shared_mlps',
+            [512, 256, 128]
+        )
         self.binary_crossentropy = False
         comp_args = kwargs.get('compilation_args', None)
         if comp_args is not None:
@@ -92,10 +96,22 @@ class PointNetPwiseClassif(PointNet):
         x = self.pretransf_feats_X + [self.transf_feats_X] + \
             self.postransf_feats_X[:-1] + [X]
         if F is not None:
-            x = x + self.pretransf_feats_F + [self.transf_feats_F] + \
-                self.postransf_feats_F[:-1] + [F]
+            if self.full_pnet_on_features:
+                x = x + self.pretransf_feats_F + [self.transf_feats_F] + \
+                    self.postransf_feats_F[:-1] + [F]
+            if self.skip_link_features:
+                x = x + [self.Ftransf]
 
         x = tf.keras.layers.Concatenate(name='full_feats')(x)
+        # Final shared MLPs
+        if self.final_shared_mlps is not None:
+            for i, shared_mlp in enumerate(self.final_shared_mlps):
+                x = PointNet.build_conv_block(
+                    x,
+                    filters=shared_mlp,
+                    kernel_initializer=self.kernel_initializer,
+                    name=f'final_sharedMLP{i+1}_{shared_mlp}'
+                )
         # Convolve point-wise features
         if self.num_pwise_feats > 0:
             x = PointNet.build_conv_block(
@@ -210,6 +226,7 @@ class PointNetPwiseClassif(PointNet):
         state = super().__getstate__()
         # Add PointNetPwiseClassif's attributes to state dictionary
         state['num_classes'] = self.num_classes
+        state['final_shared_mlps'] = self.final_shared_mlps
         state['num_pwise_feats'] = self.num_pwise_feats
         state['binary_crossentropy'] = self.binary_crossentropy
         # Return
@@ -227,6 +244,7 @@ class PointNetPwiseClassif(PointNet):
         """
         # Assign PointNetPwiseClassif's attributes from state dictionary
         self.num_classes = state['num_classes']
+        self.final_shared_mlps = state['final_shared_mlps']
         self.num_pwise_feats = state['num_pwise_feats']
         self.binary_crossentropy = state['binary_crossentropy']
         self.fsl_layer = None
