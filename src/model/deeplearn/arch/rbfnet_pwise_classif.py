@@ -337,6 +337,16 @@ class RBFNetPwiseClassif(RBFNet):
         self.transform_input_features = state['transform_input_features']
         # Call parent's set state
         super().__setstate__(state)
+        # Track feature processing layer
+        self.feature_processing_layer = [
+            layer
+            for layer in self.nn.layers
+            if isinstance(layer, RBFFeatProcessingLayer)
+        ]
+        if len(self.feature_processing_layer) > 0:
+            self.feature_processing_layer = self.feature_processing_layer[0]
+        else:
+            self.feature_processing_layer = None
 
     # ---  FIT LOGIC CALLBACKS  --- #
     # ----------------------------- #

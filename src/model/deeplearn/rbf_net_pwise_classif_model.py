@@ -143,43 +143,9 @@ class RBFNetPwiseClassifModel(ClassificationModel):
         """
         Consider the current specification of model args (self.model_args)
         to update the paths.
-
         """
         if self.model is not None:
-            # TODO Rethink : Delegate model_handling paths to model handler
-            model_handling = self.model_args['model_handling']
-            self.model.summary_report_path = \
-                model_handling['summary_report_path']
-            self.model.training_history_dir = \
-                model_handling['training_history_dir']
-            self.model.checkpoint_path = model_handling['checkpoint_path']
-            if self.model.arch is not None:
-                self.model.arch.architecture_graph_path = \
-                    self.model_args['architecture_graph_path']
-                # TODO Rethink : Delegate preproc paths to pre-processor
-                pre_processor = None
-                if self.model.arch.pre_runnable is not None:
-                    if hasattr(self.model.arch.pre_runnable, "pre_processor"):
-                        pre_processor = \
-                            self.model.arch.pre_runnable.pre_processor
-                if pre_processor is not None:
-                    preproc = self.model_args['pre_processing']
-                    pre_processor.training_receptive_fields_distribution_report_path = \
-                        preproc['training_receptive_fields_distribution_report_path']
-                    pre_processor.training_receptive_fields_distribution_plot_path = \
-                        preproc['training_receptive_fields_distribution_plot_path']
-                    pre_processor.training_receptive_fields_dir = \
-                        preproc['training_receptive_fields_dir']
-                    pre_processor.receptive_fields_distribution_report_path = \
-                        preproc['receptive_fields_distribution_report_path']
-                    pre_processor.receptive_fields_distribution_plot_path = \
-                        preproc['receptive_fields_distribution_plot_path']
-                    pre_processor.receptive_fields_dir = \
-                        preproc['receptive_fields_dir']
-                    pre_processor.training_support_points_report_path = \
-                        preproc['training_support_points_report_path']
-                    pre_processor.support_points_report_path = \
-                        preproc['support_points_report_path']
+            self.model.update_paths(self.model_args)
 
     def predict(self, pcloud, X=None, F=None, plots_and_reports=True):
         """

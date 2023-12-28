@@ -86,6 +86,7 @@ class SimpleDLModelHandler(DLModelHandler):
         # Assign member attributes
         self.summary_report_path = kwargs.get('summary_report_path', None)
         self.training_history_dir = kwargs.get('training_history_dir', None)
+        # TODO Rethink : RBF and FSL dirs should belong to the model? externalize them somehow?
         self.feat_struct_repr_dir = kwargs.get(
             'features_structuring_representation_dir', None
         )
@@ -350,6 +351,35 @@ class SimpleDLModelHandler(DLModelHandler):
                     spec_handling['learning_rate_on_plateau']
             if 'early_stopping' in spec_handling_keys:
                 self.early_stopping = spec_handling['early_stopping']
+
+    def update_paths(self, model_args):
+        """
+        Consider the current specification of model handling arguments to
+        update the paths.
+        """
+        # Nothing to do if no specification is given
+        if model_args is None:
+            return
+        # Update model paths
+        model_handling = model_args.get('model_handling', None)
+        if model_handling is not None:
+            self.summary_report_path = model_handling['summary_report_path']
+            self.training_history_dir = model_handling['training_history_dir']
+            self.checkpoint_path = model_handling['checkpoint_path']
+        # Update architecture paths
+        if self.arch is not None:
+            self.arch.architecture_graph_path = \
+                model_args['architecture_graph_path']
+            # Update pre-procesor paths
+            pre_processor = None
+            if self.arch.pre_runnable is not None:
+                if hasattr(self.arch.pre_runnable, "pre_processor"):
+                    pre_processor = \
+                        self.arch.pre_runnable.pre_processor
+            if pre_processor is not None:
+                pre_processor.update_paths(model_args.get(
+                    'pre_processing', None
+                ))
 
     # ---  MODEL HANDLING TASKS  --- #
     # ------------------------------ #

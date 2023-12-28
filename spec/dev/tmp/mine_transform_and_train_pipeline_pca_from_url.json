@@ -17,18 +17,6 @@
 	  "fnames": ["linearity", "planarity", "surface_variation", "eigenentropy", "omnivariance", "verticality", "anisotropy"]
 	},
 	{
-		"miner": "SmoothFeatures",
-		"chunk_size": 500000,
-		"subchunk_size": 1000,
-		"neighborhood": {
-		    "type": "sphere",
-		    "radius": 0.25
-		},
-		"input_fnames": ["Reflectance", "linearity_r0.1", "planarity_r0.1", "surface_variation_r0.1", "eigenentropy_r0.1", "omnivariance_r0.1", "verticality_r0.1", "anisotropy_r0.1"],
-		"fnames": ["mean"],
-		"nthreads": 6
-	},
-	{
 	  "miner": "GeometricFeatures",
 	  "radius": 0.2,
 	  "fnames": ["linearity", "planarity", "surface_variation", "eigenentropy", "omnivariance", "verticality", "anisotropy"]
@@ -49,10 +37,6 @@
 	  "fnames": ["AUTO"],
 	  "center": true,
 	  "scale": true
-	},
-	{
-	  "writer": "Writer",
- 	  "out_pcloud": "*pcloud/std_geomfeats.laz"
 	},
 	{
 	  "feature_transformer": "PCATransformer",
@@ -117,7 +101,7 @@
 	{
 	  "writer": "PredictivePipelineWriter",
 	  "out_pipeline": "*pipe/LeafWood_Training_RF.pipe",
-	  "include_writer": false,
+	  "include_writer": true,
 	  "include_imputer": true,
 	  "include_feature_transformer": true,
 	  "include_miner": true
