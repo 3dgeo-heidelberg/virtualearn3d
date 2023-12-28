@@ -65,24 +65,37 @@ class PointNetPwiseClassif(PointNet):
         :rtype: :class:`tf.Tensor`.
         """
         # Call parent's build hidden
-        x = super().build_hidden(x, **kwargs)
+        X, F = super().build_hidden(x, **kwargs), None
+        if isinstance(X, list):
+            X, F = X[0], X[1]
         # Extend parent's hidden layer with point-wise blocks
-        x = tf.keras.layers.MaxPool1D(
+        X = tf.keras.layers.MaxPool1D(
             pool_size=self.num_points,
-            name='max_pool1D'
-        )(x)
-        x = tf.tile(
-            x,
+            name='max_pool1D_X'
+        )(X)
+        X = tf.tile(
+            X,
             [1, self.num_points, 1],
-            name='global_feats'
+            name='global_feats_X'
         )
+        if F is not None:
+            F = tf.keras.layers.MaxPool1D(
+                pool_size=self.num_points,
+                name='max_pool1D_F'
+            )(F)
+            F = tf.tile(
+                F,
+                [1, self.num_points, 1],
+                name='global_feats_F'
+            )
         # Concatenate features for point-wise classification
-        x = tf.keras.layers.Concatenate(name='full_feats')(
-            self.pretransf_feats +
-            [self.transf_feats] +
-            self.postransf_feats[:-1] +
-            [x]
-        )
+        x = self.pretransf_feats_X + [self.transf_feats_X] + \
+            self.postransf_feats_X[:-1] + [X]
+        if F is not None:
+            x = x + self.pretransf_feats_F + [self.transf_feats_F] + \
+                self.postransf_feats_F[:-1] + [F]
+
+        x = tf.keras.layers.Concatenate(name='full_feats')(x)
         # Convolve point-wise features
         if self.num_pwise_feats > 0:
             x = PointNet.build_conv_block(
