@@ -93,15 +93,33 @@ class PointNetPwiseClassif(PointNet):
                 name='global_feats_F'
             )
         # Concatenate features for point-wise classification
-        x = self.pretransf_feats_X + [self.transf_feats_X] + \
-            self.postransf_feats_X[:-1] + [X]
+        x = []
+        if self.skip_link_features_X:
+            x = x + [self.Xtransf]
+        if self.include_pretransf_feats_X:
+            x = x + self.pretransf_feats_X
+        if self.include_transf_feats_X:
+            x = x + [self.transf_feats_X]
+        if self.include_postransf_feats_X:
+            x = x + [self.postransf_feats_X[:-1]]
+        if self.include_global_feats_X:
+            x = x + [X]
         if F is not None:
-            if self.full_pnet_on_features:
-                x = x + self.pretransf_feats_F + [self.transf_feats_F] + \
-                    self.postransf_feats_F[:-1] + [F]
-            if self.skip_link_features:
+            if self.skip_link_features_F:
                 x = x + [self.Ftransf]
-
+            if self.include_pretransf_feats_F:
+                x = x + self.pretransf_feats_F
+            if self.include_transf_feats_F:
+                x = x + [self.transf_feats_F]
+            if self.include_postransf_feats_F:
+                x = x + [self.postransf_feats_F[:-1]]
+            if self.include_global_feats_F:
+                x = x + [F]
+        if len(x) < 1:
+            raise DeepLearningException(
+                'PointNetPwiseClassif cannot be built without features for '
+                'point-wise classification.'
+            )
         x = tf.keras.layers.Concatenate(name='full_feats')(x)
         # Final shared MLPs
         if self.final_shared_mlps is not None:

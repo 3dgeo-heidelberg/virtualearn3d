@@ -63,8 +63,34 @@ class PointNet(Architecture, ABC):
         self.kernel_initializer_F = kwargs.get(
             'kernel_initializer_F', 'glorot_normal'
         )
-        self.skip_link_features = kwargs.get('skip_link_features', False)
-        self.full_pnet_on_features = kwargs.get('full_pnet_on_features', True)
+        self.skip_link_features_X = kwargs.get('skip_link_features', False)
+        self.include_pretransf_feats_X = kwargs.get(
+            'include_pretransf_feats_X', False
+        )
+        self.include_transf_feats_X = kwargs.get(
+            'include_transf_feats_X', True
+        )
+        self.include_postransf_feats_X = kwargs.get(
+            'include_postransf_feats_X', False
+        )
+        self.include_global_feats_X = kwargs.get(
+            'include_global_feats_X', True
+        )
+        self.skip_link_features_F = kwargs.get(
+            'skip_link_features_F', False
+        )
+        self.include_pretransf_feats_F = kwargs.get(
+            'include_pretransf_feats_F', False
+        )
+        self.include_transf_feats_F = kwargs.get(
+            'include_transf_feats_F', True
+        )
+        self.include_postransf_feats_F = kwargs.get(
+            'include_postransf_feats_F', False
+        )
+        self.include_global_feats_F = kwargs.get(
+            'include_global_feats_F', True
+        )
         # Initialize cache-like attributes
         self.pretransf_feats_X, self.pretransf_feats_F = None, None
         self.postransf_feats_X, self.postransf_feats_F = None, None
@@ -433,8 +459,16 @@ class PointNet(Architecture, ABC):
         state['postransf_feats_F_spec'] = self.postransf_feats_F_spec
         state['tnet_pre_filters_F_spec'] = self.tnet_pre_filters_F_spec
         state['tnet_post_filters_F_spec'] = self.tnet_post_filters_F_spec
-        state['skip_link_features'] = self.skip_link_features
-        state['full_pnet_on_features'] = self.full_pnet_on_features
+        state['skip_link_features_X'] = self.skip_link_features_X
+        state['include_pretransf_feats_X'] = self.include_pretransf_feats_X
+        state['include_transf_feats_X'] = self.include_transf_feats_X
+        state['include_postransf_feats_X'] = self.include_postransf_feats_X
+        state['include_global_feats_X'] = self.include_global_feats_X
+        state['skip_link_features_F'] = self.skip_link_features_F
+        state['include_pretransf_feats_F'] = self.include_pretransf_feats_F
+        state['include_transf_feats_F'] = self.include_transf_feats_F
+        state['include_postransf_feats_F'] = self.include_postransf_feats_F
+        state['include_global_feats_F'] = self.include_global_feats_F
         state['features_structuring_layer'] = self.features_structuring_layer
         # Return
         return state
@@ -462,8 +496,16 @@ class PointNet(Architecture, ABC):
         self.postransf_feats_F_spec = state['postransf_feats_F_spec']
         self.tnet_pre_filters_F_spec = state['tnet_pre_filters_F_spec']
         self.tnet_post_filters_F_spec = state['tnet_post_filters_F_spec']
-        self.skip_link_features = state['skip_link_features']
-        self.full_pnet_on_features = state['full_pnet_on_features']
+        self.skip_link_features_X = state['skip_link_features_X']
+        self.include_pretransf_feats_X = state['include_pretransf_feats_X']
+        self.include_transf_feats_X = state['include_transf_feats_X']
+        self.include_postransf_feats_X = state['include_postransf_feats_X']
+        self.include_global_feats_X = state['include_global_feats_X']
+        self.skip_link_features_F = state['skip_link_features_F']
+        self.include_pretransf_feats_F = state['include_pretransf_feats_F']
+        self.include_transf_feats_F = state['include_transf_feats_F']
+        self.include_postransf_feats_F = state['include_postransf_feats_F']
+        self.include_global_feats_F = state['include_global_feats_F']
         self.features_structuring_layer = state.get(
             'features_structuring_layer', None
         )
