@@ -1,0 +1,57 @@
+{
+  "in_pcloud": [
+	"/home/uadmin/git/virtualearn3d/test_data/QuePet_BR01_01_2019-07-03_q2_TLS-on_c.laz",
+	"/home/uadmin/git/virtualearn3d/test_data/test_tree.laz"
+  ],
+  "out_pcloud": [
+	"/home/uadmin/git/virtualearn3d/out/mine_bug/QuePet_BR01*",
+	"/home/uadmin/git/virtualearn3d/out/mine_bug/test_tree*"
+  ],
+  "sequential_pipeline": [
+	{
+	  "miner": "HeightFeatures",
+	  "support_chunk_size": 200,
+	  "support_subchunk_size": 20,
+	  "pwise_chunk_size": 10000,
+	  "nthreads": 10,
+	  "neighborhood": {	
+    	"type": "Rectangular2D",
+		"radius": 50.0,
+		"separation_factor": 0.35
+	  },
+	  "outlier_filter": null,
+	  "fnames": ["floor_distance"]
+	},
+	{
+	  "miner": "SmoothFeatures",
+	  "chunk_size": 100000,
+	  "subchunk_size": 1000,
+	  "neighborhood": {
+		"type": "sphere",
+		"radius": 0.25
+	  },
+	  "input_fnames": ["Reflectance"],
+	  "fnames": ["mean"],
+	  "nthreads": 10
+	},
+	{
+	  "miner": "GeometricFeatures",
+	  "radius": 0.125,
+	  "fnames": ["linearity", "planarity", "sphericity", "surface_variation", "omnivariance", "verticality", "anisotropy", "eigenentropy", "eigenvalue_sum"]
+	},
+	{
+	  "miner": "GeometricFeatures",
+	  "radius": 0.25,
+	  "fnames": ["linearity", "planarity", "sphericity", "surface_variation", "omnivariance", "verticality", "anisotropy", "eigenentropy", "eigenvalue_sum"]
+	},
+	{
+	  "miner": "GeometricFeatures",
+	  "radius": 0.5,
+	  "fnames": ["linearity", "planarity", "sphericity", "surface_variation", "omnivariance", "verticality", "anisotropy", "eigenentropy", "eigenvalue_sum"]
+	},
+	{
+	  "writer": "Writer",
+ 	  "out_pcloud": "*feats.laz"
+	}
+  ]
+}

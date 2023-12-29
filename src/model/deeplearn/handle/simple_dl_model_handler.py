@@ -86,11 +86,15 @@ class SimpleDLModelHandler(DLModelHandler):
         # Assign member attributes
         self.summary_report_path = kwargs.get('summary_report_path', None)
         self.training_history_dir = kwargs.get('training_history_dir', None)
+        # TODO Rethink : RBF and FSL dirs should belong to the model? externalize them somehow?
         self.feat_struct_repr_dir = kwargs.get(
             'features_structuring_representation_dir', None
         )
         self.rbf_feat_extract_repr_dir = kwargs.get(
             'rbf_feature_extraction_representation_dir', None
+        )
+        self.rbf_feat_processing_repr_dir = kwargs.get(
+            'rbf_feature_processing_representation_dir', None
         )
         self.out_prefix = kwargs.get('out_prefix', None)
         self.training_epochs = kwargs.get('training_epochs', 100)
@@ -215,6 +219,7 @@ class SimpleDLModelHandler(DLModelHandler):
         fit_cache_map = {
             'fsl_dir_path': self.feat_struct_repr_dir,
             'rbf_dir_path': self.rbf_feat_extract_repr_dir,
+            'rbf_feat_processing_dir_path': self.rbf_feat_processing_repr_dir,
             'out_prefix': self.out_prefix,
             'X': X,
             'y_rf': y_rf,
@@ -313,7 +318,7 @@ class SimpleDLModelHandler(DLModelHandler):
             )
         # Compile
         self.compiled.compile(
-            # run_eagerly=True,  # Uncomment for better debugging (but slower)
+            #run_eagerly=True,  # Uncomment for better debugging (but slower)
             **comp_args
         )
         return self
@@ -346,6 +351,35 @@ class SimpleDLModelHandler(DLModelHandler):
                     spec_handling['learning_rate_on_plateau']
             if 'early_stopping' in spec_handling_keys:
                 self.early_stopping = spec_handling['early_stopping']
+
+    def update_paths(self, model_args):
+        """
+        Consider the current specification of model handling arguments to
+        update the paths.
+        """
+        # Nothing to do if no specification is given
+        if model_args is None:
+            return
+        # Update model paths
+        model_handling = model_args.get('model_handling', None)
+        if model_handling is not None:
+            self.summary_report_path = model_handling['summary_report_path']
+            self.training_history_dir = model_handling['training_history_dir']
+            self.checkpoint_path = model_handling['checkpoint_path']
+        # Update architecture paths
+        if self.arch is not None:
+            self.arch.architecture_graph_path = \
+                model_args['architecture_graph_path']
+            # Update pre-procesor paths
+            pre_processor = None
+            if self.arch.pre_runnable is not None:
+                if hasattr(self.arch.pre_runnable, "pre_processor"):
+                    pre_processor = \
+                        self.arch.pre_runnable.pre_processor
+            if pre_processor is not None:
+                pre_processor.update_paths(model_args.get(
+                    'pre_processing', None
+                ))
 
     # ---  MODEL HANDLING TASKS  --- #
     # ------------------------------ #
@@ -695,6 +729,8 @@ class SimpleDLModelHandler(DLModelHandler):
         state['training_history_dir'] = self.training_history_dir
         state['feat_struct_repr_dir'] = self.feat_struct_repr_dir
         state['rbf_feat_extract_repr_dir'] = self.rbf_feat_extract_repr_dir
+        state['rbf_feat_processing_repr_dir'] = \
+            self.rbf_feat_processing_repr_dir
         state['out_prefix'] = self.out_prefix
         state['training_epochs'] = self.training_epochs
         state['batch_size'] = self.batch_size
@@ -725,6 +761,9 @@ class SimpleDLModelHandler(DLModelHandler):
         self.feat_struct_repr_dir = state.get('feat_struct_repr_dir', None)
         self.rbf_feat_extract_repr_dir = state.get(
             'rbf_feat_extract_repr_dir', None
+        )
+        self.rbf_feat_processing_repr_dir = state.get(
+            'rbf_feat_processing_repr_dir', None
         )
         self.out_prefix = state['out_prefix']
         self.training_epochs = state['training_epochs']

@@ -38,6 +38,10 @@ class PointNetPwiseClassif(PointNet):
                 'the number of classes defining the problem. None was given.'
             )
         self.num_pwise_feats = kwargs.get('num_pwise_feats', 128)
+        self.final_shared_mlps = kwargs.get(
+            'final_shared_mlps',
+            [512, 256, 128]
+        )
         self.binary_crossentropy = False
         comp_args = kwargs.get('compilation_args', None)
         if comp_args is not None:
@@ -65,24 +69,67 @@ class PointNetPwiseClassif(PointNet):
         :rtype: :class:`tf.Tensor`.
         """
         # Call parent's build hidden
-        x = super().build_hidden(x, **kwargs)
+        X, F = super().build_hidden(x, **kwargs), None
+        if isinstance(X, list):
+            X, F = X[0], X[1]
         # Extend parent's hidden layer with point-wise blocks
-        x = tf.keras.layers.MaxPool1D(
+        X = tf.keras.layers.MaxPool1D(
             pool_size=self.num_points,
-            name='max_pool1D'
-        )(x)
-        x = tf.tile(
-            x,
+            name='max_pool1D_X'
+        )(X)
+        X = tf.tile(
+            X,
             [1, self.num_points, 1],
-            name='global_feats'
+            name='global_feats_X'
         )
+        if F is not None:
+            F = tf.keras.layers.MaxPool1D(
+                pool_size=self.num_points,
+                name='max_pool1D_F'
+            )(F)
+            F = tf.tile(
+                F,
+                [1, self.num_points, 1],
+                name='global_feats_F'
+            )
         # Concatenate features for point-wise classification
-        x = tf.keras.layers.Concatenate(name='full_feats')(
-            self.pretransf_feats +
-            [self.transf_feats] +
-            self.postransf_feats[:-1] +
-            [x]
-        )
+        x = []
+        if self.skip_link_features_X:
+            x = x + [self.Xtransf]
+        if self.include_pretransf_feats_X:
+            x = x + self.pretransf_feats_X
+        if self.include_transf_feats_X:
+            x = x + [self.transf_feats_X]
+        if self.include_postransf_feats_X:
+            x = x + [self.postransf_feats_X[:-1]]
+        if self.include_global_feats_X:
+            x = x + [X]
+        if F is not None:
+            if self.skip_link_features_F:
+                x = x + [self.Ftransf]
+            if self.include_pretransf_feats_F:
+                x = x + self.pretransf_feats_F
+            if self.include_transf_feats_F:
+                x = x + [self.transf_feats_F]
+            if self.include_postransf_feats_F:
+                x = x + [self.postransf_feats_F[:-1]]
+            if self.include_global_feats_F:
+                x = x + [F]
+        if len(x) < 1:
+            raise DeepLearningException(
+                'PointNetPwiseClassif cannot be built without features for '
+                'point-wise classification.'
+            )
+        x = tf.keras.layers.Concatenate(name='full_feats')(x)
+        # Final shared MLPs
+        if self.final_shared_mlps is not None:
+            for i, shared_mlp in enumerate(self.final_shared_mlps):
+                x = PointNet.build_conv_block(
+                    x,
+                    filters=shared_mlp,
+                    kernel_initializer=self.kernel_initializer,
+                    name=f'final_sharedMLP{i+1}_{shared_mlp}'
+                )
         # Convolve point-wise features
         if self.num_pwise_feats > 0:
             x = PointNet.build_conv_block(
@@ -197,6 +244,7 @@ class PointNetPwiseClassif(PointNet):
         state = super().__getstate__()
         # Add PointNetPwiseClassif's attributes to state dictionary
         state['num_classes'] = self.num_classes
+        state['final_shared_mlps'] = self.final_shared_mlps
         state['num_pwise_feats'] = self.num_pwise_feats
         state['binary_crossentropy'] = self.binary_crossentropy
         # Return
@@ -214,6 +262,7 @@ class PointNetPwiseClassif(PointNet):
         """
         # Assign PointNetPwiseClassif's attributes from state dictionary
         self.num_classes = state['num_classes']
+        self.final_shared_mlps = state['final_shared_mlps']
         self.num_pwise_feats = state['num_pwise_feats']
         self.binary_crossentropy = state['binary_crossentropy']
         self.fsl_layer = None

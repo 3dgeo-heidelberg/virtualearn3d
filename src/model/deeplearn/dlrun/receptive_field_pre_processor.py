@@ -191,6 +191,32 @@ class ReceptiveFieldPreProcessor:
                 'support_points_report_path'
             ]
 
+    def update_paths(self, preproc):
+        """
+        Consider the given specification of pre-processing arguments to update
+        the paths.
+        """
+        # Nothing to do if no specification is given
+        if preproc is None:
+            return
+        # Update paths
+        self.training_receptive_fields_distribution_report_path = \
+            preproc['training_receptive_fields_distribution_report_path']
+        self.training_receptive_fields_distribution_plot_path = \
+            preproc['training_receptive_fields_distribution_plot_path']
+        self.training_receptive_fields_dir = \
+            preproc['training_receptive_fields_dir']
+        self.receptive_fields_distribution_report_path = \
+            preproc['receptive_fields_distribution_report_path']
+        self.receptive_fields_distribution_plot_path = \
+            preproc['receptive_fields_distribution_plot_path']
+        self.receptive_fields_dir = \
+            preproc['receptive_fields_dir']
+        self.training_support_points_report_path = \
+            preproc['training_support_points_report_path']
+        self.support_points_report_path = \
+            preproc['support_points_report_path']
+
     @staticmethod
     def transform_to_unit_sphere(X):
         r"""

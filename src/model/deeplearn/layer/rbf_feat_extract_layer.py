@@ -284,9 +284,11 @@ class RBFFeatExtractLayer(Layer):
         :return: The computed Markov kernel function.
         :rtype: :class:`tf.Tensor`
         """
-        # TODO Rethink : Solve, it is implemented as Gaussian
         omega_squared = self.omega * self.omega
-        return tf.exp(-tf.transpose(D_squared, [0, 2, 1]) / omega_squared)
+        return tf.exp(
+            -tf.transpose(tf.sqrt(D_squared), [0, 2, 1]) /
+            omega_squared
+        )
 
     # ---   SERIALIZATION   --- #
     # ------------------------- #
@@ -387,6 +389,7 @@ class RBFFeatExtractLayer(Layer):
             omegaD_name='$\\omega_{i}$',
             kernel_type=self.kernel_function_type
         ).plot(out_prefix=out_prefix)
+        # Log time
         end = time.perf_counter()
         LOGGING.LOGGER.debug(
             'Representation of RBF feature extraction layer exported to '

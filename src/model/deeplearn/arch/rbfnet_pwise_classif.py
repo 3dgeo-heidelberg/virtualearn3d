@@ -3,10 +3,8 @@
 from src.model.deeplearn.arch.rbfnet import RBFNet
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
 from src.model.deeplearn.arch.point_net import PointNet
-# TODO Rethink : RBFFPL imports ---
 from src.model.deeplearn.layer.rbf_feat_processing_layer import \
     RBFFeatProcessingLayer
-# --- TODO Rethink : RBFFPL imports
 import tensorflow as tf
 import numpy as np
 import os
@@ -42,6 +40,9 @@ class RBFNetPwiseClassif(RBFNet):
         self.include_prepooling_features = kwargs.get(
             'include_prepooling_features', True
         )
+        self.include_global_features = kwargs.get(
+            'include_global_features', True
+        )
         # Neural network architecture specifications
         self.output_kernel_initializer = kwargs.get(
             'output_kernel_initializer', 'glorot_normal'
@@ -70,6 +71,7 @@ class RBFNetPwiseClassif(RBFNet):
         self.prepool_feats_tensor = None
         self.global_feats_tensor = None
         self.feature_processing_tensor = None
+        self.feature_processing_layer = None
 
     # ---   ARCHITECTURE METHODS   --- #
     # -------------------------------- #
@@ -120,7 +122,8 @@ class RBFNetPwiseClassif(RBFNet):
         gathered_tensors = []
         if self.include_prepooling_features:
             gathered_tensors.append(self.prepool_feats_tensor)
-        gathered_tensors.append(self.global_feats_tensor)
+        if self.include_global_features:
+            gathered_tensors.append(self.global_feats_tensor)
         # Handle input features (if given)
         if self.fnames is not None:
             if self.transform_input_features:  # Transform features
@@ -230,17 +233,25 @@ class RBFNetPwiseClassif(RBFNet):
         fs = self.feature_structuring
         num_feats = self.Ftransf.shape[-1]
         # Build feature processing layer
-        # TODO Rethink : If fp['means'] and ['stdevs'] are None, use input args
-        fpl = RBFFeatProcessingLayer(
+        means = fp.get(
+            'means',
+            np.random.uniform(-fp['a'], fp['a'], num_feats)
+        )
+        stdevs = fp.get(
+            'stdevs',
+            np.random.uniform(fp['a'], fp['b'], num_feats)
+        )
+        self.feature_processing_layer = RBFFeatProcessingLayer(
             num_kernels=fp['num_kernels'],
-            means=np.random.uniform(-fp['a'], fp['a'], num_feats),
-            stdevs=np.random.uniform(fp['a'], fp['b'], num_feats),
+            means=means,
+            stdevs=stdevs,
             a=fp['a'],
             b=fp['b'],
             kernel_function_type=fp['kernel_function_type'],
             trainable_M=fp['trainable_M'],
             trainable_Omega=fp['trainable_Omega']
-        )(self.Ftransf)
+        )
+        fpl = self.feature_processing_layer(self.Ftransf)
         # Before enhancement feature structuring
         if self.check_feature_structuring('fsl_processed_features_dim_out'):
             fpl = self.build_FSL_block(
@@ -255,7 +266,8 @@ class RBFNetPwiseClassif(RBFNet):
                 fpl,
                 fp['num_kernels']*num_feats,
                 f'fpl_enhancement',
-                self.enhancement_kernel_initializer
+                self.enhancement_kernel_initializer,
+                batch_normalization=fp.get('batch_normalization', True)
             )
             # After enhancement feature structuring
             if self.check_feature_structuring(
@@ -289,6 +301,7 @@ class RBFNetPwiseClassif(RBFNet):
         state['after_features_kernel_initializer'] = \
             self.after_features_kernel_initializer
         state['include_prepooling_features'] = self.include_prepooling_features
+        state['include_global_features'] = self.include_global_features
         state['output_kernel_initializer'] = self.output_kernel_initializer
         state['binary_crossentropy'] = self.binary_crossentropy
         state['skip_link_features'] = self.skip_link_features
@@ -315,12 +328,25 @@ class RBFNetPwiseClassif(RBFNet):
         self.include_prepooling_features = state.get(  # get 4 backward compat.
             'include_prepooling_features', True
         )
+        self.include_global_features = state.get(  # get 4 backward compat.
+            'include_global_Features', True
+        )
         self.output_kernel_initializer = state['output_kernel_initializer']
         self.binary_crossentropy = state['binary_crossentropy']
         self.skip_link_features = state['skip_link_features']
         self.transform_input_features = state['transform_input_features']
         # Call parent's set state
         super().__setstate__(state)
+        # Track feature processing layer
+        self.feature_processing_layer = [
+            layer
+            for layer in self.nn.layers
+            if isinstance(layer, RBFFeatProcessingLayer)
+        ]
+        if len(self.feature_processing_layer) > 0:
+            self.feature_processing_layer = self.feature_processing_layer[0]
+        else:
+            self.feature_processing_layer = None
 
     # ---  FIT LOGIC CALLBACKS  --- #
     # ----------------------------- #
@@ -343,6 +369,15 @@ class RBFNetPwiseClassif(RBFNet):
                     Qpast=None
                 )
                 cache_map['Qpast'].append(np.array(rbf_layer.Q))
+        # Prefit logic for RBF feature processing layer representation
+        if self.feature_processing_layer is not None:
+            self.feature_processing_layer.export_representation(
+                os.path.join(
+                    cache_map['rbf_feat_processing_dir_path'],
+                    'init'
+                ),
+                out_prefix=cache_map['out_prefix']
+            )
 
     def posfit_logic_callback(self, cache_map):
         """
@@ -363,3 +398,12 @@ class RBFNetPwiseClassif(RBFNet):
                     out_prefix=cache_map['out_prefix'],
                     Qpast=cache_map['Qpast'][i]
                 )
+        # Postfit logic for RBF feature processing layer representation
+        if self.feature_processing_layer is not None:
+            self.feature_processing_layer.export_representation(
+                os.path.join(
+                    cache_map['rbf_feat_processing_dir_path'],
+                    'trained'
+                ),
+                out_prefix=cache_map['out_prefix']
+            )

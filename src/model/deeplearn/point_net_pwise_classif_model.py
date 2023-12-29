@@ -138,45 +138,9 @@ class PointNetPwiseClassifModel(ClassificationModel):
         """
         Consider the current specification of model args (self.model_args)
         to update the paths.
-
         """
         if self.model is not None:
-            # TODO Rethink : Delegate model_handling paths to model handler
-            model_handling = self.model_args['model_handling']
-            self.model.summary_report_path = \
-                model_handling['summary_report_path']
-            self.model.training_history_dir = \
-                model_handling['training_history_dir']
-            self.model.feat_struct_repr_dir = \
-                model_handling['features_structuring_representation_dir']
-            self.model.checkpoint_path = model_handling['checkpoint_path']
-            if self.model.arch is not None:
-                self.model.arch.architecture_graph_path = \
-                    self.model_args['architecture_graph_path']
-                # TODO Rethink : Delegate preproc paths to pre-processor
-                pre_processor = None
-                if self.model.arch.pre_runnable is not None:
-                    if hasattr(self.model.arch.pre_runnable, "pre_processor"):
-                        pre_processor = \
-                            self.model.arch.pre_runnable.pre_processor
-                if pre_processor is not None:
-                    preproc = self.model_args['pre_processing']
-                    pre_processor.training_receptive_fields_distribution_report_path = \
-                        preproc['training_receptive_fields_distribution_report_path']
-                    pre_processor.training_receptive_fields_distribution_plot_path = \
-                        preproc['training_receptive_fields_distribution_plot_path']
-                    pre_processor.training_receptive_fields_dir = \
-                        preproc['training_receptive_fields_dir']
-                    pre_processor.receptive_fields_distribution_report_path = \
-                        preproc['receptive_fields_distribution_report_path']
-                    pre_processor.receptive_fields_distribution_plot_path = \
-                        preproc['receptive_fields_distribution_plot_path']
-                    pre_processor.receptive_fields_dir = \
-                        preproc['receptive_fields_dir']
-                    pre_processor.training_support_points_report_path = \
-                        preproc['training_support_points_report_path']
-                    pre_processor.support_points_report_path = \
-                        preproc['support_points_report_path']
+            self.model.update_paths(self.model_args)
 
     def predict(self, pcloud, X=None, F=None):
         """
@@ -204,7 +168,15 @@ class PointNetPwiseClassifModel(ClassificationModel):
         """
         See :meth:`model.Model.get_input_from_pcloud`.
         """
-        return pcloud.get_coordinates_matrix()
+        # TODO Rethink : Common impl. wrt RBFNetPwiseClassifModel.get_input_from_pcloud
+        # No features
+        if self.fnames is None:
+            return pcloud.get_coordinates_matrix()
+        # Features
+        return [
+            pcloud.get_coordinates_matrix(),
+            pcloud.get_features_matrix(self.fnames)
+        ]
 
     # ---   TRAINING METHODS   --- #
     # ---------------------------- #
@@ -241,10 +213,12 @@ class PointNetPwiseClassifModel(ClassificationModel):
         )
         # Training evaluation
         super().on_training_finished(X, y, yhat=yhat)
+        # Get the coordinates matrix even when [X, F] is given
+        _X = X[0] if isinstance(X, list) else X
         # Write classified point cloud
         if self.training_classified_point_cloud_path is not None:
             ClassifiedPcloudReport(
-                X=X, y=y, yhat=yhat, zhat=zhat, class_names=self.class_names
+                X=_X, y=y, yhat=yhat, zhat=zhat, class_names=self.class_names
             ).to_file(
                 path=self.training_classified_point_cloud_path
             )
@@ -258,7 +232,7 @@ class PointNetPwiseClassifModel(ClassificationModel):
                 f'{end-start:.3f} seconds.'
             )
             PwiseActivationsReport(
-                X=X, activations=activations, y=y
+                X=_X, activations=activations, y=y
             ).to_file(
                 path=self.training_activations_path
             )
@@ -352,8 +326,9 @@ class PointNetPwiseClassifModel(ClassificationModel):
         # Reduce overlapping propagations to mean
         I = self.model.arch.pre_runnable.pre_processor\
             .last_call_neighborhoods
+        npoints = X[0].shape[0] if isinstance(X, list) else X.shape[0]
         activations = GridSubsamplingPostProcessor.pwise_reduce(
-            X.shape[0], activations.shape[-1], I, propagated_activations
+            npoints, activations.shape[-1], I, propagated_activations
         )
         # Return
         return activations
