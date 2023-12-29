@@ -89,7 +89,7 @@
 				"pre_processor": "furthest_point_subsampling",
 				"to_unit_sphere": true,
 				"support_strategy": "fps",
-				"support_strategy_num_points": 2500, 
+				"support_strategy_num_points": 250, 
 				"support_strategy_fast": false,
 				"support_chunk_size": 2000,
 				"_training_class_distribution": [2500, 2500],
@@ -142,28 +142,41 @@
 			"pretransf_feats_F_spec": [
 				{
 					"filters": 64,
-					"name": "prefeats_64"
+					"name": "prefeats_64A"
 				},
 				{
-					"filters": 128,
-					"name": "prefeats_128"
+					"filters": 64,
+					"name": "prefeats_64B"
 				}
 			],
 			"postransf_feats_F_spec": [
 				{
 					"filters": 64,
-					"name": "posfeats_128"
+					"name": "posfeats_64"
 				},
 				{
 					"filters": 128,
-					"name": "posfeats_end_128"
+					"name": "posfeats_128"
+				},
+				{
+					"filters": 1024,
+					"name": "posfeats_end_1024"
 				}
 			],
 			"tnet_pre_filters_F_spec": [64, 128],
 			"tnet_post_filters_F_spec": [128, 64],
-			"skip_link_features": true,
-			"full_pnet_on_features": true,
+			
 			"final_shared_mlps": [512, 256, 128],
+			"skip_link_features_X": false,
+			"include_pretransf_feats_X": false,
+			"include_transf_feats_X": true,
+			"include_postransf_feats_X": false,
+			"include_global_feats_X": true,
+			"skip_link_features_F": false,
+			"include_pretransf_feats_F": false,
+			"include_transf_feats_F": true,
+			"include_postransf_feats_F": false,
+			"include_global_feats_F": true,
 			"_features_structuring_layer": {
 				"max_radii": [5, 5, 5],
 				"radii_resolution": 4,
@@ -183,8 +196,8 @@
 				"summary_report_path": "*/model_summary.log",
 				"training_history_dir": "*/training_eval/history",
 				"features_structuring_representation_dir": "*/training_eval/feat_struct_layer/",
-				"class_weight": [1, 1],
-				"training_epochs": 200,
+				"class_weight": [1, 0.5],
+				"training_epochs": 20,
 				"batch_size": 16,
 				"checkpoint_path": "*/checkpoint.model",
 				"checkpoint_monitor": "loss",
@@ -212,7 +225,7 @@
 						"schedule": "exponential_decay",
 						"schedule_args": {
 							"initial_learning_rate": 1e-2,
-							"decay_steps": 2000,
+							"decay_steps": 1000,
 							"decay_rate": 0.96,
 							"staircase": false
 						}

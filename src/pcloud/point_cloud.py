@@ -91,7 +91,14 @@ class PointCloud:
         :return: The matrix of features representing the point cloud.
         :rtype: :class:`np.ndarray`
         """
-        return np.array([self.las[fname] for fname in fnames]).T
+        try:
+            return np.array([self.las[fname] for fname in fnames]).T
+        except Exception as ex:
+            raise PointCloudException(
+                'PointCloud get_features_matrix method received unexpected '
+                'feature names. Supported feature names for the particular '
+                f'point cloud are:\n{self.get_features_names()}'
+            ) from ex
 
     def get_features_names(self):
         """

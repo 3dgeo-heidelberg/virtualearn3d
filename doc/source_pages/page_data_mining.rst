@@ -457,6 +457,10 @@ neighbor.
     The names of the features that must be taken from the closest neighbor in
     the pool.
 
+-- ``frenames``
+    An optional list with the name of the output features. When not given, the
+    output features will be named as specified by ``fnames``.
+
 -- ``pcloud_pool``
     A list with the paths to the point clouds composing the pool.
 
