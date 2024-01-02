@@ -89,4 +89,5 @@ def main_test():
         return 0 if success else 3
     except Exception as ex:
         LOGGING.LOGGER.error('Failed to run tests!')
+        raise ex  # TODO Remove
         raise VL3DException('VL3D tests failed.') from ex

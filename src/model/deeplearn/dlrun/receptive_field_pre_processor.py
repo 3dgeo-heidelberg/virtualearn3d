@@ -292,7 +292,7 @@ class ReceptiveFieldPreProcessor:
         )
         self.support_strategy_fast = state.get('support_strategy_fast', False)
         self.support_chunk_size = state.get('support_chunk_size', 0)
-        self.to_unit_sphere = state.get('to_unit_sphere', True)  # TODO Rethink : Set to False by default
+        self.to_unit_sphere = state.get('to_unit_sphere', False)
         self.training_class_distribution = state['training_class_distribution']
         self.center_on_pcloud = state['center_on_pcloud']
         self.nthreads = state['nthreads']
@@ -304,5 +304,5 @@ class ReceptiveFieldPreProcessor:
         self.training_receptive_fields_distribution_plot_path = None
         self.training_support_points_report_path = None
         self.support_points_report_path = None
-        self.last_call_neighborhoods = None
+        self.last_call_receptive_fields = None
         self.last_call_neighborhoods = None

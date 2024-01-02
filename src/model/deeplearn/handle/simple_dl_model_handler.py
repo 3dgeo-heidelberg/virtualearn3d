@@ -21,7 +21,6 @@ import src.main.main_logger as LOGGING
 import tensorflow as tf
 from tensorflow.python.framework.errors_impl import ResourceExhaustedError as \
     TFResourceExhaustedError
-
 from sklearn.preprocessing import LabelBinarizer
 import numpy as np
 import copy
@@ -71,6 +70,10 @@ class SimpleDLModelHandler(DLModelHandler):
         :meth:`simple_dl_model_handler.SimpleDLModelHandler.build_compilation_args`
         .
     :vartype compilation_args: dict
+    :ivar fit_verbose: Whether to use silent mode (0), show a progress bar (1),
+        or print one line per epoch (2). Alternatively, "auto" can be used
+        which typically means (1).
+    :vartype fit_verbose: str or int
     """
     # ---   INIT   --- #
     # ---------------- #
@@ -108,6 +111,7 @@ class SimpleDLModelHandler(DLModelHandler):
         )
         self.early_stopping = kwargs.get('early_stopping', None)
         self.compilation_args = kwargs.get('compilation_args', None)
+        self.fit_verbose = kwargs.get('fit_verbose', "auto")
 
     # ---   MODEL HANDLER   --- #
     # ------------------------- #
@@ -236,7 +240,8 @@ class SimpleDLModelHandler(DLModelHandler):
             X, y_rf,
             epochs=self.training_epochs,
             callbacks=callbacks,
-            batch_size=self.batch_size
+            batch_size=self.batch_size,
+            verbose=self.fit_verbose
         )
         # Post-fit logic
         if hasattr(self.arch, 'posfit_logic_callback'):
@@ -741,6 +746,7 @@ class SimpleDLModelHandler(DLModelHandler):
         state['learning_rate_on_plateau'] = self.learning_rate_on_plateau
         state['early_stopping'] = self.early_stopping
         state['compilation_args'] = self.compilation_args
+        state['fit_verbose'] = self.fit_verbose
         # Return Simple DL Model Handler state (for serialization)
         return state
 
@@ -774,3 +780,4 @@ class SimpleDLModelHandler(DLModelHandler):
         self.learning_rate_on_plateau = state['learning_rate_on_plateau']
         self.early_stopping = state['early_stopping']
         self.compilation_args = state['compilation_args']
+        self.fit_verbose = state['fit_verbose']
