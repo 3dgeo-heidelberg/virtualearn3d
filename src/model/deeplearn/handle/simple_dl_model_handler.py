@@ -112,6 +112,7 @@ class SimpleDLModelHandler(DLModelHandler):
         self.early_stopping = kwargs.get('early_stopping', None)
         self.compilation_args = kwargs.get('compilation_args', None)
         self.fit_verbose = kwargs.get('fit_verbose', "auto")
+        self.predict_verbose = kwargs.get('predict_verbose', "auto")
 
     # ---   MODEL HANDLER   --- #
     # ------------------------- #
@@ -265,7 +266,11 @@ class SimpleDLModelHandler(DLModelHandler):
             'plots_and_reports': plots_and_reports
         })
         try:
-            zhat_rf = self.compiled.predict(X_rf, batch_size=self.batch_size)
+            zhat_rf = self.compiled.predict(
+                X_rf,
+                batch_size=self.batch_size,
+                verbose=self.predict_verbose
+            )
         except TFResourceExhaustedError as resexherr:
             LOGGING.LOGGER.debug(
                 'SimpleDLModelHandler could not compute predictions for '
@@ -747,6 +752,7 @@ class SimpleDLModelHandler(DLModelHandler):
         state['early_stopping'] = self.early_stopping
         state['compilation_args'] = self.compilation_args
         state['fit_verbose'] = self.fit_verbose
+        state['predict_verbose'] = self.predict_verbose
         # Return Simple DL Model Handler state (for serialization)
         return state
 
@@ -781,3 +787,4 @@ class SimpleDLModelHandler(DLModelHandler):
         self.early_stopping = state['early_stopping']
         self.compilation_args = state['compilation_args']
         self.fit_verbose = state['fit_verbose']
+        self.predict_verbose = state['predict_verbose']

@@ -253,6 +253,7 @@ class ClassificationModel(Model, ABC):
         :return: The state's dictionary of the object.
         :rtype: dict
         """
+        # Get state dictionary
         state = self.__dict__.copy()
         # Remove metrics (because they use lambda functions)
         if state.get('autoval_metrics', None) is not None:

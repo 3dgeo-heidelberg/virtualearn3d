@@ -7,8 +7,10 @@ from src.model.deeplearn.point_net_pwise_classif_model import \
     PointNetPwiseClassifModel
 from src.model.deeplearn.rbf_net_pwise_classif_model import \
     RBFNetPwiseClassifModel
+from src.model.deeplearn.arch.point_net import PointNet
 from src.model.deeplearn.dlrun.receptive_field_pre_processor import \
     ReceptiveFieldPreProcessor
+from src.model.deeplearn.arch.architecture import Architecture
 from src.inout.model_io import ModelIO
 import src.main.main_logger as LOGGING
 import sklearn
@@ -16,6 +18,7 @@ import tensorflow as tf
 from tensorflow.python.framework.ops import EagerTensor
 from keras.utils.object_identity import ObjectIdentityDictionary
 import numpy as np
+import weakref
 import tempfile
 import os
 
@@ -126,7 +129,7 @@ class ModelSerializationTest(VL3DTest):
             }
         }
         rf_original = RandomForestClassificationModel(**init_args)
-        rf_original.training(self.X, self.y)
+        rf_original.training(self.F, self.y)
         # Temporary workspace
         with tempfile.TemporaryDirectory() as tmpdir:
             # Serialize model
@@ -135,7 +138,12 @@ class ModelSerializationTest(VL3DTest):
             # Deserialize model
             rf_deserial = ModelIO.read(tmpfile)
             # Validate deserialized model
-            return self.validate_deserialized_model(rf_original, rf_deserial)
+            return self.validate_deserialized_model(
+                rf_original,
+                rf_deserial,
+                original_y=rf_original._predict(self.F),
+                deserial_y=rf_deserial._predict(self.F)
+            )
 
     def test_point_net_pwise_classifier(self):
         """
@@ -147,7 +155,7 @@ class ModelSerializationTest(VL3DTest):
             otherwise.
         """
         # Model initialization arguments
-        batch_size = 16
+        batch_size = 4
         init_args = {
             # Model init args
             'autoval_metrics_names': ['OA', 'P', 'wP', 'MCC'],
@@ -248,7 +256,6 @@ class ModelSerializationTest(VL3DTest):
                 ],
                 "tnet_pre_filters_F_spec": [4, 8],
                 "tnet_post_filters_F_spec": [8, 4],
-
                 "final_shared_mlps": [16, 8, 4],
                 "skip_link_features_X": False,
                 "include_pretransf_feats_X": False,
@@ -300,7 +307,8 @@ class ModelSerializationTest(VL3DTest):
                         "min_delta": 0.01,
                         "patience": 5000
                     },
-                    "fit_verbose": 0
+                    "fit_verbose": 0,
+                    "predict_verbose": 0
                 },
                 "compilation_args": {
                     "optimizer": {
@@ -345,9 +353,13 @@ class ModelSerializationTest(VL3DTest):
             ModelIO.write(pnet_original, tmpfile)
             # Deserialize model
             pnet_deserial = ModelIO.read(tmpfile)
+            pnet_deserial.model = pnet_deserial.model.compile()
             # Validate deserialized model
             return self.validate_deserialized_model(
-                pnet_original, pnet_deserial
+                pnet_original,
+                pnet_deserial,
+                original_y=pnet_original.model.predict([self.X, self.F]),
+                deserial_y=pnet_deserial.model.predict([self.X, self.F])
             )
 
     def test_rbf_net_pwise_classifier(self):
@@ -362,10 +374,11 @@ class ModelSerializationTest(VL3DTest):
         # TODO Rethink : Implement
         return True
 
-
     # ---  MODEL VALIDATION METHODS  --- #
     # ---------------------------------- #
-    def validate_deserialized_model(self, original, deserial):
+    def validate_deserialized_model(
+        self, original, deserial, original_y=None, deserial_y=None
+    ):
         """
         Check that the attributes of the deserialized model (deserial) match
         those of the model before the serialization.
@@ -379,9 +392,17 @@ class ModelSerializationTest(VL3DTest):
         if deserial is None:  # No deserialized model was given
             return False
         # Recursively validate given models
-        return ModelSerializationTest.recursive_object_validation(
+        if not ModelSerializationTest.recursive_object_validation(
             original, deserial
-        )
+        ):
+            return False
+        # Validate the output of given models
+        if not ModelSerializationTest.model_output_validation(
+            original_y, deserial_y
+        ):
+            return False
+        # All validations were successfully passed
+        return True
 
     @staticmethod
     def recursive_object_validation(oriobj, desobj):
@@ -401,7 +422,7 @@ class ModelSerializationTest(VL3DTest):
         )):
             return True
         # Prepare validation
-        IGNORE_TYPES = (
+        IGNORE_TYPES = ( # Types that must not be considered as general objects
             int,
             float,
             str,
@@ -414,14 +435,17 @@ class ModelSerializationTest(VL3DTest):
             np.ndarray,
             tf.Tensor,
             tf.Variable,
-            EagerTensor
+            EagerTensor,
         )
-        TENSOR_TYPES = (
+        TENSOR_TYPES = (  # Tensorflow data types
             tf.Tensor,
             tf.Variable,
             EagerTensor
         )
-        orivars, desvars = oriobj.__dict__, desobj.__dict__
+        try:
+            orivars, desvars = oriobj.__dict__, desobj.__dict__
+        except AttributeError as aerr:
+            return True  # Consider objects without attributes as passed
         for okey in orivars.keys():  # Iterate for each okey (original key)
             # Skip irrelevant attributes (not relevant for serialization)
             if ModelSerializationTest.is_irrelevant_attribute(oriobj, okey):
@@ -432,8 +456,45 @@ class ModelSerializationTest(VL3DTest):
             # Check original attribute value matches deserial
             orival, desval = orivars[okey], desvars[okey]
             oritype, destype = type(orival), type(desval)
+            # Extract elements for tuples of single element
+            if isinstance(orival, tuple) and len(orival) == 1:
+                orival, oritype = orival[0], type(orival[0])
+            if isinstance(desval, tuple) and len(desval) == 1:
+                desval, destype = desval[0], type(desval[0])
+            # Determine whether the attribute is a symbolic keras tensor
+            is_keras_tensor = False
+            try:
+                is_keras_tensor = tf.keras.backend.is_keras_tensor(orival)
+            except ValueError as verr:
+                pass
+            # Determine whether the list or tuple contains keras tensors
+            are_keras_tensors = []
+            if isinstance(orival, (list, tuple)):
+                for i in range(len(orival)):
+                    _is_keras_tensor = False
+                    try:
+                        _is_keras_tensor = tf.keras.backend.is_keras_tensor(
+                            orival[i]
+                        )
+                    except ValueError as verr:
+                        pass
+                    are_keras_tensors.append(_is_keras_tensor)
+            # Handle checks to validate that original matches deserial
             if oritype != destype:  # Check types match
-                return False
+                if(  # Leverage deserial list or tuple to array, if possible
+                    isinstance(orival, np.ndarray) and
+                    isinstance(desval, (list, tuple))
+                ):
+                    desval = np.array(desval)
+                    destype = type(desval)
+                elif(  # Leverage original list or tuple to array, if possible
+                    isinstance(desval, np.ndarray) and
+                    isinstance(orival, (list, tuple))
+                ):
+                    orival = np.array(orival)
+                    oritype = type(orival)
+                else:  # Otherwise, types do not match
+                    return False
             elif (orival is None) ^ (desval is None):  # Check only one is None
                 return False
             elif isinstance(orival, np.ndarray):  # Handle array comparison
@@ -452,6 +513,28 @@ class ModelSerializationTest(VL3DTest):
                         continue  # Avoid comparing empty tensors (problematic)
                     if bool(tf.reduce_any(oritensor != destensor)):
                         return False  # Element-wise comparison
+            elif is_keras_tensor:  # Handle KerasTensor
+                if orival.shape != desval.shape or orival.dtype != desval.dtype:
+                    return False
+            elif len(are_keras_tensors) > 0 and are_keras_tensors[0]:
+                # Handle list or tuple of Keras tensors
+                for i in range(len(orival)):
+                    try:
+                        if(
+                            orival[i].shape != desval[i].shape or
+                            orival[i].dtype != desval[i].dtype
+                        ):
+                            return False
+                    except AttributeError as aerr:
+                        try:  # Compare mixed lists (elems. with diff. types.)
+                            if orival[i] != desval[i]:
+                                return False
+                        except Exception:  # Extend exception info.
+                            raise AttributeError(
+                                f'orival[{i}] type is {type(orival[i])}\n'
+                                f'desval[{i}] type is {type(desval[i])}'
+                            ) from aerr
+            # Handle general comparisons
             elif orival != desval:  # When they don't match
                 if not isinstance(orival, IGNORE_TYPES):  # Recurs. obj. val.
                     valid = ModelSerializationTest.recursive_object_validation(
@@ -462,11 +545,26 @@ class ModelSerializationTest(VL3DTest):
                 elif isinstance(orival, (list, tuple)):  # Element-wise val.
                     if len(orival) != len(desval):  # Check num elems.
                         return False
-                    for orielem, deselem in zip(orival, desval):
-                        valid = ModelSerializationTest.recursive_object_validation(
-                            orielem, deselem
-                        )
-                        if not valid:
+                    try:
+                        for orielem, deselem in zip(orival, desval):
+                            valid = ModelSerializationTest.\
+                                recursive_object_validation(orielem, deselem)
+                            if not valid:
+                                return False
+                    except AttributeError as aerr:
+                        return False
+                elif isinstance(orival, dict):  # Element-wise val. on dicts.
+                    for dkey in orival.keys():
+                        dorival, ddesval = orival[dkey], desval[dkey]
+                        if (
+                            not isinstance(dorival, IGNORE_TYPES) or
+                            isinstance(dorival, (list, tuple))
+                        ):
+                            valid = ModelSerializationTest.\
+                                recursive_object_validation(dorival, ddesval)
+                            if not valid:
+                                return False
+                        elif dorival != ddesval:
                             return False
                 else:  # Values do not match
                     return False
@@ -487,12 +585,13 @@ class ModelSerializationTest(VL3DTest):
         """
         # Ignored attributes for ReceptiveFieldPreProcessor
         if isinstance(obj, ReceptiveFieldPreProcessor):
-            return key in [
+            if key in [
                 'last_call_receptive_fields',
                 'last_call_neighborhoods'
-            ]
+            ]:
+                return True
         # Ignore attributes for whatever class
-        return key in [
+        if key in [
             '_eager_losses',
             '_metrics_lock',
             '_auto_config',
@@ -503,5 +602,68 @@ class ModelSerializationTest(VL3DTest):
             '_inbound_nodes_value',
             '_obj_reference_counts_dict',
             '_auto_get_config',
-        ]
+            '_keras_inputs_ids_and_indices',
+            'flat_input_ids',
+            'flat_output_ids',
+            '_self_unconditional_checkpoint_dependencies',
+            '_self_unconditional_dependency_names',
+            '_seed',
+            '_kwargs',
+            '_steps_per_execution',
+            '_train_counter',
+            '_nodes_by_depth',
+            '_layer_call_argspecs',
+            '_tensor_usage_count',
+            '_iterations',
+            '_current_learning_rate',
+            '_index_dict',
+            'momentums',
+            '_built',
+            'compiled_loss',
+            'compiled_metrics',
+            'train_tf_function',
+            'train_function',
+            'history',
+            'architecture_graph_args',
+            'predict_function'
+        ]:
+            return True
+        # Ignore objects
+        if type(obj) == tf.keras.layers.Dot:
+            return True
+        if isinstance(obj, weakref.WeakKeyDictionary):
+            return True
+        # Ignore attributes for certain objects
+        if isinstance(obj, Architecture) and key in [
+            "inlayer"
+        ]:
+            return True
+        if isinstance(obj, PointNet) and key in [
+            'pretransf_feats_X', 'pretransf_feats_F',
+            'postransf_feats_X', 'postransf_feats_F',
+            'transf_feats_X', 'transf_feats_F',
+            'X', 'F',
+            'Xtransf', 'Ftransf'
+        ]:
+            return True
+        # Irrelevancy checks were passed
+        return False
+
+    @staticmethod
+    def model_output_validation(original_y, deserial_y):
+        """
+        Determine whether the outputs are equal or not.
+
+        :param original_y: The output (predictions) of the original model.
+        :type original_y: :class:`np.ndarray`
+        :param deserial_y: The output (predictions) of the deserialized model.
+        :type deserial_y: :class:`np.ndarray`
+        :return: True if the outputs are valid (equal), False otherwise.
+        :rtype: bool
+        """
+        # Always passed when no outputs are given
+        if original_y is None and deserial_y is None:
+            return True
+        # When outputs are not None, check for equality
+        return np.allclose(original_y, deserial_y)
 
