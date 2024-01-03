@@ -77,7 +77,10 @@ class PointCloudArraysFactory(PointCloudFactory):
             if self.F is not None:
                 extra_bytes = [
                     laspy.ExtraBytesParams(name=fname, type='f')
-                    for fname in self.fnames
+                    for fname in self.fnames if fname not in [
+                        # Exclude default features like intensity
+                        'intensity'
+                    ]
                 ]
                 las.add_extra_dims(extra_bytes)
         else:  # Initialize from previous header

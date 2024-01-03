@@ -163,8 +163,55 @@ class PointCloud:
         :return: True if predictions are available, false otherwise.
         :rtype: bool
         """
-        return self.las['prediction'] is not None and \
+        return 'prediction' in self.get_features_names() and \
+            self.las['prediction'] is not None and \
             len(self.las.prediction) > 0
+
+    def equals(self, pcloud, compare_header=True):
+        """
+        Check whether this (self) and given (pcloud) point clouds are equal
+        or not. In this method, equality holds if and only if all the values
+        of one point cloud match those of the other.
+
+        :param pcloud: The point cloud to be compared against.
+        :type pcloud: :class:`.PointCloud`
+        :return: True if point clouds are equal, False otherwise.
+        :rtype: bool
+        """
+        # Equality checks
+        if self.get_num_points() != pcloud.get_num_points():
+            return False
+        if compare_header and self.get_header() != pcloud.get_header():
+            return False
+        if np.count_nonzero(
+            self.get_coordinates_matrix() != pcloud.get_coordinates_matrix()
+        ):
+            return False
+        fnames = self.get_features_names()
+        if fnames != pcloud.get_features_names():
+            return False
+        if np.count_nonzero(
+            self.get_features_matrix(fnames) !=
+            pcloud.get_features_matrix(fnames)
+        ):
+            return False
+        if self.has_classes() != pcloud.has_classes():
+            return False
+        if self.has_classes():
+            if np.count_nonzero(
+                self.get_classes_vector() != pcloud.get_classes_vector()
+            ):
+                return False
+        if self.has_predictions() != pcloud.has_predictions():
+            return False
+        if self.has_predictions():
+            if np.count_nonzero(
+                self.get_predictions_vector() !=
+                pcloud.get_predictions_vector()
+            ):
+                return False
+        # All checks were passed so both point clouds should be equal
+        return True
 
     # ---  UPDATE METHODS  --- #
     # ------------------------ #
