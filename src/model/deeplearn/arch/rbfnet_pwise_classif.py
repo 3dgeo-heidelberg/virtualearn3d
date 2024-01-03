@@ -360,7 +360,10 @@ class RBFNetPwiseClassif(RBFNet):
         :return: Nothing.
         """
         # Prefit logic for RBF feature extraction layer representation
-        if self.rbf_layers is not None:
+        if(
+            self.rbf_layers is not None and
+            cache_map.get('rbf_dir_path', None) is not None
+        ):
             cache_map['Qpast'] = []
             for i, rbf_layer in enumerate(self.rbf_layers):
                 rbf_layer.export_representation(
@@ -370,7 +373,10 @@ class RBFNetPwiseClassif(RBFNet):
                 )
                 cache_map['Qpast'].append(np.array(rbf_layer.Q))
         # Prefit logic for RBF feature processing layer representation
-        if self.feature_processing_layer is not None:
+        if(
+            self.feature_processing_layer is not None and
+            cache_map.get('rbf_feat_processing_dir_path', None) is not None
+        ):
             self.feature_processing_layer.export_representation(
                 os.path.join(
                     cache_map['rbf_feat_processing_dir_path'],
@@ -389,7 +395,10 @@ class RBFNetPwiseClassif(RBFNet):
         :return: Nothing.
         """
         # Postfit logic for RBF feature extraction layer representation
-        if self.rbf_layers is not None:
+        if(
+            self.rbf_layers is not None and
+            cache_map.get('rbf_dir_path', None) is not None
+        ):
             for i, rbf_layer in enumerate(self.rbf_layers):
                 rbf_layer.export_representation(
                     os.path.join(
@@ -399,7 +408,10 @@ class RBFNetPwiseClassif(RBFNet):
                     Qpast=cache_map['Qpast'][i]
                 )
         # Postfit logic for RBF feature processing layer representation
-        if self.feature_processing_layer is not None:
+        if(
+            self.feature_processing_layer is not None and
+            cache_map.get('rbf_feat_processing_dir_path', None) is not None
+        ):
             self.feature_processing_layer.export_representation(
                 os.path.join(
                     cache_map['rbf_feat_processing_dir_path'],

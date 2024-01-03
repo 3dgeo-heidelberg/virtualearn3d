@@ -150,7 +150,7 @@ class RBFNet(Architecture, ABC):
             # Store RBF output
             self.rbf_output_tensors.append(_x)
         x = tf.keras.layers.Concatenate(name='rbf_concat')(
-            self.rbf_output_tensors,
+            self.rbf_output_tensors
         )
         # Apply enhancement if requested
         if self.enhanced_dim is not None:

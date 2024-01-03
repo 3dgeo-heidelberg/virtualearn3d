@@ -281,7 +281,10 @@ class PointNetPwiseClassif(PointNet):
         :return: Nothing.
         """
         # Prefit logic for features structuring layer representation
-        if self.fsl_layer is not None and cache_map['fsl_dir_path'] is not None:
+        if(
+            self.fsl_layer is not None and
+            cache_map.get('fsl_dir_path', None) is not None
+        ):
             self.fsl_layer.export_representation(
                 os.path.join(cache_map['fsl_dir_path'], 'init'),
                 out_prefix=cache_map['out_prefix'],
@@ -366,7 +369,10 @@ class PointNetPwiseClassif(PointNet):
             msg += 'RECOMPILING IS NECESSARY FOR THESE CHANGES TO MAKE EFFECT!'
             LOGGING.LOGGER.debug(msg)
         # Postfit logic for features structuring layer representation
-        if self.fsl_layer is not None and cache_map['fsl_dir_path'] is not None:
+        if(
+            self.fsl_layer is not None and
+            cache_map.get('fsl_dir_path', None) is not None
+        ):
             self.fsl_layer.export_representation(
                 os.path.join(cache_map['fsl_dir_path'], 'trained'),
                 out_prefix=cache_map['out_prefix'],

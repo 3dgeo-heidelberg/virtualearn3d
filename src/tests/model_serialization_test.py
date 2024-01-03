@@ -8,6 +8,7 @@ from src.model.deeplearn.point_net_pwise_classif_model import \
 from src.model.deeplearn.rbf_net_pwise_classif_model import \
     RBFNetPwiseClassifModel
 from src.model.deeplearn.arch.point_net import PointNet
+from src.model.deeplearn.arch.rbfnet import RBFNet
 from src.model.deeplearn.dlrun.receptive_field_pre_processor import \
     ReceptiveFieldPreProcessor
 from src.model.deeplearn.arch.architecture import Architecture
@@ -193,7 +194,7 @@ class ModelSerializationTest(VL3DTest):
                         "radius": 1.5,
                         "separation_factor": 1.5
                     },
-                    "nthreads": -1,
+                    "nthreads": 4,
                     "training_receptive_fields_distribution_report_path": None,
                     "training_receptive_fields_distribution_plot_path": None,
                     "training_receptive_fields_dir": None,
@@ -371,8 +372,325 @@ class ModelSerializationTest(VL3DTest):
         :return: True if model serialization works as expected, False
             otherwise.
         """
-        # TODO Rethink : Implement
-        return True
+        # Model initialization arguments
+        batch_size = 4
+        init_args = {
+            # Model init args
+            'autoval_metrics_names': ['OA', 'P', 'wP', 'MCC'],
+            'training_type': "base",
+            'random_seed': None,
+            'shuffle_points': True,
+            'autoval_size': 0.3,
+            'num_folds': 4,
+            'imputer': None,
+            'fnames': ["AUTO"],
+            'stratkfold_report_path': None,
+            'stratkfold_plot_path': None,
+            # Classification model init args
+            'class_names': self.class_names,
+            # RBFNet pwise classifier init args
+            "model_args": {
+                "fnames": self.fnames,
+                "num_classes": len(self.class_names),
+                "class_names": self.class_names,
+                "pre_processing": {
+                    "pre_processor": "furthest_point_subsampling",
+                    "to_unit_sphere": True,
+                    "support_strategy": "fps",
+                    "support_strategy_num_points": 32,
+                    "support_strategy_fast": False,
+                    "support_chunk_size": 8,
+                    "training_class_distribution": [8, 8, 8],
+                    "center_on_pcloud": True,
+                    "num_points": 64,
+                    "num_encoding_neighbors": 1,
+                    "fast": False,
+                    "neighborhood": {
+                        "type": "sphere",
+                        "radius": 1.5,
+                        "separation_factor": 1.5
+                    },
+                    "nthreads": 4,
+                    "training_receptive_fields_distribution_report_path": None,
+                    "training_receptive_fields_distribution_plot_path": None,
+                    "training_receptive_fields_dir": None,
+                    "receptive_fields_distribution_report_path": None,
+                    "receptive_fields_distribution_plot_path": None,
+                    "receptive_fields_dir": None,
+                    "training_support_points_report_path": None,
+                    "support_points_report_path": None
+                },
+                "rbfs": [
+                    {
+                        "max_radii": [1.0, 1.0, 1.0],
+                        "radii_resolution": 2,
+                        "angular_resolutions": [1, 2],
+                        "structure_initialization_type": "concentric_grids",
+                        "trainable_kernel_structure": True,
+                        "trainable_kernel_sizes": True,
+                        "kernel_function_type": "Gaussian",
+                        "batch_normalization": False,
+                        "activation": None
+                    },
+                    {
+                        "max_radii": [0.6, 0.6, 0.6],
+                        "radii_resolution": 2,
+                        "angular_resolutions": [1, 2],
+                        "structure_initialization_type": "concentric_grids",
+                        "trainable_kernel_structure": True,
+                        "trainable_kernel_sizes": True,
+                        "kernel_function_type": "Gaussian",
+                        "batch_normalization": False,
+                        "activation": None
+                    },
+                    {
+                        "max_radii": [0.3, 0.3, 0.3],
+                        "radii_resolution": 2,
+                        "angular_resolutions": [1, 2],
+                        "structure_initialization_type": "concentric_grids",
+                        "trainable_kernel_structure": True,
+                        "trainable_kernel_sizes": True,
+                        "kernel_function_type": "Gaussian",
+                        "batch_normalization": False,
+                        "activation": None
+                    },
+                    {
+                        "max_radii": [1.0, 1.0, 1.0],
+                        "radii_resolution": 3,
+                        "angular_resolutions": [1, 2, 3],
+                        "structure_initialization_type": "concentric_rectangulars",
+                        "trainable_kernel_structure": True,
+                        "trainable_kernel_sizes": True,
+                        "kernel_function_type": "Gaussian",
+                        "batch_normalization": False,
+                        "activation": None
+                    },
+                    {
+                        "max_radii": [1.0, 1.0, 1.0],
+                        "radii_resolution": 2,
+                        "angular_resolutions": [1, 3],
+                        "structure_initialization_type": "concentric_cylinders",
+                        "trainable_kernel_structure": True,
+                        "trainable_kernel_sizes": True,
+                        "kernel_function_type": "Gaussian",
+                        "batch_normalization": False,
+                        "activation": None
+                    },
+                    {
+                        "max_radii": [0.6, 0.6, 0.6],
+                        "radii_resolution": 2,
+                        "angular_resolutions": [1, 3],
+                        "structure_initialization_type": "concentric_cylinders",
+                        "trainable_kernel_structure": True,
+                        "trainable_kernel_sizes": True,
+                        "kernel_function_type": "Gaussian",
+                        "batch_normalization": False,
+                        "activation": None
+                    },
+                    {
+                        "max_radii": [0.3, 0.3, 0.3],
+                        "radii_resolution": 2,
+                        "angular_resolutions": [1, 3],
+                        "structure_initialization_type": "concentric_cylinders",
+                        "trainable_kernel_structure": True,
+                        "trainable_kernel_sizes": True,
+                        "kernel_function_type": "Gaussian",
+                        "batch_normalization": False,
+                        "activation": None
+                    },
+                    {
+                        "max_radii": [1.0, 1.0, 1.0],
+                        "radii_resolution": 2,
+                        "angular_resolutions": [1, 3],
+                        "structure_initialization_type": "concentric_ellipsoids",
+                        "trainable_kernel_structure": True,
+                        "trainable_kernel_sizes": True,
+                        "kernel_function_type": "Gaussian",
+                        "batch_normalization": False,
+                        "activation": None
+                    },
+                    {
+                        "max_radii": [0.6, 0.6, 0.6],
+                        "radii_resolution": 2,
+                        "angular_resolutions": [1, 3],
+                        "structure_initialization_type": "concentric_ellipsoids",
+                        "trainable_kernel_structure": True,
+                        "trainable_kernel_sizes": True,
+                        "kernel_function_type": "Gaussian",
+                        "batch_normalization": False,
+                        "activation": None
+                    },
+                    {
+                        "max_radii": [0.3, 0.3, 0.3],
+                        "radii_resolution": 2,
+                        "angular_resolutions": [1, 3],
+                        "structure_initialization_type": "concentric_ellipsoids",
+                        "trainable_kernel_structure": True,
+                        "trainable_kernel_sizes": True,
+                        "kernel_function_type": "Gaussian",
+                        "batch_normalization": False,
+                        "activation": None
+                    },
+                    {
+                        "max_radii": [1.0, 1.0, 1.0],
+                        "radii_resolution": 2,
+                        "angular_resolutions": [1, 3],
+                        "structure_initialization_type": "cone",
+                        "trainable_kernel_structure": True,
+                        "trainable_kernel_sizes": True,
+                        "kernel_function_type": "Gaussian",
+                        "batch_normalization": False,
+                        "activation": None
+                    },
+                    {
+                        "max_radii": [0.6, 0.6, 0.6],
+                        "radii_resolution": 2,
+                        "angular_resolutions": [1, 3],
+                        "structure_initialization_type": "cone",
+                        "trainable_kernel_structure": True,
+                        "trainable_kernel_sizes": True,
+                        "kernel_function_type": "Gaussian",
+                        "batch_normalization": False,
+                        "activation": None
+                    },
+                    {
+                        "max_radii": [0.3, 0.3, 0.3],
+                        "radii_resolution": 2,
+                        "angular_resolutions": [1, 3],
+                        "structure_initialization_type": "cone",
+                        "trainable_kernel_structure": True,
+                        "trainable_kernel_sizes": True,
+                        "kernel_function_type": "Gaussian",
+                        "batch_normalization": False,
+                        "activation": None
+                    },
+                    {
+                        "max_radii": [1.0, 1.0, 1.0],
+                        "radii_resolution": 1,
+                        "angular_resolutions": [1],
+                        "structure_initialization_type": "zeros",
+                        "trainable_kernel_structure": True,
+                        "trainable_kernel_sizes": True,
+                        "kernel_function_type": "Gaussian",
+                        "batch_normalization": False,
+                        "activation": None
+                    }
+                ],
+                "tnet_pre_filters_spec": [4, 8, 16],
+                "tnet_post_filters_spec": [32, 16, 8],
+                "enhanced_dim": [4, 8, 32],
+                "after_features_dim": [32, 16, 8],
+                "after_features_type": "Conv1D",
+                "include_prepooling_features": True,
+                "include_global_features": True,
+                "transform_input_features": True,
+                "skip_link_features": False,
+                "feature_structuring": {
+                    "max_radii": [3.0, 3.0, 3.0],
+                    "angular_resolutions": [1, 3],
+                    "concatenation_strategy": "OPAQUE",
+                    "trainable_QX": True,
+                    "trainable_QW": True,
+                    "trainable_omegaD": True,
+                    "trainable_omegaF": True,
+                    "enhance": True,
+                    "transformed_structure": True,
+                    "fsl_input_features_dim_out": "dim_in",
+                    "fsl_processed_features_dim_out": "dim_in",
+                    "fsl_enhanced_processed_features_dim_out": "dim_in",
+                    "fsl_prepool_features_dim_out": "dim_in",
+                    "fsl_global_features_dim_out": "dim_in",
+                    "fsl_rbf_features_dim_out": "dim_in",
+                    "fsl_rbf_enhanced_features_dim_out": "dim_in"
+                },
+                "feature_processing": {
+                    "num_kernels": 8,
+                    "a": 0.1,
+                    "b": 1,
+                    "kernel_function_type": "Gaussian",
+                    "trainable_M": True,
+                    "trainable_Omega": True,
+                    "enhance": True,
+                    "batch_normalization": False
+                },
+                "model_handling": {
+                    "summary_report_path": None,
+                    "training_history_dir": None,
+                    "features_structuring_representation_dir": None,
+                    "rbf_feature_extraction_representation_dir": None,
+                    "rbf_feature_processing_representation_dir": None,
+                    "class_weight": [0.8, 0.9, 1.0],
+                    "training_epochs": 3,
+                    "batch_size": batch_size,
+                    "checkpoint_path": None,
+                    "checkpoint_monitor": "loss",
+                    "learning_rate_on_plateau": {
+                        "monitor": "loss",
+                        "mode": "min",
+                        "factor": 0.1,
+                        "patience": 5000,
+                        "cooldown": 5,
+                        "min_delta": 0.01,
+                        "min_lr": 1e-6
+                    },
+                    "early_stopping": {
+                        "monitor": "loss",
+                        "mode": "min",
+                        "min_delta": 0.001,
+                        "patience": 50
+                    },
+                    "fit_verbose": 0,
+                    "predict_verbose": 0
+                },
+                "compilation_args": {
+                    "optimizer": {
+                        "algorithm": "SGD",
+                        "learning_rate": {
+                            "schedule": "exponential_decay",
+                            "schedule_args": {
+                                "initial_learning_rate": 1e-3,
+                                "decay_steps": 33,
+                                "decay_rate": 0.96,
+                                "staircase": False
+                            }
+                        }
+                    },
+                    "loss": {
+                        "function": "class_weighted_binary_crossentropy"
+                    },
+                    "metrics": [
+                        "binary_accuracy"
+                    ]
+                },
+                "architecture_graph_path": None,
+                "architecture_graph_args": {
+                    "show_shapes": True,
+                    "show_dtype": True,
+                    "show_layer_names": True,
+                    "rankdir": "TB",
+                    "expand_nested": True,
+                    "dpi": 300,
+                    "show_layer_activations": True
+                }
+            },
+        }
+        rbfnet_original = RBFNetPwiseClassifModel(**init_args)
+        rbfnet_original.training([self.X, self.F], self.y)
+        # Temporary workspace
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Serialize model
+            tmpfile = os.path.join(tmpdir, 'rbfnet')
+            ModelIO.write(rbfnet_original, tmpfile)
+            # Deserialize model
+            rbfnet_deserial = ModelIO.read(tmpfile)
+            rbfnet_deserial.model = rbfnet_deserial.model.compile()
+            # Validate deserialized model
+            return self.validate_deserialized_model(
+                rbfnet_original,
+                rbfnet_deserial,
+                original_y=rbfnet_original.model.predict([self.X, self.F]),
+                deserial_y=rbfnet_deserial.model.predict([self.X, self.F])
+            )
 
     # ---  MODEL VALIDATION METHODS  --- #
     # ---------------------------------- #
@@ -546,6 +864,8 @@ class ModelSerializationTest(VL3DTest):
                     if len(orival) != len(desval):  # Check num elems.
                         return False
                     try:
+                        orival, desval = ModelSerializationTest \
+                            .sort_lists_or_tuples(orival, desval)
                         for orielem, deselem in zip(orival, desval):
                             valid = ModelSerializationTest.\
                                 recursive_object_validation(orielem, deselem)
@@ -646,8 +966,46 @@ class ModelSerializationTest(VL3DTest):
             'Xtransf', 'Ftransf'
         ]:
             return True
+        if isinstance(obj, RBFNet) and key in [
+            'rbf_layers', 'rbf_output_tensors',
+            'rbf_feat_proc_layer',
+            'X', 'F',
+            'Xtransf', 'Ftransf',
+            'prepool_feats_tensor',
+            'global_feats_tensor',
+            'feature_processing_tensor',
+            'feature_processing_layer'
+        ]:
+            return True
         # Irrelevancy checks were passed
         return False
+
+    @staticmethod
+    def sort_lists_or_tuples(x, y):
+        """
+        Generate a sorted version of given lists or tuples.
+
+        :param x: First input list or tuple.
+        :type x: list or tuple
+        :param y: Second input list or tuple.
+        :type y: list or tuple
+        :return: Sorted version of the input lists or tuples.
+        :rtype: list
+        """
+        # Sort elements if they are layers
+        if isinstance(x[0], tf.keras.layers.Layer):
+            key = lambda layer: layer.name
+            return sorted(x, key=key), sorted(y, key=key)
+        # Sort elements if they can be transformed to Keras layers
+        if(
+            hasattr(x[0], 'layer') and
+            isinstance(x[0].layer, tf.keras.layers.Layer)
+        ):
+            p, q = [xi.layer for xi in x], [yi.layer for yi in y]
+            return ModelSerializationTest.sort_lists_or_tuples(p, q)
+        else:  # Return unsorted lists because no sort strategy was determined
+            return x, y
+
 
     @staticmethod
     def model_output_validation(original_y, deserial_y):
