@@ -175,6 +175,9 @@ class PointCloud:
 
         :param pcloud: The point cloud to be compared against.
         :type pcloud: :class:`.PointCloud`
+        :param compare_header: True to consider the LAS header when comparing
+            the point clouds, False otherwise.
+        :type compare_header: bool
         :return: True if point clouds are equal, False otherwise.
         :rtype: bool
         """
