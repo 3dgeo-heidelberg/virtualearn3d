@@ -39,13 +39,21 @@ class ModelSerializationTest(VL3DTest):
         super().__init__('Model serialization test')
         # Prepare training data
         self.num_points = 256
-        self.fnames = ['intensity', 'planarity']
-        self.num_features = len(self.fnames)
         self.X = np.random.normal(0, 1, (self.num_points, 3))
-        self.F = np.random.normal(0, 1, (self.num_points, self.num_features))
         self.class_names = ['Terrain', 'Vegetation', 'Object']
         self.num_classes = len(self.class_names)
         self.y = np.random.randint(0, self.num_classes, self.num_points)
+        self.fnames = ['intensity', 'planarity', 'linearity', 'roughness']
+        self.num_features = len(self.fnames)
+        self.F = np.random.uniform(0, 1, (self.num_points, self.num_features))
+        for j in range(self.num_features):
+            k = j % self.num_classes  # k is class index
+            fj = self.F[:, j]
+            mask = self.y == k
+            num_points_in_mask = np.count_nonzero(mask)
+            fj[mask] = np.random.uniform(5*j+1, 5*j+3, num_points_in_mask)
+            self.F[:, j] = fj
+
 
     # ---  TEST INTERFACE  --- #
     # ------------------------ #
