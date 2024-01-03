@@ -116,7 +116,7 @@ class SimpleDLModelHandler(DLModelHandler):
 
     # ---   MODEL HANDLER   --- #
     # ------------------------- #
-    def _fit(self, X, y, F=None):
+    def _fit(self, X, y):
         """
         See :class:`.DLModelHandler` and
         :meth:`dl_model_handler.DLModelHandler._fit`.
@@ -254,7 +254,7 @@ class SimpleDLModelHandler(DLModelHandler):
             self.history = fit_cache_map['history']
         return self.history
 
-    def _predict(self, X, F=None, y=None, zout=None, plots_and_reports=True):
+    def _predict(self, X, y=None, zout=None, plots_and_reports=True):
         """
         See :class:`.DLModelHandler` and
         :meth:`dl_model_handler.DLModelHandler._predict`.
@@ -299,7 +299,7 @@ class SimpleDLModelHandler(DLModelHandler):
         # Return
         return yhat
 
-    def compile(self, X=None, y=None, F=None, y_rf=None, **kwargs):
+    def compile(self, X=None, y=None, y_rf=None, **kwargs):
         """
         See :class:`.DLModelHandler` and
         :meth:`dl_model_handler.DLModelHandler.compile`.
