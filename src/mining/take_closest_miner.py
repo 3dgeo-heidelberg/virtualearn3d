@@ -115,13 +115,6 @@ class TakeClosestMiner(Miner):
         """
         # Obtain coordinates
         X = pcloud.get_coordinates_matrix()
-        # Initialize distances, features, and labels matrices and vectors
-        D = np.empty(X.shape[0], dtype=float)
-        D.fill(np.inf)
-        F = np.empty((X.shape[0], len(self.fnames)), dtype=float)
-        F.fill(np.nan)
-        y = np.empty(X.shape[0], dtype=int)
-        y.fill(np.iinfo(int).max)
         # Prepare fnames
         fnames = []
         take_classes = False
@@ -132,6 +125,13 @@ class TakeClosestMiner(Miner):
                 fnames.append(fname)
         if len(fnames) < 1:
             fnames = None
+        # Initialize distances, features, and labels matrices and vectors
+        D = np.empty(X.shape[0], dtype=float)
+        D.fill(np.inf)
+        F = np.empty((X.shape[0], len(fnames)), dtype=float)
+        F.fill(np.nan)
+        y = np.empty(X.shape[0], dtype=int)
+        y.fill(np.iinfo(int).max)
         # Find features from closest neighbor in pool
         for pcloud_path in self.pcloud_pool:
             # Read input point cloud
@@ -185,7 +185,7 @@ class TakeClosestMiner(Miner):
         if take_classes:
             pcloud = pcloud.set_classes_vector(y)
         if fnames is not None:
-            frenames = self.fnames
+            frenames = fnames
             if self.frenames is not None:
                 frenames = self.frenames
             pcloud = pcloud.add_features(frenames, F)
