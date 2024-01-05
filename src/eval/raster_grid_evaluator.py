@@ -41,6 +41,10 @@ class RasterGridEvaluator(Evaluator):
         centerd on each cell. In this expression, "l" represents the greatest
         cell size, i.e., :math:`\max \; \{\mathrm{xres}, \mathrm{yres}\}`.
     :vartype radius_expr: str
+    :ivar nthreads: How many threads must be used for the parallel computation
+        of the grids of features. By default, a single thread is used (1).
+        Also, note that -1 means as many threads as available cores.
+    :vartype nthreads: int
     """
 
     # ---  SPECIFICATION ARGUMENTS  --- #
@@ -64,7 +68,8 @@ class RasterGridEvaluator(Evaluator):
             'yres': spec.get('yres', None),
             'grid_iter_step': spec.get('grid_iter_step', None),
             'reverse_rows': spec.get('reverse_rows', None),
-            'radius_expr': spec.get('radius_expr', None)
+            'radius_expr': spec.get('radius_expr', None),
+            'nthreads': spec.get('nthreads', None)
         }
         # Delete keys with None value
         kwargs = DictUtils.delete_by_val(kwargs, None)
@@ -91,6 +96,7 @@ class RasterGridEvaluator(Evaluator):
         self.grid_iter_step = kwargs.get('grid_iter_step', 1024)
         self.reverse_rows = kwargs.get('reverse_rows', True)
         self.radius_expr = kwargs.get('radius_expr', 'l')
+        self.nthreads = kwargs.get('nthreads', 1)
         # Validate
         if self.grids is None or len(self.grids) < 1:
             raise EvaluatorException(
@@ -174,7 +180,8 @@ class RasterGridEvaluator(Evaluator):
             f'blocks of {self.grid_iter_step} rows each ...'
         )
         # Compute grids of features
-        grids = None
+        # TODO Rethink : Legacy implementation ---
+        """grids = None
         onames = [grid['oname'] for grid in self.grids]
         for i in range(0, width, self.grid_iter_step):  # Iterate over rows
             Xi = np.vstack(Xgrid[i:i+self.grid_iter_step])
@@ -188,7 +195,28 @@ class RasterGridEvaluator(Evaluator):
                 grids = subgrid
             else:
                 for j in range(len(grids)):
-                    grids[j] = np.vstack([grids[j].T, subgrid[j].T]).T
+                    grids[j] = np.vstack([grids[j].T, subgrid[j].T]).T"""
+        # --- TODO Rethink : Legacy implementation
+        # TODO Rethink : Alternative implementation ---
+        grids = [
+            np.full((len(grid['fnames']), height, width), np.nan, dtype=float)
+            for i, grid in enumerate(self.grids)
+        ]
+        onames = [grid['oname'] for grid in self.grids]
+        for i in range(0, width, self.grid_iter_step):  # Iterate over rowsa
+            # Extract support points for subgrid
+            Xi = np.vstack(Xgrid[i:i+self.grid_iter_step])
+            I = KDT(Xi).query_ball_tree(kdt, radius)
+            # Compute subgrids
+            subgrids = []
+            for k, grid in enumerate(self.grids):
+                subgrids.append(self.digest_grid(
+                    pcloud, grid, height, I, n_rows=len(I)//height
+                ))
+            # Assign subgrids to grids
+            for k in range(len(grids)):
+                grids[k][:, :, i:i+self.grid_iter_step] = subgrids[k]
+        # --- TODO Rethink : Alternative implementation
         # Reverse rows if requested
         for k, grid in enumerate(grids):
             grids[k] = grid[:, ::-1, :]
