@@ -105,7 +105,9 @@ class RasterGridEvaluator(Evaluator):
         Evaluate the point cloud as a raster-like 2D grid.
 
         :param pcloud: The point cloud to be evaluated.
-        :return:
+        :type pcloud: :class:`.PointCloud`
+        :return: The raster grid obtained after computing the evaluation.
+        :rtype: :class:`.RasterGridEvaluation`
         """
         start = time.perf_counter()
         # Extract coordinates
@@ -166,6 +168,11 @@ class RasterGridEvaluator(Evaluator):
         kdt = KDT(X[:, :2])
         l = max(self.xres, self.yres)  # l is used when evaluating radius_expr
         radius = eval(StrUtils.to_numpy_expr(self.radius_expr))
+        num_subgrids = int(np.ceil(width/self.grid_iter_step))
+        LOGGING.LOGGER.debug(
+            f'RasterGridEvaluator computing {width} rows in {num_subgrids} '
+            f'blocks of {self.grid_iter_step} rows each ...'
+        )
         # Compute grids of features
         grids = None
         onames = [grid['oname'] for grid in self.grids]
