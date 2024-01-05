@@ -278,8 +278,7 @@ class RasterGridEvaluator(Evaluator):
             reducef = lambda F, I, j, target, th: np.max(F[I[j]], axis=0)
         elif reduce_low == 'binary_mask':
             reducef = lambda F, I, j, target, th: [int(np.count_nonzero(
-                F[I[j]] == target,
-                axis=0
+                F[I[j]] == target
             ) >= th)]
         if reducef is None:
             raise EvaluatorException(
