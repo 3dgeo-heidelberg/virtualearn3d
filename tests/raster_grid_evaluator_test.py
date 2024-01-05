@@ -10,6 +10,7 @@ SPEC = {
     "xres": 1.0,
     "yres": 1.0,
     "radius_expr": "sqrt(2)*l/2",
+    "grid_iter_step": 5,
     "grids": [
         {
             "fnames": ["f1"],
@@ -38,7 +39,6 @@ SPEC = {
 # ------------------------ #
 def _load_asset(asset):
     return np.loadtxt("tests/assets/" + asset, delimiter=",")
-
 
 # ---  BEFORE TEST LOGIC  --- #
 # --------------------------- #
@@ -69,7 +69,17 @@ class TestRasterGridEval:
         self.assert_rasters(rasters_out, rasters_ref)
 
     def test_parallel(self):
-        pass  # TODO Rethink : Implement
+        # Load data
+        pcloud_in = self.point_cloud_from_file("3DPCloud_for_raster_eval.xyz")
+        rasters_ref = self.raster_from_file("2DRaster_for_raster_eval")
+        # Compute raster grid evaluation
+        spec = dict(SPEC)
+        spec['nthreads'] = 3
+        evaluator = RasterGridEvaluator(**spec)
+        evaluation = evaluator.eval(pcloud_in)
+        rasters_out = evaluation.Fgrids
+        # Assert generated raster grid
+        self.assert_rasters(rasters_out, rasters_ref)
 
     # ---   UTIL METHODS   --- #
     # ------------------------ #

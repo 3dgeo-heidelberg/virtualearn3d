@@ -195,28 +195,6 @@ class RasterGridEvaluator(Evaluator):
             f'RasterGridEvaluator computing {width} rows in {num_subgrids} '
             f'blocks of {self.grid_iter_step} rows each ...'
         )
-        # Compute grids of features
-        # TODO Rethink : Alternative implementation ---
-        """grids = [
-            np.full((len(grid['fnames']), height, width), np.nan, dtype=float)
-            for i, grid in enumerate(self.grids)
-        ]
-        onames = [grid['oname'] for grid in self.grids]
-        for i in range(0, width, self.grid_iter_step):  # Iterate over rowsa
-            # Extract support points for subgrid
-            Xi = np.vstack(Xgrid[i:i+self.grid_iter_step])
-            I = KDT(Xi).query_ball_tree(kdt, radius)
-            # Compute subgrids
-            subgrids = []
-            for k, grid in enumerate(self.grids):
-                subgrids.append(self.digest_grid(
-                    pcloud, grid, height, I, n_rows=len(I)//height
-                ))
-            # Assign subgrids to grids
-            for k in range(len(grids)):
-                grids[k][:, :, i:i+self.grid_iter_step] = subgrids[k]"""
-        # --- TODO Rethink : Alternative implementation
-        # TODO Rethink : Parallel implementation ---
         # Determine output names
         onames = [grid['oname'] for grid in self.grids]
         # Obtain features
@@ -225,7 +203,7 @@ class RasterGridEvaluator(Evaluator):
             fnames.extend(grid['fnames'])
         fnames = list(OrderedDict.fromkeys(fnames))
         F = pcloud.get_features_matrix(fnames)
-        # Compute all the subgrids
+        # Compute all the subgrids of features
         grids = joblib.Parallel(n_jobs=self.nthreads)(joblib.delayed(
             compute_subgrid
         )(
@@ -242,7 +220,6 @@ class RasterGridEvaluator(Evaluator):
         grids = list(zip(*grids))
         for k in range(len(grids)):
             grids[k] = np.concatenate(grids[k], axis=2)
-        # --- TODO Rethink : Parallel implementation
         # Reverse rows if requested
         for k, grid in enumerate(grids):
             grids[k] = grid[:, ::-1, :]
