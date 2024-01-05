@@ -7,7 +7,9 @@ from src.utils.dict_utils import DictUtils
 from src.utils.str_utils import StrUtils
 import src.main.main_logger as LOGGING
 from scipy.spatial import KDTree as KDT
+import joblib
 import numpy as np
+from collections import OrderedDict
 import time
 
 
@@ -163,6 +165,20 @@ class RasterGridEvaluator(Evaluator):
         :return: The generated grids of features.
         :rtype: list of :class:`np.ndarray`
         """
+        # Function to compute subgrids (potentially in parallel)
+        def compute_subgrid(
+            Xi, radius, grids, fnames, F, height, digest_grid
+        ):
+            # Extract support points for subgrid
+            I = KDT(Xi).query_ball_tree(kdt, radius)
+            # Compute subgrids
+            subgrids = []
+            for k, grid in enumerate(grids):
+                subgrids.append(digest_grid(
+                    fnames, F, grid, height, I, n_rows=len(I)//height
+                ))
+            # Return subgrids
+            return subgrids
         # Prepare spatial grid
         width, height, window, transform, xmin, xmax, ymin, ymax = \
             GeoTiffIO.generate_raster(X, self.xres, self.yres)
@@ -180,25 +196,8 @@ class RasterGridEvaluator(Evaluator):
             f'blocks of {self.grid_iter_step} rows each ...'
         )
         # Compute grids of features
-        # TODO Rethink : Legacy implementation ---
-        """grids = None
-        onames = [grid['oname'] for grid in self.grids]
-        for i in range(0, width, self.grid_iter_step):  # Iterate over rows
-            Xi = np.vstack(Xgrid[i:i+self.grid_iter_step])
-            I = KDT(Xi).query_ball_tree(kdt, radius)
-            subgrid = []
-            for k, grid in enumerate(self.grids):
-                subgrid.append(self.digest_grid(
-                    pcloud, grid, height, I, n_rows=len(I)//height
-                ))
-            if grids is None:
-                grids = subgrid
-            else:
-                for j in range(len(grids)):
-                    grids[j] = np.vstack([grids[j].T, subgrid[j].T]).T"""
-        # --- TODO Rethink : Legacy implementation
         # TODO Rethink : Alternative implementation ---
-        grids = [
+        """grids = [
             np.full((len(grid['fnames']), height, width), np.nan, dtype=float)
             for i, grid in enumerate(self.grids)
         ]
@@ -215,19 +214,48 @@ class RasterGridEvaluator(Evaluator):
                 ))
             # Assign subgrids to grids
             for k in range(len(grids)):
-                grids[k][:, :, i:i+self.grid_iter_step] = subgrids[k]
+                grids[k][:, :, i:i+self.grid_iter_step] = subgrids[k]"""
         # --- TODO Rethink : Alternative implementation
+        # TODO Rethink : Parallel implementation ---
+        # Determine output names
+        onames = [grid['oname'] for grid in self.grids]
+        # Obtain features
+        fnames = []
+        for grid in self.grids:
+            fnames.extend(grid['fnames'])
+        fnames = list(OrderedDict.fromkeys(fnames))
+        F = pcloud.get_features_matrix(fnames)
+        # Compute all the subgrids
+        grids = joblib.Parallel(n_jobs=self.nthreads)(joblib.delayed(
+            compute_subgrid
+        )(
+            np.vstack(Xgrid[i:i+self.grid_iter_step]),  # Xi
+            radius,
+            self.grids,
+            fnames,
+            F,
+            height,
+            self.digest_grid
+        ) for i in range(0, width, self.grid_iter_step)
+        )
+        # Derive each grid from its subgrids
+        grids = list(zip(*grids))
+        for k in range(len(grids)):
+            grids[k] = np.concatenate(grids[k], axis=2)
+        # --- TODO Rethink : Parallel implementation
         # Reverse rows if requested
         for k, grid in enumerate(grids):
             grids[k] = grid[:, ::-1, :]
         # Return
         return grids, onames
 
-    def digest_grid(self, pcloud, grid, height, I, n_rows):
+    @staticmethod
+    def digest_grid(fnames, F, grid, height, I, n_rows):
         """
         Generate the grid of features for a given grid specification.
 
-        :param pcloud: The point cloud containing the features.
+        :param fnames: The name for each column (feature) in the matrix F.
+        :param F: The matrix of features.
         :param grid: The grid specification to be digested.
         :param height: The height of the grid in number of cells.
         :param I: The list of neighborhoods, where each neighborhood is
@@ -238,8 +266,16 @@ class RasterGridEvaluator(Evaluator):
         :rtype: :class:`np.ndarray`
         """
         # Obtain features
-        fnames = grid['fnames']
-        F = pcloud.get_features_matrix(fnames)
+        grid_fnames = grid['fnames']
+        feature_indices = []
+        for grid_fname in grid_fnames:
+            idx = None
+            for i, fname in enumerate(fnames):
+                if grid_fname == fname:
+                    idx = i
+                    break
+            feature_indices.append(idx)
+        F = F[:, feature_indices]
         # Determine empty val
         empty_val = grid.get('empty_val', np.nan)
         if isinstance(empty_val, str):
