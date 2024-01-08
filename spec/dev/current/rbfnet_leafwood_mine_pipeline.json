@@ -1,0 +1,57 @@
+{
+  "in_pcloud": [
+	"/home/uadmin/git/virtualearn3d/test_data/PinSyl_KA10_03_2019-07-30_q2_TLS-on_c_t.laz",
+	"/home/uadmin/git/virtualearn3d/test_data/PinSyl_KA09_T048_2019-08-20_q1_TLS-on_c_t.laz"
+  ],
+  "out_pcloud": [
+	"out/rbf_lw/mined/PinSyl_KA10_*",
+	"out/rbf_lw/mined/PinSyl_KA09_*"
+  ],
+  "sequential_pipeline": [
+	{
+	  "miner": "HeightFeatures",
+	  "support_chunk_size": 50,
+	  "support_subchunk_size": 10,
+	  "pwise_chunk_size": 10000,
+	  "nthreads": 5,
+	  "neighborhood": {	
+    	"type": "Rectangular2D",
+		"radius": 50.0,
+		"separation_factor": 0.35
+	  },
+	  "outlier_filter": null,
+	  "fnames": ["floor_distance"]
+	},
+	{
+	  "miner": "SmoothFeatures",
+	  "chunk_size": 250000,
+	  "subchunk_size": 2500,
+	  "neighborhood": {
+		"type": "sphere",
+		"radius": 1.0
+	  },
+	  "input_fnames": ["floor_distance_r50.0_sep0.35"],
+	  "fnames": ["mean"],
+	  "nthreads": 6
+	},
+	{
+	  "miner": "GeometricFeatures",
+	  "radius": 0.1,
+	  "fnames": ["linearity", "planarity", "surface_variation", "eigenentropy", "omnivariance", "verticality", "anisotropy"]
+	},
+	{
+	  "miner": "GeometricFeatures",
+	  "radius": 0.2,
+	  "fnames": ["linearity", "planarity", "surface_variation", "eigenentropy", "omnivariance", "verticality", "anisotropy"]
+	},
+	{
+	  "miner": "GeometricFeatures",
+	  "radius": 0.3,
+	  "fnames": ["linearity", "planarity", "surface_variation", "eigenentropy", "omnivariance", "verticality", "anisotropy"]
+	},
+	{
+	  "writer": "Writer",
+ 	  "out_pcloud": "*feats.laz"
+	}
+  ]
+}

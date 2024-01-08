@@ -31,13 +31,15 @@ class PointNet(Architecture, ABC):
         See :meth:`architecture.Architecture.__init__`.
         """
         # Call parent's init
-        kwargs['arch_name'] = 'PointNet'
+        if kwargs.get('arch_name', None) is None:
+            kwargs['arch_name'] = 'PointNet'
         super().__init__(**kwargs)
+        self.fnames = kwargs.get('fnames', None)
         # Update the preprocessing logic
         self.pre_runnable = PointNetPreProcessor(**kwargs['pre_processing'])
         # Update the postprocessing logic
         self.post_runnable = PointNetPostProcessor(self.pre_runnable)
-        # The number of points is the number of cells in the receptive fields
+        # The number of points (cells for grid, points for furth. pt. sampling)
         self.num_points = self.pre_runnable.get_num_input_points()
         # Neural network architecture specifications
         self.kernel_initializer = kwargs.get(
@@ -50,9 +52,51 @@ class PointNet(Architecture, ABC):
         self.features_structuring_layer = kwargs.get(
             'features_structuring_layer', None
         )
+        self.pretransf_feats_F_spec = kwargs.get(
+            'pretransf_feats_F_spec', None
+        )
+        self.postransf_feats_F_spec = kwargs.get('postransf_feats_F_spec', None)
+        self.tnet_pre_filters_F_spec = kwargs.get('tnet_pre_filters_F_spec', None)
+        self.tnet_post_filters_F_spec = kwargs.get(
+            'tnet_post_filters_F_spec', None
+        )
+        self.kernel_initializer_F = kwargs.get(
+            'kernel_initializer_F', 'glorot_normal'
+        )
+        self.skip_link_features_X = kwargs.get('skip_link_features', False)
+        self.include_pretransf_feats_X = kwargs.get(
+            'include_pretransf_feats_X', False
+        )
+        self.include_transf_feats_X = kwargs.get(
+            'include_transf_feats_X', True
+        )
+        self.include_postransf_feats_X = kwargs.get(
+            'include_postransf_feats_X', False
+        )
+        self.include_global_feats_X = kwargs.get(
+            'include_global_feats_X', True
+        )
+        self.skip_link_features_F = kwargs.get(
+            'skip_link_features_F', False
+        )
+        self.include_pretransf_feats_F = kwargs.get(
+            'include_pretransf_feats_F', False
+        )
+        self.include_transf_feats_F = kwargs.get(
+            'include_transf_feats_F', True
+        )
+        self.include_postransf_feats_F = kwargs.get(
+            'include_postransf_feats_F', False
+        )
+        self.include_global_feats_F = kwargs.get(
+            'include_global_feats_F', True
+        )
         # Initialize cache-like attributes
-        self.pretransf_feats, self.postransf_feats = [None]*2
-        self.transf_feats = None
+        self.pretransf_feats_X, self.pretransf_feats_F = None, None
+        self.postransf_feats_X, self.postransf_feats_F = None, None
+        self.transf_feats_X, self.transf_feats_F = None, None
+        self.X, self.F = None, None
+        self.Xtransf, self.Ftransf = None, None
 
     # ---   ARCHITECTURE METHODS   --- #
     # -------------------------------- #
@@ -67,16 +111,29 @@ class PointNet(Architecture, ABC):
         :return: Built layer.
         :rtype: :class:`tf.Tensor`
         """
-        return tf.keras.layers.Input(shape=(None, 3))
+        # TODO Rethink : PointNet and RBFNet build_input to shared impl.
+        self.X = tf.keras.layers.Input(shape=(None, 3), name='Xin')
+        # Handle input features, if any
+        if self.fnames is not None:
+            self.F = tf.keras.layers.Input(
+                shape=(None, len(self.fnames)),
+                name='Fin'
+            )
+        # Return
+        if self.F is None:
+            return self.X
+        return [self.X, self.F]
 
     def build_hidden(self, x, **kwargs):
         """
         Build the hidden layers of the PointNet neural network.
 
-        :param x: The input layer for the first hidden layer.
-        :type x: :class:`tf.Tensor`
-        :return: The last hidden layer.
-        :rtype: :class:`tf.Tensor`
+        :param x: The input layer for the first hidden layer. Alternatively,
+            it can be a list with many input layers.
+        :type x: :class:`tf.Tensor` or list
+        :return: The last hidden layer. Alternatively, it can be a list with
+            many hidden layers.
+        :rtype: :class:`tf.Tensor` or list
         """
         # Build the input dictionary for the build_hidden_pointnet function
         _kwargs = {
@@ -98,15 +155,57 @@ class PointNet(Architecture, ABC):
         }
         # Remove None from dictionary to prevent overriding defaults
         _kwargs = DictUtils.delete_by_val(_kwargs, None)
-        # Build the PointNet block
-        hidden, pretransf_feats, transf_feats, postransf_feats = \
-            PointNet.build_hidden_pointnet(x, **_kwargs)
-        # Update cached feature layers
-        self.pretransf_feats = pretransf_feats
-        self.transf_feats = transf_feats
-        self.postransf_feats = postransf_feats
+        # Build the PointNet block on the structure space
+        hidden_X, pretransf_feats_X, transf_feats_X, postransf_feats_X, \
+            self.Xtransf = PointNet.build_hidden_pointnet(self.X, **_kwargs)
+        # Update cached feature layers for the structure space
+        self.pretransf_feats_X = pretransf_feats_X
+        self.transf_feats_X = transf_feats_X
+        self.postransf_feats_X = postransf_feats_X
+        # Handle feature space when requested
+        if self.F is not None:
+            # Update the input dictionary if necessary
+            pretransf_feats_F = kwargs.get(
+                'pretransf_feats_F', self.pretransf_feats_F_spec
+            )
+            if pretransf_feats_F is not None:
+                _kwargs['pretransf_feats'] = pretransf_feats_F
+            postransf_feats_F = kwargs.get(
+                'postransf_feats_F', self.postransf_feats_F_spec
+            )
+            if postransf_feats_F is not None:
+                _kwargs['postransf_feats'] = postransf_feats_F
+            tnet_pre_filters_F = kwargs.get(
+                'tnet_pre_filters_F', self.tnet_pre_filters_F_spec
+            )
+            if tnet_pre_filters_F is not None:
+                _kwargs['tnet_pre_filters'] = tnet_pre_filters_F
+            tnet_post_filters_F = kwargs.get(
+                'tnet_post_filters_F', self.tnet_post_filters_F_spec
+            )
+            if tnet_post_filters_F is not None:
+                _kwargs['tnet_post_filters'] = tnet_post_filters_F
+            kernel_initializer_F = kwargs.get(
+                'kernel_initializer_F', self.kernel_initializer_F
+            )
+            if kernel_initializer_F is not None:
+                _kwargs['kernel_initializer'] = kernel_initializer_F
+            # Build the PointNet block on the feature space
+            hidden_F, pretransf_feats_F, transf_feats_F, postransf_feats_F, \
+                self.Ftransf = PointNet.build_hidden_pointnet(
+                    self.F,
+                    **_kwargs,
+                    space_dimensionality=len(self.fnames),
+                    prefix='F_'
+                )
+            # Update cached feature layers for the feature space
+            self.pretransf_feats_F = pretransf_feats_F
+            self.transf_feats_F = transf_feats_F
+            self.postransf_feats_F = postransf_feats_F
+            # Return list of hidden layers (one structure, one features)
+            return [hidden_X, hidden_F]
         # Return last hidden layer
-        return hidden
+        return hidden_X
 
     # ---  POINTNET METHODS  --- #
     # -------------------------- #
@@ -117,7 +216,9 @@ class PointNet(Architecture, ABC):
         postransf_feats,
         tnet_pre_filters,
         tnet_post_filters,
-        kernel_initializer
+        kernel_initializer,
+        space_dimensionality=3,
+        prefix='X_'
     ):
         """
         Build the PointNet block of the architecture on the given input.
@@ -135,25 +236,31 @@ class PointNet(Architecture, ABC):
         :param tnet_pre_filters: The list of number of filters (integer)
             defining each convolutional block before the global pooling.
         :type tnet_pre_filters: list
-        :param tnet_post_filters: The list of nubmer of filters (integer)
+        :param tnet_post_filters: The list of number of filters (integer)
             defining each MLP block after the global pooling.
         :type tnet_post_filters: list
         :param kernel_initializer: The name of the kernel initializer
         :type kernel_initializer: str
+        :param space_dimensionality: The dimensionality of the space where
+            the PointNet block operates (typicalle 3D for the structure
+            space, i.e., x,y,z).
+        :type space_dimensionality: int
         :return: Last layer of the built PointNet, the list of
             pre-transformations, the layer of transformed features, and the
-            list of post-transformations.
+            list of post-transformations. Finally, the aligned input tensor.
         :rtype: :class:`tf.Tensor` and list and :class:`tf.keras.Layer` and list
+            and :class:`tf.Tensor`
         """
         # First transformation block
         x = PointNet.build_transformation_block(
             x,
-            num_features=3,
-            name='input_transf',
+            num_features=space_dimensionality,
+            name=f'{prefix}input_transf',
             tnet_pre_filters=tnet_pre_filters,
             tnet_post_filters=tnet_post_filters,
             kernel_initializer=kernel_initializer
         )
+        aligned_x = x
         # Features before the second transformation block
         pretransf_feat_layers = []
         for pretransf_feat_spec in pretransf_feats:
@@ -161,14 +268,14 @@ class PointNet(Architecture, ABC):
                 x,
                 filters=pretransf_feat_spec['filters'],
                 kernel_initializer=kernel_initializer,
-                name=pretransf_feat_spec['name']
+                name=f'{prefix}{pretransf_feat_spec["name"]}'
             )
             pretransf_feat_layers.append(x)
         # The second transformation block
         x = PointNet.build_transformation_block(
             x,
             num_features=pretransf_feats[-1]['filters'],
-            name='hidden_transf',
+            name=f'{prefix}hidden_transf',
             tnet_pre_filters=tnet_pre_filters,
             tnet_post_filters=tnet_post_filters,
             kernel_initializer=kernel_initializer
@@ -181,10 +288,11 @@ class PointNet(Architecture, ABC):
                 x,
                 filters=postransf_feat_spec['filters'],
                 kernel_initializer=kernel_initializer,
-                name=postransf_feat_spec['name']
+                name=f'{prefix}{postransf_feat_spec["name"]}'
             )
             postransf_feat_layers.append(x)
-        return x, pretransf_feat_layers, transf_feats, postransf_feat_layers
+        return x, pretransf_feat_layers, transf_feats, postransf_feat_layers,\
+            aligned_x
 
     @staticmethod
     def build_transformation_block(
@@ -298,7 +406,9 @@ class PointNet(Architecture, ABC):
         return tf.keras.layers.Activation("relu", name=f'{name}_relu')(x)
 
     @staticmethod
-    def build_mlp_block(x, filters, name, kernel_initializer):
+    def build_mlp_block(
+        x, filters, name, kernel_initializer, batch_normalization=True
+    ):
         """
         Build an MLP block.
 
@@ -310,15 +420,19 @@ class PointNet(Architecture, ABC):
         :type kernel_initializer: str
         :param name: The name of the block.
         :type name: str
+        :param batch_normalization: Whether to apply batch normalization (True)
+            or not (False).
+        :type batch_normalization: bool
         """
         x = tf.keras.layers.Dense(
             filters,
             kernel_initializer=kernel_initializer,
             name=f'{name}_dense'
         )(x)
-        x = tf.keras.layers.BatchNormalization(
-            momentum=0.0, name=f'{name}_bn'
-        )(x)
+        if batch_normalization:
+            x = tf.keras.layers.BatchNormalization(
+                momentum=0.0, name=f'{name}_bn'
+            )(x)
         return tf.keras.layers.Activation("relu", name=f'{name}_relu')(x)
 
     # ---   SERIALIZATION   --- #
@@ -333,12 +447,29 @@ class PointNet(Architecture, ABC):
         # Call parent's method
         state = super().__getstate__()
         # Add PointNet's attributes to state dictionary
+        state['fnames'] = self.fnames
         state['num_points'] = self.num_points
         state['kernel_initializer'] = self.kernel_initializer
         state['pretransf_feats_spec'] = self.pretransf_feats_spec
         state['postransf_feats_spec'] = self.postransf_feats_spec
         state['tnet_pre_filters_spec'] = self.tnet_pre_filters_spec
         state['tnet_post_filters_spec'] = self.tnet_post_filters_spec
+        state['kernel_initializer_F'] = self.kernel_initializer_F
+        state['pretransf_feats_F_spec'] = self.pretransf_feats_F_spec
+        state['postransf_feats_F_spec'] = self.postransf_feats_F_spec
+        state['tnet_pre_filters_F_spec'] = self.tnet_pre_filters_F_spec
+        state['tnet_post_filters_F_spec'] = self.tnet_post_filters_F_spec
+        state['skip_link_features_X'] = self.skip_link_features_X
+        state['include_pretransf_feats_X'] = self.include_pretransf_feats_X
+        state['include_transf_feats_X'] = self.include_transf_feats_X
+        state['include_postransf_feats_X'] = self.include_postransf_feats_X
+        state['include_global_feats_X'] = self.include_global_feats_X
+        state['skip_link_features_F'] = self.skip_link_features_F
+        state['include_pretransf_feats_F'] = self.include_pretransf_feats_F
+        state['include_transf_feats_F'] = self.include_transf_feats_F
+        state['include_postransf_feats_F'] = self.include_postransf_feats_F
+        state['include_global_feats_F'] = self.include_global_feats_F
+        state['features_structuring_layer'] = self.features_structuring_layer
         # Return
         return state
 
@@ -352,12 +483,31 @@ class PointNet(Architecture, ABC):
         :type state: dict
         :return: Nothing, but modifies the internal state of the object.
         """
-        # Call parent's set state
-        super().__setstate__(state)
         # Assign PointNet's attributes from state dictionary
+        self.fnames = state.get('fnames', None)
         self.num_points = state['num_points']
         self.kernel_initializer = state['kernel_initializer']
         self.pretransf_feats_spec = state['pretransf_feats_spec']
         self.postransf_feats_spec = state['postransf_feats_spec']
         self.tnet_pre_filters_spec = state['tnet_pre_filters_spec']
         self.tnet_post_filters_spec = state['tnet_post_filters_spec']
+        self.kernel_initializer_F = state['kernel_initializer_F']
+        self.pretransf_feats_F_spec = state['pretransf_feats_F_spec']
+        self.postransf_feats_F_spec = state['postransf_feats_F_spec']
+        self.tnet_pre_filters_F_spec = state['tnet_pre_filters_F_spec']
+        self.tnet_post_filters_F_spec = state['tnet_post_filters_F_spec']
+        self.skip_link_features_X = state['skip_link_features_X']
+        self.include_pretransf_feats_X = state['include_pretransf_feats_X']
+        self.include_transf_feats_X = state['include_transf_feats_X']
+        self.include_postransf_feats_X = state['include_postransf_feats_X']
+        self.include_global_feats_X = state['include_global_feats_X']
+        self.skip_link_features_F = state['skip_link_features_F']
+        self.include_pretransf_feats_F = state['include_pretransf_feats_F']
+        self.include_transf_feats_F = state['include_transf_feats_F']
+        self.include_postransf_feats_F = state['include_postransf_feats_F']
+        self.include_global_feats_F = state['include_global_feats_F']
+        self.features_structuring_layer = state.get(
+            'features_structuring_layer', None
+        )
+        # Call parent's set state
+        super().__setstate__(state)

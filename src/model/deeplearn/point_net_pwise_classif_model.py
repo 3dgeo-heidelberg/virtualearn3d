@@ -11,9 +11,11 @@ from src.model.deeplearn.dlrun.grid_subsampling_post_processor import \
     GridSubsamplingPostProcessor
 from src.report.classified_pcloud_report import ClassifiedPcloudReport
 from src.report.pwise_activations_report import PwiseActivationsReport
+from src.report.best_score_selection_report import BestScoreSelectionReport
 from src.utils.dict_utils import DictUtils
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
 import src.main.main_logger as LOGGING
+from sklearn.feature_selection import f_classif
 import tensorflow as tf
 import numpy as np
 import joblib
@@ -132,6 +134,14 @@ class PointNetPwiseClassifModel(ClassificationModel):
                 )
             self.model.overwrite_pretrained_model(spec['model_args'])
 
+    def update_paths(self):
+        """
+        Consider the current specification of model args (self.model_args)
+        to update the paths.
+        """
+        if self.model is not None:
+            self.model.update_paths(self.model_args)
+
     def predict(self, pcloud, X=None, F=None):
         """
         Use the model to compute predictions on the input point cloud.
@@ -158,7 +168,15 @@ class PointNetPwiseClassifModel(ClassificationModel):
         """
         See :meth:`model.Model.get_input_from_pcloud`.
         """
-        return pcloud.get_coordinates_matrix()
+        # TODO Rethink : Common impl. wrt RBFNetPwiseClassifModel.get_input_from_pcloud
+        # No features
+        if self.fnames is None:
+            return pcloud.get_coordinates_matrix()
+        # Features
+        return [
+            pcloud.get_coordinates_matrix(),
+            pcloud.get_features_matrix(self.fnames)
+        ]
 
     # ---   TRAINING METHODS   --- #
     # ---------------------------- #
@@ -195,10 +213,12 @@ class PointNetPwiseClassifModel(ClassificationModel):
         )
         # Training evaluation
         super().on_training_finished(X, y, yhat=yhat)
+        # Get the coordinates matrix even when [X, F] is given
+        _X = X[0] if isinstance(X, list) else X
         # Write classified point cloud
         if self.training_classified_point_cloud_path is not None:
             ClassifiedPcloudReport(
-                X=X, y=y, yhat=yhat, zhat=zhat, class_names=self.class_names
+                X=_X, y=y, yhat=yhat, zhat=zhat, class_names=self.class_names
             ).to_file(
                 path=self.training_classified_point_cloud_path
             )
@@ -212,17 +232,35 @@ class PointNetPwiseClassifModel(ClassificationModel):
                 f'{end-start:.3f} seconds.'
             )
             PwiseActivationsReport(
-                X=X, activations=activations, y=y
+                X=_X, activations=activations, y=y
             ).to_file(
                 path=self.training_activations_path
+            )
+            # ANOVA on activations
+            start = time.perf_counter()
+            Fval, pval = f_classif(activations, y)
+            end = time.perf_counter()
+            LOGGING.LOGGER.info(
+                'ANOVA computed on PointNet point-wise activations in '
+                f'{end-start:.3f} seconds.'
+            )
+            BestScoreSelectionReport(
+                fnames=None,
+                scores=Fval,
+                score_name='F-value',
+                pvalues=pval,
+                selected_features=None
+            ).to_file(
+                path=self.training_activations_path[
+                    :self.training_activations_path.rfind('.')
+                ] + '_ANOVA.csv'
             )
 
     # ---  PREDICTION METHODS  --- #
     # ---------------------------- #
-    def _predict(self, X, F=None, y=None, zout=None):
+    def _predict(self, X, F=None, y=None, zout=None, plots_and_reports=True):
         """
-        Extend the base _predict method to account for coordinates (X) as
-        input.
+        Extend the base _predict method.
 
         See :meth:`model.Model_predict`.
 
@@ -230,7 +268,9 @@ class PointNetPwiseClassifModel(ClassificationModel):
             predictions on training data to generate a thorough representation
             of the receptive fields.
         """
-        return self.model.predict(X, y=y, zout=zout)
+        return self.model.predict(
+            X, y=y, zout=zout, plots_and_reports=plots_and_reports
+        )
 
     # ---  POINT NET PWISE CLASSIF METHODS  --- #
     # ----------------------------------------- #
@@ -286,8 +326,9 @@ class PointNetPwiseClassifModel(ClassificationModel):
         # Reduce overlapping propagations to mean
         I = self.model.arch.pre_runnable.pre_processor\
             .last_call_neighborhoods
+        npoints = X[0].shape[0] if isinstance(X, list) else X.shape[0]
         activations = GridSubsamplingPostProcessor.pwise_reduce(
-            X.shape[0], activations.shape[-1], I, propagated_activations
+            npoints, activations.shape[-1], I, propagated_activations
         )
         # Return
         return activations

@@ -43,7 +43,7 @@ class DLModelHandler:
 
     # ---   MODEL HANDLER   --- #
     # ------------------------- #
-    def fit(self, X, y, F=None):
+    def fit(self, X, y):
         """
         Fit the handled model to given data.
 
@@ -53,18 +53,15 @@ class DLModelHandler:
         :param y: The vector of expected labels, the ground-truth from the
             supervised training perspective.
         :type y: :class:`np.ndarray`
-        :param F: The features matrix. Often, models can work without features
-            because they can derive their own features from the X matrix.
-        :type F: :class:`np.ndarray`
         :return: The fit model handler.
         :rtype: :class:`.DLModelHandler`
         """
         if not self.is_compiled():
-            self.compile(X=X, F=F, y=y)
-        return self._fit(X, y, F=F)
+            self.compile(X=X, y=y, arch_plot=True)
+        return self._fit(X, y)
 
     @abstractmethod
-    def _fit(self, X, y, F=None):
+    def _fit(self, X, y):
         """
         This method must be overriden by any concrete derived class to provide
         the fit logic assuming the model has been compiled. It complements the
@@ -75,16 +72,13 @@ class DLModelHandler:
         """
         pass
 
-    def predict(self, X, F=None, y=None, zout=None):
+    def predict(self, X, y=None, zout=None, plots_and_reports=True):
         """
         Compute predictions for the given input data.
 
         :param X: The structure space matrix, typically the matrix with the
             x, y, z coordinates as columns.
         :type X: :class:`np.ndarray`
-        :param F: The features matrix. Often, models can work without features
-            because they can derive their own features from the X matrix.
-        :type F: :class:`np.ndarray`
         :param y: The vector of expected labels, the ground-truth from the
             supervised training perspective. While it is not necessary to
             compute predictions, when available it can be given because some
@@ -98,15 +92,21 @@ class DLModelHandler:
             zout does not necessarily return the softmax output, it can be
             defined to consider different output layers or metrics for some
             potential model.
+        :param plots_and_reports: Control whether to compute and export the
+            plots and reports associated to the computation of predictions
+            (True) or not (False).
+        :type plots_and_reports: bool
         :return: The predictions.
         :rtype: :class:`np.ndarray`
         """
         if not self.is_compiled():
-            self.compile(X=X, F=F)
-        return self._predict(X, F=F, y=y, zout=zout)
+            self.compile(X=X)
+        return self._predict(
+            X, y=y, zout=zout, plots_and_reports=plots_and_reports
+        )
 
     @abstractmethod
-    def _predict(self, X, F=None, y=None, zout=None):
+    def _predict(self, X, y=None, zout=None, plots_and_reports=True):
         """
         This method must be overriden by any concrete derived class to provide
         the predictive logic assuming the model has been compiled. It
@@ -118,7 +118,7 @@ class DLModelHandler:
         pass
 
     @abstractmethod
-    def compile(self, X=None, y=None, F=None, **kwargs):
+    def compile(self, X=None, y=None, **kwargs):
         """
         The method that provides the logic to compile a model.
 
@@ -128,9 +128,6 @@ class DLModelHandler:
             belong to).
         :param y: Optionally, the labels might be used for a better
             initialization (e.g., automatically derive the number of classes).
-        :param F: Optionally, the features might be used (or even necessary)
-            for initialization (e.g., automatically deriving the dimensionality
-            of the input feature space).
         :return: The model handler itself after compiling the architecture,
             which implies modifying its internal state.
         :rtype: :class:`.DLModelHandler`

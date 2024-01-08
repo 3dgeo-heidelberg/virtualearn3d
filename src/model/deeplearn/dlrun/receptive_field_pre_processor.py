@@ -1,6 +1,7 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from abc import abstractmethod
+import numpy as np
 
 
 # ---   CLASS   --- #
@@ -21,11 +22,22 @@ class ReceptiveFieldPreProcessor:
     See :class:`.GridSubsamplingPreProcessor`
     See :class:`.FurthestPointSubsamplingPreProcessor`
 
+    :ivar support_strategy: The strategy to be used to compute the support
+        points when no training class distribution has been given. It can be
+        "grid" (default) to get support points through grid sampling, or "fps"
+        to use furthest point sampling.
+    :vartype support_strategy: str
+    :ivar support_strategy_num_points: The number of points to consider when
+        using a furthest point sampling strategy to compute the support points.
+    :vartype support_strategy_num_points: int
     :ivar support_chunk_size: The number of supports per chunk :math:`n`.
         If zero, all support points are considered at once.
         If greater than zero, the support points will be considered in chunks
         of :math:`n` points.
     :vartype support_chunk_size: int
+    :ivar to_unit_sphere: Whether to map the structure space of the receptive
+        fields to the unit sphere (True) or not (False).
+    :vartype to_unit_sphere: bool
     :ivar training_class_distribution: The target class distribution to
         consider when building the support points. The element i of this
         vector (or list) specifies how many neighborhoods centered on a point
@@ -74,7 +86,13 @@ class ReceptiveFieldPreProcessor:
             ReceptiveFieldPreProcessor.
         """
         # Assign attributes
+        self.support_strategy = kwargs.get('support_strategy', 'grid')
+        self.support_strategy_num_points = kwargs.get(
+            'support_strategy_num_points', 1000
+        )
+        self.support_strategy_fast = kwargs.get('support_strategy_fast', False)
         self.support_chunk_size = kwargs.get('support_chunk_size', 0)
+        self.to_unit_sphere = kwargs.get('to_unit_sphere', False)
         self.training_class_distribution = kwargs.get(
             'training_class_distribution', None
         )
@@ -126,6 +144,12 @@ class ReceptiveFieldPreProcessor:
         """
         spec_keys = spec.keys()
         # Overwrite the attributes of the furth. pt. subsampling pre-processor
+        if 'support_strategy' in spec_keys:
+            self.support_strategy = spec['support_strategy']
+        if 'support_strategy_num_points' in spec_keys:
+            self.support_strategy_num_points = spec[
+                'support_strategy_num_points'
+            ]
         if 'support_chunk_size' in spec_keys:
             self.support_chunk_size = spec['support_chunk_size']
         if 'training_class_distribution' in spec_keys:
@@ -167,6 +191,57 @@ class ReceptiveFieldPreProcessor:
                 'support_points_report_path'
             ]
 
+    def update_paths(self, preproc):
+        """
+        Consider the given specification of pre-processing arguments to update
+        the paths.
+        """
+        # Nothing to do if no specification is given
+        if preproc is None:
+            return
+        # Update paths
+        self.training_receptive_fields_distribution_report_path = \
+            preproc['training_receptive_fields_distribution_report_path']
+        self.training_receptive_fields_distribution_plot_path = \
+            preproc['training_receptive_fields_distribution_plot_path']
+        self.training_receptive_fields_dir = \
+            preproc['training_receptive_fields_dir']
+        self.receptive_fields_distribution_report_path = \
+            preproc['receptive_fields_distribution_report_path']
+        self.receptive_fields_distribution_plot_path = \
+            preproc['receptive_fields_distribution_plot_path']
+        self.receptive_fields_dir = \
+            preproc['receptive_fields_dir']
+        self.training_support_points_report_path = \
+            preproc['training_support_points_report_path']
+        self.support_points_report_path = \
+            preproc['support_points_report_path']
+
+    @staticmethod
+    def transform_to_unit_sphere(X):
+        r"""
+        Map the points in :math:`\pmb{X} \in \mathbb{R}^{m \times n_x}` to the
+        unit sphere (typically :math:`n_x = 3`, i.e., 3D).
+
+        Let :math:`r = \max_{1 \leq i \leq m} \; \rVert{\pmb{x}_{i*}}\rVert^2`
+        where :math:`\pmb{x}_{i*}` represents the i-th row (i.e., point) in
+        the matrix :math:`\pmb{X}`. For then, the structure space transformed
+        to the unit sphere can be represented as follows:
+
+        .. math::
+
+            \pmb{X'} = \pmb{X}/r
+
+        :param X: The matrix representing a structure space such that rows
+            are points and columns are coordinates.
+        :type X: :class:`np.ndarray`
+        :return: The structure space matrix transformed to the unit sphere.
+        :rtype: :class:`np.ndarray`
+        """
+        squared_distances = np.sum(np.power(X, 2), axis=1)
+        r = np.sqrt(np.max(squared_distances))
+        return X/r
+
     # ---   SERIALIZATION   --- #
     # ------------------------- #
     def __getstate__(self):
@@ -179,7 +254,11 @@ class ReceptiveFieldPreProcessor:
         """
         # Return pre-processor state (cache to None)
         return {
+            'support_strategy': self.support_strategy,
+            'support_strategy_num_points': self.support_strategy_num_points,
+            'support_strategy_fast': self.support_strategy_fast,
             'support_chunk_size': self.support_chunk_size,
+            'to_unit_sphere': self.to_unit_sphere,
             'training_class_distribution': self.training_class_distribution,
             'center_on_pcloud': self.center_on_pcloud,
             'nthreads': self.nthreads,
@@ -207,7 +286,13 @@ class ReceptiveFieldPreProcessor:
         :return: Nothing, but modifies the internal state of the object.
         """
         # Assign member attributes from state
+        self.support_strategy = state.get('support_strategy', 'grid')
+        self.support_strategy_num_points = state.get(
+            'support_strategy_num_points', 1000
+        )
+        self.support_strategy_fast = state.get('support_strategy_fast', False)
         self.support_chunk_size = state.get('support_chunk_size', 0)
+        self.to_unit_sphere = state.get('to_unit_sphere', False)
         self.training_class_distribution = state['training_class_distribution']
         self.center_on_pcloud = state['center_on_pcloud']
         self.nthreads = state['nthreads']
@@ -219,6 +304,5 @@ class ReceptiveFieldPreProcessor:
         self.training_receptive_fields_distribution_plot_path = None
         self.training_support_points_report_path = None
         self.support_points_report_path = None
+        self.last_call_receptive_fields = None
         self.last_call_neighborhoods = None
-        self.last_call_neighborhoods = None
-

@@ -5,6 +5,8 @@ from src.pipeline.predictive_pipeline import PredictivePipeline
 from src.pipeline.pps.pps_sequential import PpsSequential
 from src.pipeline.state.simple_pipeline_state import SimplePipelineState
 from src.pipeline.pipeline_executor import PipelineExecutor
+from src.pcloud.point_cloud_factory_facade import PointCloudFactoryFacade
+from src.pcloud.point_cloud_filter import PointCloudFilter
 import src.main.main_logger as LOGGING
 from src.main.main_mine import MainMine
 from src.main.main_train import MainTrain
@@ -19,8 +21,10 @@ from src.utils.ctransf_utils import CtransfUtils
 from src.model.model_op import ModelOp
 from src.inout.writer import Writer
 from src.inout.writer_utils import WriterUtils
+from src.inout.predictive_pipeline_writer import PredictivePipelineWriter
 from src.inout.pipeline_io import PipelineIO
 from src.inout.model_io import ModelIO
+import numpy as np
 import time
 import copy
 
@@ -87,7 +91,14 @@ class SequentialPipeline(Pipeline):
                 self.sequence.append(ctransf)
             if comp.get("train", None) is not None:  # Handle train
                 model_class = MainTrain.extract_model_class(comp)
-                model = model_class(**model_class.extract_model_args(comp))
+                pretrained = comp.get('pretrained_model', None)
+                if pretrained is not None:
+                    model = MainTrain.extract_pretrained_model(
+                        comp, model_class
+                    )
+                    model.overwrite_pretrained_model(comp)
+                else:
+                    model = model_class(**model_class.extract_model_args(comp))
                 self.sequence.append(ModelOp(model, ModelOp.OP.TRAIN))
             if comp.get("predict", None) is not None:  # Handle predict
                 if comp['predict'].lower() == 'predictivepipeline':
@@ -121,6 +132,37 @@ class SequentialPipeline(Pipeline):
         """
         Run the sequential pipeline.
 
+        See :meth:`sequential_pipeline.SequentialPipeline.run_for_in_pcloud`
+        and
+        :meth:`sequential_pipeline.SequentialPipeline.run_for_in_pcloud_concat`
+        .
+
+        :return: Nothing.
+        """
+        # Check that only a single input specification is given
+        if self.in_pcloud is not None and self.in_pcloud_concat is not None:
+            raise PipelineException(
+                'SequentialPipeline found in_pcloud and in_pcloud_concat '
+                'at the same time. This is ambiguous and is not supported. '
+                'Please, choose a single input specification.'
+            )
+        # Handle in_pcloud input specification
+        if self.in_pcloud is not None:
+            self.run_for_in_pcloud()
+        elif self.in_pcloud_concat is not None:
+            self.run_for_in_pcloud_concat()
+        else:
+            raise PipelineException(
+                'SequentialPipeline did NOT receive any input specification.'
+            )
+
+    def run_for_in_pcloud(self):
+        """
+        Run the sequential pipeline considering in_pcloud as the input
+        specification.
+
+        See :meth:`sequential_pipeline.SequentialPipeline.run`.
+
         :return: Nothing.
         """
         # List of input point clouds (even if just one is given)
@@ -133,8 +175,63 @@ class SequentialPipeline(Pipeline):
             out_pcloud = None
             if self.out_pcloud is not None:
                 out_pcloud = self.out_pcloud[i]
+            # Save original sequence
+            sequence = copy.deepcopy(self.sequence)
             # Run the pipeline for the current case
             self.run_case(in_pcloud, out_pcloud=out_pcloud)
+            # Restore original sequence for next cases
+            self.sequence = sequence
+
+    def run_for_in_pcloud_concat(self):
+        """
+        Run the sequential pipeline considering in_pcloud_concat as the input
+        specification.
+
+        See :meth:`sequential_pipeline.SequentialPipeline.run`.
+
+        :return: Nothing.
+        """
+        X = []  # Coordinates of the concatenated point cloud
+        F = []  # Features of the concatenated point cloud
+        y = []  # Classification of the concatenated point cloud
+        fnames = None  # Feature names of the concatenated point cloud
+        header = None  # Header of the concatenated point cloud
+        # Load the concatenated input point cloud
+        for i, concat in enumerate(self.in_pcloud_concat):
+            in_pcloud_i = concat['in_pcloud']
+            conditions_i = concat.get('conditions', None)
+            # Load and filter input point cloud i
+            pcloud_i = PointCloudFactoryFacade.make_from_file(in_pcloud_i)
+            pcloud_i = PointCloudFilter(conditions_i).filter(pcloud_i)
+            if i == 0:  # Get feature names and header from first point cloud
+                fnames = pcloud_i.get_features_names()
+                header = pcloud_i.get_header()
+            # Concatenate coordinates, features, and classes
+            X.append(pcloud_i.get_coordinates_matrix())
+            if len(fnames) > 0:
+                F.append(pcloud_i.get_features_matrix(fnames))
+            if pcloud_i.has_classes():
+                y.append(pcloud_i.get_classes_vector())
+        # Concatenations to arrays
+        X = np.vstack(X)
+        F = np.vstack(F)
+        y = np.concatenate(y)
+        # Build concatenated input point cloud
+        in_pcloud = PointCloudFactoryFacade.make_from_arrays(
+            X, F, y=y, header=header, fnames=fnames
+        )
+        # Get path to output point cloud
+        out_pcloud = self.out_pcloud
+        if isinstance(self.out_pcloud, (list, tuple)):
+            if len(self.out_pcloud) > 1:
+                raise PipelineException(
+                    'SequentialPipeline with in_pcloud_concat input is not '
+                    'compatible with more than one output path but '
+                    f'{len(self.out_pcloud)} were given.'
+                )
+            out_pcloud = self.out_pcloud[0]
+        # Run pipeline
+        self.run_case(in_pcloud, out_pcloud=out_pcloud)
 
     def run_case(self, in_pcloud, out_pcloud=None):
         """
@@ -144,10 +241,18 @@ class SequentialPipeline(Pipeline):
         :param out_pcloud: Optionally, the output path or prefix.
         :return: Nothing.
         """
-        LOGGING.LOGGER.info(
-            f'SequentialPipeline running for "{in_pcloud}" ...'
-        )
+        if isinstance(in_pcloud, str):
+            LOGGING.LOGGER.info(
+                f'SequentialPipeline running for "{in_pcloud}" ...'
+            )
+        else:
+            LOGGING.LOGGER.info(
+                f'SequentialPipeline running for {in_pcloud.get_num_points()} '
+                'points ...'
+            )
         start = time.perf_counter()
+        # Prepare case (iteration)
+        self.state.prepare_iter()
         # Prepare executor
         executor = PipelineExecutor(self, out_prefix=out_pcloud)
         executor.load_input(self.state, in_pcloud=in_pcloud)
@@ -196,7 +301,8 @@ class SequentialPipeline(Pipeline):
             if isinstance(comp, ModelOp):
                 sp.sequence.append(ModelOp(comp.model, ModelOp.OP.PREDICT))
             if isinstance(comp, Writer) and \
-                    kwargs.get('include_writer', False):
+                    kwargs.get('include_writer', False) and \
+                    not isinstance(comp, PredictivePipelineWriter):
                 sp.sequence.append(comp)
             if isinstance(comp, Imputer) and \
                     kwargs.get('include_imputer', True):

@@ -79,6 +79,11 @@ class MinmaxNormalizer(FeatureTransformer):
         See :class:`.FeatureTransformer` and
         :meth:`feature_transformer.FeatureTransformer.transform`.
         """
+        # Report feature names
+        LOGGING.LOGGER.debug(
+            f'MinmaxNormalizer considers the following {len(self.fnames)} '
+            f'features:\n{self.fnames}'
+        )
         # Transform
         plot_and_report = False
         start = time.perf_counter()

@@ -1,6 +1,7 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.main.vl3d_exception import VL3DException
+import src.main.main_logger as LOGGING
 import numpy as np
 import laspy
 
@@ -58,6 +59,14 @@ class PointCloud:
         """
         return len(self.las.X)
 
+    def get_header(self):
+        """
+        Obtain the header representing the input point cloud.
+
+        :return: Header representing the input point cloud.
+        """
+        return self.las.header
+
     def get_coordinates_matrix(self):
         """
         Obtain the matrix of coordinates representing the point cloud (supported
@@ -82,7 +91,14 @@ class PointCloud:
         :return: The matrix of features representing the point cloud.
         :rtype: :class:`np.ndarray`
         """
-        return np.array([self.las[fname] for fname in fnames]).T
+        try:
+            return np.array([self.las[fname] for fname in fnames]).T
+        except Exception as ex:
+            raise PointCloudException(
+                'PointCloud get_features_matrix method received unexpected '
+                'feature names. Supported feature names for the particular '
+                f'point cloud are:\n{self.get_features_names()}'
+            ) from ex
 
     def get_features_names(self):
         """
@@ -97,6 +113,18 @@ class PointCloud:
             for x in self.las.point_format.dimension_names
             if x not in ['X', 'Y', 'Z']
         ]
+
+    def has_given_features(self, fnames):
+        """
+        Check whether the point cloud contains the features represented by
+        the given feature names.
+
+        :param fnames: The names of the features to be checked.
+        :return: True if all the features specified in fnames are available,
+            False otherwise.
+        """
+        pcloud_fnames = self.get_features_names()
+        return all(fname in pcloud_fnames for fname in fnames)
 
     def get_classes_vector(self):
         r"""
@@ -135,8 +163,58 @@ class PointCloud:
         :return: True if predictions are available, false otherwise.
         :rtype: bool
         """
-        return self.las['prediction'] is not None and \
+        return 'prediction' in self.get_features_names() and \
+            self.las['prediction'] is not None and \
             len(self.las.prediction) > 0
+
+    def equals(self, pcloud, compare_header=True):
+        """
+        Check whether this (self) and given (pcloud) point clouds are equal
+        or not. In this method, equality holds if and only if all the values
+        of one point cloud match those of the other.
+
+        :param pcloud: The point cloud to be compared against.
+        :type pcloud: :class:`.PointCloud`
+        :param compare_header: True to consider the LAS header when comparing
+            the point clouds, False otherwise.
+        :type compare_header: bool
+        :return: True if point clouds are equal, False otherwise.
+        :rtype: bool
+        """
+        # Equality checks
+        if self.get_num_points() != pcloud.get_num_points():
+            return False
+        if compare_header and self.get_header() != pcloud.get_header():
+            return False
+        if np.count_nonzero(
+            self.get_coordinates_matrix() != pcloud.get_coordinates_matrix()
+        ):
+            return False
+        fnames = self.get_features_names()
+        if fnames != pcloud.get_features_names():
+            return False
+        if np.count_nonzero(
+            self.get_features_matrix(fnames) !=
+            pcloud.get_features_matrix(fnames)
+        ):
+            return False
+        if self.has_classes() != pcloud.has_classes():
+            return False
+        if self.has_classes():
+            if np.count_nonzero(
+                self.get_classes_vector() != pcloud.get_classes_vector()
+            ):
+                return False
+        if self.has_predictions() != pcloud.has_predictions():
+            return False
+        if self.has_predictions():
+            if np.count_nonzero(
+                self.get_predictions_vector() !=
+                pcloud.get_predictions_vector()
+            ):
+                return False
+        # All checks were passed so both point clouds should be equal
+        return True
 
     # ---  UPDATE METHODS  --- #
     # ------------------------ #
@@ -168,6 +246,14 @@ class PointCloud:
         # Add extra dimensions to the output LAS
         extra_bytes = []
         for i, fname in enumerate(fnames):  # For each new feature (i)
+            if len(fname) > 32:
+                LOGGING.LOGGER.warning(
+                    'PointCloud.add_features truncated the feature name '
+                    f'"{fname}" to {fname[:32]}  because no more than 32 '
+                    'bytes are supported.'
+                )
+                fname = fname[:32]
+                fnames[i] = fname
             extra_bytes.append(
                 laspy.ExtraBytesParams(name=fname, type=ftypes[i])
             )
@@ -180,4 +266,43 @@ class PointCloud:
         # Replace the old point cloud with the new one
         self.las = las
         # Return
+        return self
+
+    def preserve_mask(self, mask):
+        """
+        Preserve the points whose index in the mask corresponds to True.
+        Otherwise, the point is discarded.
+
+        :param mask: The binary mask to be applied (True means preserve,
+            False means discard).
+        :return: The point cloud after applying the mask.
+        :rtype: :class:`.PointCloud`
+        """
+        self.las.points = self.las.points[mask]
+        self.las.header.point_records_count = len(self.las.points)
+        return self
+
+    def remove_mask(self, mask):
+        """
+        Discard the points whose index in the mask corresponds to True.
+        Otherwise, the point is preserved.
+
+        :param mask: The binary mask to be applied (True means remove, False
+            means preserve).
+        :return: The point cloud after applying the mask.
+        :rtype: :class:`.PointCloud`
+        """
+        return self.preserve_mask(~np.array(mask))
+
+    def set_classes_vector(self, y):
+        r"""
+        Set the point-wise classes of the point cloud from the given vector
+        of classes.
+
+        :param y: The vector of classes (:math:`\pmb{y}`).
+        :type y: :class:`np.ndarray`
+        :return: The updated point cloud.
+        :rtype: :class:`.PointCloud`
+        """
+        self.las.classification = y
         return self

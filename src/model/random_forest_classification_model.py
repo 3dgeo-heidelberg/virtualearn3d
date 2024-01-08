@@ -169,8 +169,10 @@ class RandomForestClassificationModel(ClassificationModel):
 
     # ---  PREDICTION METHODS  --- #
     # ---------------------------- #
-    def _predict(self, X):
+    def _predict(self, X, zout=None, **kwargs):
         """
         See :meth:`model.Model._predict`.
         """
+        if zout is not None:
+            zout.append(self.model.predict_proba(X))
         return self.model.predict(X)

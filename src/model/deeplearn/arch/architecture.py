@@ -2,9 +2,14 @@
 # ------------------- #
 from abc import abstractmethod
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
-from src.model.deeplearn.regularizer.regularizer import Regularizer
 from src.model.deeplearn.regularizer.features_orthogonal_regularizer import \
     FeaturesOrthogonalRegularizer
+from src.model.deeplearn.layer.features_structuring_layer import \
+    FeaturesStructuringLayer
+from src.model.deeplearn.layer.rbf_feat_extract_layer import \
+    RBFFeatExtractLayer
+from src.model.deeplearn.layer.rbf_feat_processing_layer import \
+    RBFFeatProcessingLayer
 from src.inout.io_utils import IOUtils
 import src.main.main_logger as LOGGING
 import tensorflow as tf
@@ -224,7 +229,6 @@ class Architecture:
                 f'"{self.architecture_graph_path}"'
             )
 
-
     def overwrite_pretrained_model(self, spec):
         """
         Assist the :meth:`model.Model.overwrite_pretrained_model` method
@@ -242,7 +246,6 @@ class Architecture:
             self.architecture_graph_args = spec['architecture_graph_args']
         if 'architecture_graph_path' in spec_keys:
             self.architecture_graph_path = spec['architecture_graph_path']
-            self.plot()
         # Overwrite the attributes of the pre-processor
         if self.pre_runnable is not None and 'pre_processing' in spec_keys:
             if hasattr(self.pre_runnable, 'overwrite_pretrained_model'):
@@ -267,8 +270,8 @@ class Architecture:
             self.nn.save(
                 nn_path,
                 overwrite=True,
-                include_optimizer=True,
-                save_format='h5'
+                # include_optimizer=True,  # Not supported with Keras format
+                save_format='keras'
             )
         # Return architecture state (for serialization)
         return {  # Must not include built architecture
@@ -294,13 +297,26 @@ class Architecture:
         self.post_runnable = state['post_runnable']
         self.nn_path = state['nn_path']
         self.build_args = state['build_args']
+        self.architecture_graph_path = None
+        self.architecture_graph_args = None
         # Load or rebuild
         if self.nn_path is not None:  # If path to neuralnet, load it
+            if not os.path.exists(self.nn_path):
+                self.nn_path = input(
+                    '\n'
+                    f'The "{self.nn_path}" file does not exist.\n'
+                    'Please, type the path to the serialized neural network: '
+                )
+                print()
             self.nn = tf.keras.models.load_model(
                 self.nn_path,
                 custom_objects={
                     'FeaturesOrthogonalRegularizer':
                         FeaturesOrthogonalRegularizer,
+                    'FeaturesStructuringLayer': FeaturesStructuringLayer,
+                    "RBFFeatExtractLayer": RBFFeatExtractLayer,
+                    'RBFFeatProcessingLayer': RBFFeatProcessingLayer
+
                 },
                 compile=False
             )

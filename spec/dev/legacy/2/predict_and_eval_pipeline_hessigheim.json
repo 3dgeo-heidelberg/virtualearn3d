@@ -1,0 +1,61 @@
+{
+  "in_pcloud": [
+	"/hei/Hessigheim_Benchmark/Epoch_March2018/LiDAR/Mar18_val.laz",
+	"/hei/Hessigheim_Benchmark/Epoch_March2018/LiDAR/Mar18_train.laz"
+  ],
+  "out_pcloud": [
+	"out/prediction/RF_Hessigheim_March2018/*",
+	"out/training/RF_Hessigheim_March2018/autoval/*"
+  ],
+  "sequential_pipeline": [
+	{
+		"class_transformer": "ClassReducer",
+		"on_predictions": false,
+		"input_class_names": ["Low vegetation", "Impervious surface", "Vehicle", "Urban furniture", "Roof", "Facade", "Shrub", "Tree", "Soil/Gravel", "Vertical surface", "Chimney"],
+		"output_class_names": ["Ground", "Vegetation", "Building", "Urban furniture", "Vehicle"],
+		"class_groups": [["Low vegetation", "Impervious surface", "Soil/Gravel"], ["Shrub", "Tree"], ["Roof", "Facade", "Vertical surface", "Chimney"], ["Urban furniture"], ["Vehicle"]],
+		"report_path": "*class_reduction.log",
+		"plot_path": "*class_reduction.svg"
+	},
+    {
+      "predict": "PredictivePipeline",
+	  "model_path": "out/training/RF_Hessigheim_March2018/pipe/Training_RF.pipe" 
+    },
+	{
+	  "writer": "Writer",
+	  "out_pcloud": "*predicted.laz"
+	},
+	{
+	  "writer": "PredictionsWriter",
+	  "out_preds": "*predictions.lbl"
+	},
+	{
+	  "eval": "ClassificationEvaluator",
+	  "class_names": ["Ground", "Vegetation", "Building", "Urban furniture", "Vehicle"],
+	  "metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
+      "class_metrics": ["P", "R", "F1", "IoU"],
+	  "report_path": "*report/global_eval.log",
+	  "class_report_path": "*report/class_eval.log",
+	  "confusion_matrix_report_path" : "*report/confusion_matrix.log",
+	  "confusion_matrix_plot_path" : "*plot/confusion_matrix.svg",
+	  "class_distribution_report_path": "*report/class_distribution.log",
+	  "class_distribution_plot_path": "*plot/class_distribution.svg"
+	},
+	{
+		"eval": "ClassificationUncertaintyEvaluator",
+		"class_names": ["Ground", "Vegetation", "Building", "Urban furniture", "Vehicle"],
+		"include_probabilities": true,
+		"include_weighted_entropy": true,
+		"include_clusters": true,
+		"weight_by_predictions": false,
+		"num_clusters": 10,
+		"clustering_max_iters": 128,
+		"clustering_batch_size": 1000000,
+		"clustering_entropy_weights": true,
+		"clustering_reduce_function": "mean",
+		"gaussian_kernel_points": 256,
+		"report_path": "*uncertainty/uncertainty.laz",
+		"plot_path": "*uncertainty/"
+	}
+  ]
+}

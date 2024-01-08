@@ -70,3 +70,26 @@ class PipelineState:
         See :meth:`pipeline_state.PipelineState.update`.
         """
         pass
+
+    def prepare_iter(self, **kwargs):
+        """
+        The logic to prepare an iteration. This method must handle any
+        member attribute that needs to be updated at the beginning of each
+        iteration.
+
+        An iteration consists of applying the many steps of the pipeline to one
+        case. For instance, the same sequential pipeline can be used to train
+        models using two different datasets. In this case, the first model
+        will be generated during the first iteration, while the second model
+        will be generated during the second iteration.
+
+        The prepare_iter method is necessary to have a pipeline state that does
+        not propagate particularities of the first case to the second, e.g.,
+        to avoid considering the last state of the feature names in the first
+        iteration as the initial feature names in the second iteration.
+
+        :param kwargs: The key-word arguments to prepare the iteration.
+        :return: The pipeline state itself is updated and returned.
+        :rtype: :class:`.PipelineState`
+        """
+        pass

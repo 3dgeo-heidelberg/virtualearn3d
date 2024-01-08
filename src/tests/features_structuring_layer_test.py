@@ -32,7 +32,6 @@ class FeaturesStructuringLayerTest(VL3DTest):
             test cases, False otherwise.
         :rtype: bool
         """
-        status = True
         # Instantiate test layer
         max_radii = (1, 1, 1)
         radii_resolution = 4
@@ -91,7 +90,7 @@ class FeaturesStructuringLayerTest(VL3DTest):
         Compute the expected output to compare it against what is generated
         by the features structuring layer.
 
-        :return: The expected output
+        :return: The expected output.
         :rtype: :class:`np.ndarray`
         """
         # Distance function

@@ -63,13 +63,19 @@ class ClassifiedPcloudReport(Report):
         self.zhat = kwargs.get('zhat', None)
         self.class_names = kwargs.get('class_names', None)
         if self.class_names is None:
-            self.class_names = [f'C{i}' for i in range(self.zhat.shape[1])]
+            if self.zhat is not None:
+                self.class_names = [f'C{i}' for i in range(self.zhat.shape[1])]
+            else:
+                num_classes = len(
+                    np.unique(np.concatenate([self.y, self.yhat]))
+                )
+                self.class_names = [f'C{i}' for i in range(num_classes)]
 
     # ---   TO FILE   --- #
     # ------------------- #
     def to_file(self, path, out_prefix=None):
         """
-        Write the report (point cloud) to a file (LAZ).
+        Write the report (point cloud) to a file (LAS/LAZ).
 
         :param path: Path to the file where the report must be written.
         :type path: str
@@ -87,11 +93,11 @@ class ClassifiedPcloudReport(Report):
         )
         # Build output features
         fnames = ['Prediction']
-        feats = self.yhat.reshape(-1, 1)
+        feats = self.yhat.reshape((-1, 1))
         # Build output features : success mask
         if self.y is not None:
             fnames.append('Success')
-            success = (self.y == self.yhat).astype(int).reshape(-1, 1)
+            success = (self.y == self.yhat).astype(int).reshape((-1, 1))
             feats = np.hstack([feats, success])
         # Build output features : class-wise scores
         if self.zhat is not None:
@@ -104,7 +110,7 @@ class ClassifiedPcloudReport(Report):
             feats = np.hstack([
                 feats,
                 self.zhat if len(self.zhat.shape) > 1
-                else self.zhat.reshape(-1, 1)
+                else self.zhat.reshape((-1, 1))
             ])
         # Write
         PointCloudIO.write(

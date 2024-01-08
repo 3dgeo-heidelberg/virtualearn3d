@@ -31,7 +31,7 @@ class CovarFeatsMiner(Miner):
     :vartype nthreads: int
     :ivar radius: The radius for the spherical neighborhood (default 0.3).
     :vartpe radius: float
-    :ivar min_neighs: The minimum number of neighborhoods (must be given for
+    :ivar min_neighs: The minimum number of neighbors (must be given for
         both spherical and knn neighborhoods).
     :vartype min_neighs: int
     :ivar optimize: True to enable optimal neighborhood configuration.

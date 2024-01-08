@@ -2,6 +2,8 @@
 # ------------------- #
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
 from src.model.deeplearn.layer.layer import Layer
+from src.model.deeplearn.initializer.kernel_point_structure_initializer import\
+    KernelPointStructureInitializer
 from src.report.features_structuring_layer_report import \
     FeaturesStructuringLayerReport
 from src.plot.features_structuring_layer_plot import \
@@ -85,8 +87,8 @@ class FeaturesStructuringLayer(Layer):
     :vartype QX: :class:`tf.Tensor`
     :ivar trainable_QX: Flag to control whether QX is trainable or not.
     :vartype trainable_QX: bool
-    :ivar built_QX: The kernel's structure matrix.
-    :vartype: Flag to control whether QX has been built or not.
+    :ivar built_QX: Flag to control whether QX has been built or not.
+    :vartype built_QX: bool
     :ivar omegaD: The kernel's distance weights.
     :vartype omegaD: :class:`tf.Tensor`
     :ivar trainable_omegaD: Flag to control whether omegaD is trainable or not.
@@ -107,7 +109,7 @@ class FeaturesStructuringLayer(Layer):
     :vartype built_QW: bool
     """
     # ---   INIT   --- #
-    # ----------------- #
+    # ---------------- #
     def __init__(
         self,
         max_radii,
@@ -137,14 +139,22 @@ class FeaturesStructuringLayer(Layer):
         self.radii_resolution = int(radii_resolution)
         self.angular_resolutions = np.array(angular_resolutions, dtype=int)
         self.structure_dimensionality = structure_dimensionality
-        self.num_kernel_points = int(np.sum(np.power(angular_resolutions, 2)))
+        self.trainable_QX = trainable_QX  # True is trainable, false not
+        self.QX_initializer = KernelPointStructureInitializer(
+            max_radii=self.max_radii,
+            radii_resolution=self.radii_resolution,
+            angular_resolutions=self.angular_resolutions,
+            trainable=self.trainable_QX,
+            name='QX'
+        )
+        self.num_kernel_points = \
+            self.QX_initializer.compute_num_kernel_points()
         self.dim_out = dim_out
         self.concatenation_strategy = concatenation_strategy
-        # Initialize to None attributes derived when building
+        # Initialize to None attributes (derived when building)
         self.num_features = None  # The number of features
         self.concatf = None  # The concatenation strategy function
         self.QX = None  # Kernel's structure matrix
-        self.trainable_QX = trainable_QX  # True is trainable, false not
         self.built_QX = built_QX  # True if built, false otherwise
         self.omegaD = None  # Trainable parameters for distance
         self.trainable_omegaD = trainable_omegaD  # True trainable, false not
@@ -156,21 +166,6 @@ class FeaturesStructuringLayer(Layer):
         self.trainable_QW = trainable_QW  # True is trainable, false not
         self.built_QW = built_QW  # True if built, false otherwise
         # Validate attributes
-        if np.count_nonzero(self.max_radii <= 0):
-            raise DeepLearningException(
-                'FeaturesStructuringLayer does not support any max radii '
-                'that is not strictly greater than zero.'
-            )
-        if len(self.angular_resolutions) != self.radii_resolution:
-            raise DeepLearningException(
-                'FeaturesStructuringLayer demands the cardinality of the '
-                'angular resolutions set to match the radii resolution.'
-            )
-        if np.count_nonzero(self.angular_resolutions < 1):
-            raise DeepLearningException(
-                'FeaturesStructuringLayer demands all angular resolutions '
-                'are strictly greater than zero.'
-            )
         if self.structure_dimensionality != 3:
             raise DeepLearningException(
                 'FeaturesStructuringLayer received '
@@ -220,12 +215,7 @@ class FeaturesStructuringLayer(Layer):
             )
         # Build the kernel's structure (if not yet)
         if not self.built_QX:
-            self.QX = tf.Variable(
-                self.sample_concentric_ellipsoids(),
-                dtype='float32',
-                trainable=self.trainable_QX,
-                name='QX'
-            )
+            self.QX = self.QX_initializer(None)
             self.built_QX = True
         # Validate the kernel's structure
         if self.QX is None:
@@ -248,7 +238,9 @@ class FeaturesStructuringLayer(Layer):
         # Build the trainable weights (if not yet)
         if not self.built_omegaD:
             self.omegaD = tf.Variable(
-                np.ones(self.num_kernel_points)*np.max(self.max_radii),
+                np.ones(self.num_kernel_points)*np.max(self.max_radii),  # TODO Restore : Legacy ?
+                #np.max(self.max_radii) *
+                #    np.random.uniform(0.01, 1.0, self.num_kernel_points),  # TODO Remove : Alternative ?
                 dtype='float32',
                 trainable=self.trainable_omegaD,
                 name='omegaD'
@@ -269,7 +261,7 @@ class FeaturesStructuringLayer(Layer):
                 ),
                 dtype="float32",
                 trainable=self.trainable_QW,
-                name='"QW'
+                name='QW'
             )
             self.built_QW = True
         # Handle concatenation strategy
@@ -350,85 +342,22 @@ class FeaturesStructuringLayer(Layer):
                 tf.transpose(QDunexp, [0, 2, 1]) / omegaD_squared, [0, 2, 1]
             )
         )
-
         # Compute kernel-based features
+        # Weight by kernel distances (NEW) ---
+        """QD_row_wise_norm = tf.expand_dims(tf.reduce_sum(QD, axis=2), axis=-1)
+        QD = QD / QD_row_wise_norm
+        # Compute kernel-based features
+        QF = self.omegaF * tf.matmul(QD, F)"""
+        # --- Weight by kernel distances (NEW)
+        # Weight by number of points (LEGACY) ---
         QF = self.omegaF/m * tf.matmul(QD, F)
+        # --- Weight by number of points (LEGACY)
         # Multiply kernel features by weights
         QY = tf.matmul(QF, self.QW)
         QDT = tf.transpose(QD, [0, 2, 1])
         QY = tf.matmul(QDT, QY)
         # Return
         return self.concatf(F, QY)
-
-    # ---   BUILD METHODS   --- #
-    # ------------------------- #
-    def sample_concentric_ellipsoids(self):
-        r"""
-        The structure matrix of the kernel :math:`\pmb{Q_X} \in \mathbb{R}^{3}`
-        is initialized for the 3D case assuming three parameters:
-
-        :math:`n` The radii resolution.
-
-        :math:`r_x^*, r_y^*, r_z^*` The max radii.
-
-        :math:`m_1, \ldots, m_n` The angular resolution for each radius.
-
-        First, the axis-wise radii for given ellipsoid are defined as:
-
-        .. math::
-            r_{xk} = \frac{k-1}{n-1} r_x^* \\
-            r_{yk} = \frac{k-1}{n-1} r_y^* \\
-            r_{zk} = \frac{k-1}{n-1} r_z^*
-
-        Where :math:`k=0,...,n-1` represents the :math:`n` concentric
-        ellipsoids with :math:`k=0` being the central point and
-        :math:`k=n-1` the biggest ellipsoid, i.e., from smaller to bigger.
-
-        For then, it is possible to define two angles
-        :math:`\alpha \in [0, \pi]` and :math:`\beta \in [0, 2\pi]` such that:
-
-        .. math::
-            \alpha_{kj} = \frac{j-1}{m_k - 1} \pi \;,\;\;
-            \beta_{kj} = \frac{j-1}{m_k -1} 2\pi
-
-        Where :math:`j=0, \ldots, m_k-1` for each :math:`k`.
-
-        Finally, the rows in :math:`\pmb{Q_X}` that represent the kernel's
-        structure can be computed as follows:
-
-        .. math::
-            \left[\begin{array}{c}
-                x \\
-                y \\
-                z
-            \end{array}\right]^\intercal =
-            \left[\begin{array}{c}
-                r_{xk} \sin(\alpha_{kj}) \cos(\beta_{kj}) \\
-                r_{yk} \sin(\alpha_{kj}) \sin(\beta_{kj}) \\
-                r_{zk} \cos(\alpha_{kj})
-            \end{array}\right]^\intercal
-
-        :return: :math:`\pmb{Q_X} \in \mathbb{R}^{K \times n_x}`
-        """
-        Q = []
-        for k in range(self.radii_resolution):
-            if k == 0:  # Center point
-                Q.append(np.zeros(3))
-                continue
-            # Concentric ellipsoid
-            radii = k/(self.radii_resolution-1)*self.max_radii
-            angular_resolution = self.angular_resolutions[k]
-            for i in range(angular_resolution):
-                alpha_i = i/angular_resolution*np.pi
-                for j in range(angular_resolution):
-                    beta_j = j/angular_resolution*2*np.pi
-                    Q.append(np.array([
-                        radii[0]*np.sin(alpha_i)*np.cos(beta_j),
-                        radii[1]*np.sin(alpha_i)*np.sin(beta_j),
-                        radii[2]*np.cos(alpha_i)
-                    ]))
-        # Return
-        return np.array(Q)
 
     # ---   CALL METHODS   --- #
     # ------------------------ #
@@ -484,7 +413,6 @@ class FeaturesStructuringLayer(Layer):
             'concatenation_strategy': self.concatenation_strategy,
             # Building attributes
             'num_features': self.num_features,
-            'concatf': None,
             'trainable_QX': self.trainable_QX,
             'built_QX': self.built_QX,
             'trainable_omegaD': self.trainable_omegaD,
@@ -500,12 +428,43 @@ class FeaturesStructuringLayer(Layer):
     @classmethod
     def from_config(cls, config):
         """Use given config data to deserialize the layer"""
+        # Obtain num_kernel_points and remove it from config
+        num_kernel_points = config['num_kernel_points']
+        del config['num_kernel_points']
+        # Obtain num_features and remove it from config
+        num_features = config['num_features']
+        del config['num_features']
         # Instantiate layer
         fsl = cls(**config)
         # Deserialize custom attributes
-        fsl.num_features = config['num_features']
+        fsl.num_features = num_features
         # Compute necessary initializations
         fsl.assign_concatf()
+        # Placeholders so build on model load does not fail
+        fsl.QX = tf.Variable(
+            np.zeros((num_kernel_points, config['structure_dimensionality'])),
+            dtype='float32',
+            trainable=config['trainable_QX'],
+            name=f'{fsl.name}_QX'
+        )
+        fsl.omegaD = tf.Variable(
+            np.zeros(num_kernel_points),
+            dtype='float32',
+            trainable=config['trainable_omegaD'],
+            name=f'{fsl.name}_omegaD'
+        )
+        fsl.omegaF = tf.Variable(
+            np.zeros(num_features),
+            dtype='float32',
+            trainable=config['trainable_omegaF'],
+            name=f'{fsl.name}_omegaF'
+        )
+        fsl.QW = tf.Variable(
+            np.zeros((num_features, config['dim_out'])),
+            dtype='float32',
+            trainable=config['trainable_QW'],
+            name=f'{fsl.name}_QW'
+        )
         # Return deserialized layer
         return fsl
 
@@ -516,7 +475,7 @@ class FeaturesStructuringLayer(Layer):
         Export a set of files representing the state of the features
         structuring kernel.
 
-        :param dir_path: The directory where the representation's files will
+        :param dir_path: The directory where the representation files will
             be exported.
         :type dir_path: str
         :param out_prefix: The output prefix to name the output files.

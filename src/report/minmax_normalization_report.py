@@ -75,7 +75,7 @@ class MinmaxNormalizationReport(Report):
         # --- Table: feature, min, max, range --- #
         # HEAD
         s += 'FEATURE         ,              MIN,              MAX, '\
-            '           RANGE'
+            '           RANGE\n'
         # BODY
         for i, fname in enumerate(self.fnames):
             s += f'{fname:24.24}, {self.fmin[i]:16.5f}, '\

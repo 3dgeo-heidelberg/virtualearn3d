@@ -1,0 +1,119 @@
+{
+  "in_pcloud": [
+	"/hei/Hessigheim_Benchmark/Epoch_March2018/LiDAR/Mar18_train.laz",
+	"/hei/Hessigheim_Benchmark/Epoch_March2018/LiDAR/Mar18_val.laz"
+  ],
+  "out_pcloud": [
+	"/hei/Hessigheim_Benchmark/Epoch_March2018/vl3d/mined/Mar18_train_rect2D*",
+	"/hei/Hessigheim_Benchmark/Epoch_March2018/vl3d/mined/Mar18_val_rect2D*"
+  ],
+  "sequential_pipeline": [
+	{
+	  "miner": "HSVFromRGB",
+ 	  "hue_unit": "radians",
+	  "frenames": ["HSV_Hrad", "HSV_Srad", "HSV_Vrad"]
+	},
+	{
+	  "miner": "HeightFeatures",
+	  "support_chunk_size": 50,
+	  "support_subchunk_size": 10,
+	  "pwise_chunk_size": 1000,
+	  "nthreads": 12,
+	  "neighborhood": {	
+    	"type": "Rectangular2D",
+		"radius": 50.0,
+		"separation_factor": 0.35
+	  },
+	  "outlier_filter": null,
+	  "fnames": ["floor_distance"],
+	  "_fnames": ["floor_coordinate", "floor_distance", "ceil_coordinate", "ceil_distance", "height_range", "mean_height", "median_height", "height_quartiles", "height_deciles", "height_variance", "height_stdev", "height_skewness", "height_kurtosis"]
+	},
+	{
+	  "miner": "SmoothFeatures",
+	  "chunk_size": 1000000,
+	  "subchunk_size": 1000,
+	  "neighborhood": {
+		"type": "sphere",
+		"radius": 0.25
+	  },
+	  "input_fnames": ["Reflectance", "HSV_Hrad", "HSV_Srad", "HSV_Vrad"],
+	  "fnames": ["mean"],
+	  "nthreads": 12
+	},
+	{
+	  "miner": "SmoothFeatures",
+	  "chunk_size": 1000000,
+	  "subchunk_size": 1000,
+	  "neighborhood": {
+		"type": "sphere",
+		"radius": 1.0
+	  },
+	  "input_fnames": ["Reflectance", "HSV_Hrad", "HSV_Srad", "HSV_Vrad"],
+	  "fnames": ["mean"],
+	  "nthreads": 10
+	},
+	{
+	  "miner": "SmoothFeatures",
+	  "chunk_size": 1000000,
+	  "subchunk_size": 1000,
+	  "neighborhood": {
+		"type": "sphere",
+		"radius": 3.0
+	  },
+	  "input_fnames": ["Reflectance", "HSV_Hrad", "HSV_Srad", "HSV_Vrad"],
+	  "fnames": ["mean"],
+	  "nthreads": 10
+	},	
+	{
+	  "miner": "GeometricFeatures",
+	  "radius": 0.125,
+	  "fnames": ["linearity", "planarity", "sphericity", "surface_variation", "omnivariance", "verticality", "anisotropy", "eigenentropy", "eigenvalue_sum"]
+	},
+	{
+	  "miner": "GeometricFeatures",
+	  "radius": 0.25,
+	  "fnames": ["linearity", "planarity", "sphericity", "surface_variation", "omnivariance", "verticality", "anisotropy", "eigenentropy", "eigenvalue_sum"]
+	},
+	{
+	  "miner": "GeometricFeatures",
+	  "radius": 0.5,
+	  "fnames": ["linearity", "planarity", "sphericity", "surface_variation", "omnivariance", "verticality", "anisotropy", "eigenentropy", "eigenvalue_sum"]
+	},
+	{
+	  "miner": "GeometricFeatures",
+	  "radius": 0.75,
+	  "fnames": ["linearity", "planarity", "sphericity", "surface_variation", "omnivariance", "verticality", "anisotropy", "eigenentropy", "eigenvalue_sum"]
+	},
+	{
+	  "miner": "GeometricFeatures",
+	  "radius": 1.0,
+	  "fnames": ["linearity", "planarity", "sphericity", "surface_variation", "omnivariance", "verticality", "anisotropy", "eigenentropy", "eigenvalue_sum"]
+	},
+	{
+	  "miner": "GeometricFeatures",
+	  "radius": 2.0,
+	  "fnames": ["linearity", "planarity", "sphericity", "surface_variation", "omnivariance", "verticality", "anisotropy", "eigenentropy", "eigenvalue_sum"]
+	},
+	{
+	  "miner": "GeometricFeatures",
+	  "radius": 3.0,
+	  "fnames": ["linearity", "planarity", "sphericity", "surface_variation", "omnivariance", "verticality", "anisotropy", "eigenentropy", "eigenvalue_sum"]
+	},
+	{
+	  "miner": "GeometricFeatures",
+	  "radius": 5.0,
+	  "fnames": ["linearity", "planarity", "sphericity", "surface_variation", "omnivariance", "verticality", "anisotropy", "eigenentropy", "eigenvalue_sum"]
+	},
+	{
+	  "imputer": "UnivariateImputer",
+	  "fnames": ["AUTO"],
+	  "target_val": "NaN",
+	  "strategy": "mean",
+	  "constant_val": 0
+	},
+	{
+	  "writer": "Writer",
+ 	  "out_pcloud": "*feats.laz"
+	}
+  ]
+}

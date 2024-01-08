@@ -48,7 +48,7 @@ class KBestSelector(FeatureTransformer):
         if not valid_score:
             raise ValueError(
                 'The KBestSelector specification contains an invalid type: '
-                f'"{type}"'
+                f'"{spec.get("type", None)}"'
             )
         # Delete keys with None value
         kwargs = DictUtils.delete_by_val(kwargs, None)

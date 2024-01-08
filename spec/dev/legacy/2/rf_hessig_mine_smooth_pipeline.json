@@ -1,0 +1,69 @@
+{
+  "in_pcloud": [
+	"/hei/Hessigheim_Benchmark/Epoch_March2018/LiDAR/Mar18_train.laz"
+  ],
+  "out_pcloud": [
+	"out/smooth/Mar18_train_*"
+  ],
+  "sequential_pipeline": [
+	{
+	  "miner": "HSVFromRGB",
+ 	  "hue_unit": "radians",
+	  "frenames": ["HSV_Hrad", "HSV_Srad", "HSV_Vrad"]
+	},
+	{
+	  "_miner": "SmoothFeatures",
+	  "chunk_size": 1000000,
+	  "subchunk_size": 1000,
+	  "neighborhood": {
+		"type": "sphere",
+		"radius": 0.25
+	  },
+	  "weighted_mean_omega": 0.0001,
+ 	  "gaussian_rbf_omega": 0.125,
+	  "input_fnames": ["Reflectance", "HSV_Hrad", "HSV_Srad", "HSV_Vrad", "red", "green", "blue"],
+	  "fnames": ["mean", "weighted_mean", "gaussian_rbf"],
+	  "nthreads": 12
+	},
+	{
+	  "_miner": "SmoothFeatures",
+	  "chunk_size": 1000000,
+	  "subchunk_size": 1000,
+	  "neighborhood": {
+		"type": "sphere",
+		"radius": 0.25
+	  },
+	  "input_fnames": ["Reflectance", "HSV_Hrad", "HSV_Srad", "HSV_Vrad"],
+	  "fnames": ["mean"],
+	  "nthreads": 12
+	},
+	{
+	  "_miner": "SmoothFeatures",
+	  "chunk_size": 1000000,
+	  "subchunk_size": 1000,
+	  "neighborhood": {
+		"type": "sphere",
+		"radius": 1.0
+	  },
+	  "input_fnames": ["Reflectance", "HSV_Hrad", "HSV_Srad", "HSV_Vrad"],
+	  "fnames": ["mean"],
+	  "nthreads": 12
+	},
+	{
+	  "miner": "SmoothFeatures",
+	  "chunk_size": 1000000,
+	  "subchunk_size": 1000,
+	  "neighborhood": {
+		"type": "sphere",
+		"radius": 3.0
+	  },
+	  "input_fnames": ["Reflectance", "HSV_Hrad", "HSV_Srad", "HSV_Vrad"],
+	  "fnames": ["mean"],
+	  "nthreads": 10
+	},	
+	{
+	  "writer": "Writer",
+ 	  "out_pcloud": "*smooth_feats.laz"
+	}
+  ]
+}

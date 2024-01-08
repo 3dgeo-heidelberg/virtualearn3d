@@ -2,8 +2,10 @@
 # ------------------- #
 from src.eval.evaluator import Evaluator, EvaluatorException
 from src.eval.deeplearn.dl_model_evaluation import DLModelEvaluation
+from src.model.model_op import ModelOp
 from src.utils.dict_utils import DictUtils
 import src.main.main_logger as LOGGING
+from sklearn.feature_selection import f_classif
 import time
 
 
@@ -115,6 +117,17 @@ class DLModelEvaluator(Evaluator):
                 'DLModelEvaluator computed point-wise activations in '
                 f'{local_end-local_start:.3f} seconds.'
             )
+        # Evaluate : ANOVA on activations:
+        Fval, pval = None, None
+        if not (X is None or activations is None or y is None):
+            local_start = time.perf_counter()
+            Fval, pval = f_classif(activations, y)
+            local_end = time.perf_counter()
+            LOGGING.LOGGER.info(
+                'DLModelEvaluator computed F-values and p-values for '
+                f'point-wise activations in {local_end-local_start:.3f} '
+                'seconds.'
+            )
         # Log execution time
         end = time.perf_counter()
         LOGGING.LOGGER.info(
@@ -128,6 +141,8 @@ class DLModelEvaluator(Evaluator):
             yhat=yhat,
             zhat=zhat,
             activations=activations,
+            Fval=Fval,
+            pval=pval,
             class_names=getattr(self.dlmodel, 'class_names', None)
         )
 
@@ -148,6 +163,9 @@ class DLModelEvaluator(Evaluator):
             pwise_activations_path = kwargs.get(
                 'pwise_activations_path', self.pwise_activations_path
             )
+            pwise_activations_anova_path = pwise_activations_path[
+                :pwise_activations_path.rfind('.')
+            ] + '_ANOVA.csv'
             if(
                 pwise_output_path is not None or
                 pwise_activations_path is not None
@@ -157,6 +175,7 @@ class DLModelEvaluator(Evaluator):
                 report.to_file(
                     pwise_output_path,
                     pwise_activations_path=pwise_activations_path,
+                    pwise_activations_anova_path=pwise_activations_anova_path,
                     out_prefix=out_prefix
                 )
                 end = time.perf_counter()
@@ -178,11 +197,13 @@ class DLModelEvaluator(Evaluator):
             updated.
         """
         self.dlmodel = state.model
+        if self.dlmodel is not None and isinstance(self.dlmodel, ModelOp):
+            self.dlmodel = self.dlmodel.model
 
     def eval_args_from_state(self, state):
         """
         Obtain the arguments to call the DLModelEvaluator from the current
-        pipeline's state .
+        pipeline's state.
 
         :param state: The pipeline's state
         :type state: :class:`.SimplePipelineState`

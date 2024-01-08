@@ -1,0 +1,20 @@
+# Fundamental requirements
+numpy>=1.21.5
+scikit-learn>=1.2.0
+PyYAML>=5.4.1
+matplotlib>=3.5.1
+joblib>=1.2.0
+laspy[laszip]>=2.3.0
+scipy>=1.10.0
+jakteristics>=0.5.0
+dill>=0.3.7
+pdal>=2.4.2
+rasterio>=1.3.9
+
+# Deep learning requirements
+tensorflow==2.12.0
+open3d>=0.17.0
+
+# Sphins and readthedocs requirements
+sphinx
+sphinx-rtd-theme

@@ -1,0 +1,23 @@
+name: vl3d
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - pdal>=2.4.2
+  - python-pdal>=2.4.2
+  - matplotlib>=3.5.1
+  - scipy>=1.10.0
+  - scikit-learn>=1.2.0
+  - numpy>=1.21.5
+  - dill>=0.3.7
+  - pyyaml>=5.4.1
+  - h5py>=3.9.0
+  - pytest>=7.4.3
+
+  - pip:
+    - open3d>=0.17.0
+    - laspy[lazrs]>=2.3.0
+    - tensorflow
+    - jakteristics>=0.4.1

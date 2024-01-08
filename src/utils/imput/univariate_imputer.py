@@ -71,6 +71,11 @@ class UnivariateImputer(Imputer):
         None, the return will be (imputed F, y) for compatibility and fluent
         programming. If y is None, only imputed F will be return.
         """
+        # Report feature names
+        LOGGING.LOGGER.debug(
+            f'UnivariateImputer considers the following {len(self.fnames)} '
+            f'features:\n{self.fnames}'
+        )
         # Fit imputer
         if not self.fit:
             start = time.perf_counter()

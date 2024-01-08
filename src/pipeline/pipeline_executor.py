@@ -2,6 +2,7 @@
 # ------------------- #
 from src.main.vl3d_exception import VL3DException
 from src.pcloud.point_cloud_factory_facade import PointCloudFactoryFacade
+from src.pcloud.point_cloud import PointCloud
 from src.mining.miner import Miner
 from src.utils.imput.imputer import Imputer
 from src.utils.ftransf.feature_transformer import FeatureTransformer, \
@@ -14,6 +15,7 @@ from src.inout.model_writer import ModelWriter
 from src.pipeline.predictive_pipeline import PredictivePipeline
 from src.inout.predictive_pipeline_writer import PredictivePipelineWriter
 from src.inout.predictions_writer import PredictionsWriter
+from src.inout.classified_pcloud_writer import ClassifiedPcloudWriter
 import src.main.main_logger as LOGGING
 import time
 
@@ -110,10 +112,18 @@ class PipelineExecutor:
         # Load input point cloud
         in_pcloud = kwargs.get('in_pcloud', None)
         if in_pcloud is not None:
-            state.update_pcloud(
-                None, PointCloudFactoryFacade.make_from_file(in_pcloud)
-            )
-        # TODO Rethink : Handle model loading (if any)
+            if isinstance(in_pcloud, PointCloud):
+                state.update_pcloud(None, in_pcloud)
+            elif isinstance(in_pcloud, str):
+                state.update_pcloud(
+                    None, PointCloudFactoryFacade.make_from_file(in_pcloud)
+                )
+            else:
+                raise PipelineExecutorException(
+                    'PipelineExecutor.load_input received an unexpected '
+                    f'type for input point cloud: \"{type(in_pcloud)}\".'
+                )
+        # TODO Rethink : Handle model loading (if any) ?
 
     def pre_process(self, state, comp, comp_id, comps):
         """
@@ -128,7 +138,7 @@ class PipelineExecutor:
             fnames_comp = comp.model
         # Then, extract fnames
         fnames = getattr(fnames_comp, 'fnames', None)
-        if fnames is not None:  # If feature names are given
+        if fnames is not None and len(fnames) > 0:  # If feat. names are given
             if fnames[0] == "AUTO":  # If AUTO is requested
                 fnames_comp.fnames = state.fnames  # Take from state
             else:  # Otherwise
@@ -206,7 +216,8 @@ class PipelineExecutor:
                 comp,
                 new_preds=comp.predict(
                     state.pcloud, out_prefix=self.out_prefix
-                )
+                ),
+                new_model=comp.get_first_model()
             )
         elif isinstance(comp, Evaluator):
             # Handle evaluation
@@ -217,6 +228,16 @@ class PipelineExecutor:
                     out_prefix=self.out_prefix
                 )
             else:
+                # Make sure state has predictions before evaluating
+                if state.preds is None:
+                    start = time.perf_counter()
+                    state.preds = state.model.predict(state.pcloud)
+                    end = time.perf_counter()
+                    LOGGING.LOGGER.info(
+                        'Missing predictions computed before evaluation in '
+                        f'{end-start:.3f} seconds.'
+                    )
+                # Evaluate
                 comp(
                     state.preds,
                     y=state.pcloud.get_classes_vector(),
@@ -232,7 +253,6 @@ class PipelineExecutor:
                     )
             if isinstance(comp, ModelWriter):
                 comp.write(state.model, prefix=self.out_prefix)
-
             elif isinstance(comp, PredictivePipelineWriter):
                 comp.write(self.maker, prefix=self.out_prefix)
             elif isinstance(comp, PredictionsWriter):
@@ -240,6 +260,8 @@ class PipelineExecutor:
                     state.pcloud.get_features_matrix(['prediction']),
                     prefix=self.out_prefix
                 )
+            elif isinstance(comp, ClassifiedPcloudWriter):
+                comp.write(state, prefix=self.out_prefix)
             else:
                 comp.write(state.pcloud, prefix=self.out_prefix)
 

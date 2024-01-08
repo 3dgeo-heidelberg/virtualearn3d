@@ -1,6 +1,6 @@
 # ---   IMPORTS   --- #
 # ------------------- #
-from abc import ABC
+from abc import ABC, abstractmethod
 from src.model.model import Model
 import src.main.main_logger as LOGGING
 from src.utils.dict_utils import DictUtils
@@ -216,6 +216,23 @@ class ClassificationModel(Model, ABC):
                 class_distribution_path=self.training_class_distribution_plot_path
             ).plot()
 
+    # ---  PREDICTION METHODS  --- #
+    # ---------------------------- #
+    @abstractmethod
+    def _predict(self, X, zout=None):
+        """
+        Extend the :meth:`model.Model._predict` method to support the predicted
+        probabilities as output.
+
+        See :class:`.Model` and :meth:`model.Model._predict`.
+
+        :param zout: It can be given as an empty list in which case its last
+            element after the call will contain the predicted probabilities
+            for each class.
+        :type zout: list
+        """
+        pass
+
     # ---   UTIL METHODS   --- #
     # ------------------------ #
     @staticmethod
@@ -236,6 +253,7 @@ class ClassificationModel(Model, ABC):
         :return: The state's dictionary of the object.
         :rtype: dict
         """
+        # Get state dictionary
         state = self.__dict__.copy()
         # Remove metrics (because they use lambda functions)
         if state.get('autoval_metrics', None) is not None:
