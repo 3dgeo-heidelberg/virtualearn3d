@@ -74,7 +74,10 @@ as shown in the JSON below:
             "num_pwise_feats": 16,
             "pre_processing": {
                 "pre_processor": "furthest_point_subsampling",
+                "to_unit_sphere": false,
+                "support_strategy": "grid",
                 "support_chunk_size": 2000,
+                "support_strategy_fast": false,
                 "_training_class_distribution": [1000, 1000, 1000, 1000, 1000],
                 "center_on_pcloud": true,
                 "num_points": 4096,
@@ -130,6 +133,17 @@ as shown in the JSON below:
             ],
             "tnet_pre_filters_spec": [32, 64, 128],
             "tnet_post_filters_spec": [128, 64, 32],
+            "final_shared_mlps": [512, 256, 128],
+            "skip_link_features_X": false,
+            "include_pretransf_feats_X": false,
+            "include_transf_feats_X": true,
+            "include_postransf_feats_X": false,
+            "include_global_feats_X": true,
+            "skip_link_features_F": false,
+            "include_pretransf_feats_F": false,
+            "include_transf_feats_F": true,
+            "include_postransf_feats_F": false,
+            "include_global_feats_F": true,
             "model_handling": {
                 "summary_report_path": "*/model_summary.log",
                 "training_history_dir": "*/training_eval/history",
@@ -157,7 +171,6 @@ as shown in the JSON below:
             "compilation_args": {
                 "optimizer": {
                     "algorithm": "SGD",
-                    "_learning_rate": 1e-3,
                     "learning_rate": {
                         "schedule": "exponential_decay",
                         "schedule_args": {
@@ -266,7 +279,68 @@ for class weights. The class weights can be used to handle data imbalance.
 
     -- ``tnet_post_filters_spec``
         A list of integers where each integer specifies the output dimensionality
-        of a danse layer (MLP) placed after the global pooling.
+        of a dense layer (MLP) placed after the global pooling.
+
+    -- ``final_shared_mlps``
+        A list of integers where each integer specifies the output dimensionality
+        of the shared MLP (i.e., 1D Conv with unitary window and stride). These
+        are called final because they are applied immediately before the
+        convolution that reduces the number of point-wise features that
+        constitute the input of the final layer.
+
+    -- ``skip_link_features_X``
+        Whether to propagate the input structure space to the final
+        concatenation of features (True) or not (False).
+
+    -- ``include_pretransf_feats_X``
+        Whether to propagate the values of the hidden layers that processed
+        the structure space before the second transformation block to the final
+        concatenation of features (True) or not (False).
+
+    -- ``include_transf_feats_X``
+        Whether to propagate the values of the hidden layers that processed the
+        structure space in the second transformation block to the final
+        concatenation of features (True) or not (False).
+
+    -- ``include_postransf_feats_X``
+        Whether to propagate the values of the hidden layers that processed
+        the structure space after the second transformation block to the
+        final concatenation of features (True) or not (False).
+
+    -- ``include_global_feats_X``
+        Whether to propagate the global features derived from the structure
+        space to the final concatenation of features (True) or not (False).
+
+    -- ``skip_link_features_F``
+        Whether to propagate the input feature space to the final
+        concatenation of features (True) or not (False).
+
+    -- ``include_pretransf_feats_F``
+        Whether to propagate the values of the hidden layers that processed
+        the feature space before the second transformation block to the final
+        concatenation of features (True) or not (False).
+
+    -- ``include_transf_feats_F``
+        Whether to propagate the values of the hidden layers that processed the
+        feature space in the second transformation block to the final
+        concatenation of features (True) or not (False).
+
+    -- ``include_postransf_feats_F``
+        Whether to propagate the values of the hidden layers that processed
+        the feature space after the second transformation block to the
+        final concatenation of features (True) or not (False).
+
+    -- ``include_global_feats_F``
+        Whether to propagate the global features derived from the feature
+        space to the final concatenation of features (True) or not (False).
+
+    -- ``features_structuring_layer``  **EXPERIMENTAL**
+        Specification for the :class:`.FeaturesStructuringLayer` that uses
+        radial basis functions to transform the features. This layer is
+        experimental and it is not part of typical PointNet-like architectures.
+        Users are strongly encouraged to avoid using this layer. At the moment
+        it is experimental and should only be used for development and research
+        purposes.
 
     -- ``architecture_graph_path``
         Path where the plot representing the neural network's architecture wil be
@@ -465,7 +539,10 @@ below:
 
     "pre_processing": {
         "pre_processor": "furthest_point_subsampling",
+        "to_unit_sphere": false,
+        "support_strategy": "grid",
         "support_chunk_size": 2000,
+        "support_strategy_fast": false,
         "training_class_distribution": [10000, 10000],
         "center_on_pcloud": true,
         "num_points": 8192,
@@ -495,10 +572,32 @@ cloud.
 
 **Arguments**
 
+-- ``to_unit_sphere``
+    Whether to transform the structure space (spatial coordinates) of each
+    receptive field (True) to the unit sphere (i.e., the distance between the center
+    point and its furthest neighbor must be one) or not (False).
+
 -- ``support_chunk_size``
     When given and distinct than zero, it will define the chunk size. The
     chunk size will be used to group certain tasks into chunks with a max
     size to prevent memory exhaustion.
+
+-- ``support_strategy``
+    Either ``"grid"`` to find the support points as the closest neighbors to
+    the nodes of a grid, or ``"fps"`` to select the support points through
+    furthest point subsampling. The grid covers the space inside the minimum
+    axis-aligned bounding box representing the point cloud's boundary.
+
+-- ``support_strategy_num_points``
+    When using the ``"fps"`` support strategy, this parameter governs the
+    number of furthest points that must be considered.
+
+-- ``support_strategy_fast``
+    When using the ``"fps"`` support strategy, setting this parameter to true
+    will use a significantly faster random sampling-based approximation of the
+    furthest point subsampling strategy. Note that this approximation is only
+    reliable for high enough values of ``"support_strategy_num_points"``
+    (at least thousands).
 
 -- ``training_class_distribution``
     When given, the support points to be considered as the centers of the
@@ -844,7 +943,7 @@ The JSON below corresponds to the described training pipeline.
                         "cooldown": 5,
                         "min_delta": 0.01,
                         "min_lr": 1e-6
-                    },
+                    }
                 },
                 "compilation_args": {
                     "optimizer": {

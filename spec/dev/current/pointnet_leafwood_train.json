@@ -165,7 +165,6 @@
 			],
 			"tnet_pre_filters_F_spec": [64, 128],
 			"tnet_post_filters_F_spec": [128, 64],
-			
 			"final_shared_mlps": [512, 256, 128],
 			"skip_link_features_X": false,
 			"include_pretransf_feats_X": false,

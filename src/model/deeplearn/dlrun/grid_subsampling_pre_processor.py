@@ -270,6 +270,11 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             class_distr is given.
         :param support_strategy_num_points: The number of points to be
             considered when using a furthest point sampling support strategy.
+        :param support_strategy_fast: Whether to use a random sampling strategy
+            to approximate the FPS (True), or not (False). The approximation
+            strategy is significantly faster than the exhaustive FPS
+            computation, but it only converges for sets with enough points
+            (at least thousands of points).
         :param nthreads: How many threads use for parallel computations, if
             any.
         :return: The support points as a matrix where rows are support points
