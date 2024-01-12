@@ -69,8 +69,16 @@ class MemToFileProxy:
         pcloud.las = laspy.read(self.proxy_file)  # TODO Rethink : Alternative
         #pcloud.las = joblib.load(self.proxy_file)  # TODO Rethink : Baseline
         # Discard binary proxy file
-        self.proxy_file.close()
-        self.proxy_file = None
+        self.release()
+
+    def release(self):
+        """
+        Discards the proxy file, if any. This means closing the file and
+        removing the reference.
+        """
+        if self.proxy_file is not None:
+            self.proxy_file.close()
+            self.proxy_file = None
 
     def is_dump_recommended(self, pcloud):
         """

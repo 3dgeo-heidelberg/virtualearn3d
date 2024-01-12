@@ -1,5 +1,6 @@
 # ---   IMPORTS   --- #
 # ------------------- #
+from src.utils.ftransf.explicit_selector import ExplicitSelector
 from src.utils.ftransf.variance_selector import VarianceSelector
 from src.utils.ftransf.kbest_selector import KBestSelector
 from src.utils.ftransf.percentile_selector import PercentileSelector
@@ -37,6 +38,8 @@ class FtransfUtils:
             )
         # Check feature transformer class
         ftransf_low = ftransf.lower()
+        if ftransf_low == 'explicitselector':
+            return ExplicitSelector
         if ftransf_low == 'varianceselector':
             return VarianceSelector
         if ftransf_low == 'kbestselector':

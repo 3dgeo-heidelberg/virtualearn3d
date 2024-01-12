@@ -24,6 +24,22 @@ class PointCloudException(VL3DException):
         super().__init__(message)
 
 
+# ---  CONSTANTS  --- #
+# ------------------- #
+"""
+The names of the features that are not considered extra dimensions.
+These features must not be removed when calling the remove_features method
+as this is incompatible with the LASPY backend used to handle point clouds.
+"""
+NON_EXTRA_DIMS_FEATURES = [
+    'intensity', 'return_number', 'number_of_returns',
+    'scan_direction_flag', 'edge_of_flight_line', 'classification',
+    'synthetic', 'key_point', 'withheld',
+    'scan_angle_rank', 'user_data', 'point_source_id',
+    'gps_time', 'red', 'green', 'blue'
+]
+
+
 # ---   CLASS   --- #
 # ----------------- #
 class PointCloud:
@@ -244,7 +260,7 @@ class PointCloud:
             each new feature. If it is a single type, then all feature are
             assumed to have the same type.
         :return: The updated point cloud.
-        :rtype: :class:`PointCloud`
+        :rtype: :class:`.PointCloud`
         """
         self.proxy_load()
         # Extract useful information
@@ -273,15 +289,35 @@ class PointCloud:
                 laspy.ExtraBytesParams(name=fname, type=ftypes[i])
             )
         # Create the new point cloud
-        las = laspy.LasData(self.las.header)
-        las.points = self.las.points.copy()
-        las.add_extra_dims(extra_bytes)
-        for i in range(nfeats):
-            las[fnames[i]] = feats[:, i]
+        #las = laspy.LasData(self.las.header)  # TODO Restore : Legacy
+        print('Copying LAS points ...')  # TODO Remove
+        #las.points = self.las.points.copy()  # TODO Restore : Legacy
+        print('LAS points copied!')  # TODO Remove
         # Replace the old point cloud with the new one
-        self.las = las
+        #self.las, las = las, None  # TODO Restore : Legacy
+        print('LAS replaced!')  # TODO Remove
+        # Update the new point cloud
+        self.las.add_extra_dims(extra_bytes)
+        print('Added LAS extra bytes!')  # TODO Remove
+        for i in range(nfeats):
+            self.las[fnames[i]] = feats[:, i]
+        print('Updated features!')  # TODO Remove
         # Return
         return self
+
+    def remove_features(self, fnames):
+        """
+        Remove features from the point cloud.
+
+        :param fnames: The name of the features to be removed.
+        :type fnames: list or tuple (of str)
+        :return: The updated point cloud.
+        :rtype: :class:`.PointCloud`
+        """
+        fnames = [  # Filter out names of non-extra dims features
+            fname for fname in fnames if fname not in NON_EXTRA_DIMS_FEATURES
+        ]
+        self.las.remove_extra_dims(fnames)  # Remove the features
 
     def preserve_mask(self, mask):
         """
@@ -323,6 +359,17 @@ class PointCloud:
         self.proxy_load()
         self.las.classification = y
         return self
+
+    def clear_data(self, proxy_release=False):
+        """
+        Remove all the data from the point cloud. Note that this means removing
+        the data from memory. In case the data is stored in a proxy file
+        it can be restored (from file to memory) when needed. To also remove
+        the proxy file, ``proxy_release=True`` must be passed explicitly.
+        """
+        self.las = None
+        if proxy_release:
+            self.proxy.release()
 
     # ---   PROXY METHODS   --- #
     # ------------------------- #
