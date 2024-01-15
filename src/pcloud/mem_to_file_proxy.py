@@ -32,7 +32,7 @@ class MemToFileProxy:
     """
     # ---   INIT   --- #
     # ---------------- #
-    def __init__(self, mem_check_threshold=0.00034):
+    def __init__(self, mem_check_threshold=0.34):
         # General attributes
         self.mem_check_threshold = mem_check_threshold
         # Cache-like attributes
@@ -50,8 +50,7 @@ class MemToFileProxy:
         # Create binary file
         self.proxy_file = tempfile.TemporaryFile("a+b")
         # Dump memory to binary proxy file
-        pcloud.las.write(self.proxy_file)  # TODO Rethink : Alternative
-        #joblib.dump(pcloud.las, self.proxy_file)  # TODO Rethink : Baseline
+        pcloud.las.write(self.proxy_file)
         self.proxy_file.flush()
         # Remove data from point cloud
         pcloud.las = None
@@ -66,8 +65,7 @@ class MemToFileProxy:
         """
         # Read from binary file
         self.proxy_file.seek(0)  # Jump to the beginning
-        pcloud.las = laspy.read(self.proxy_file)  # TODO Rethink : Alternative
-        #pcloud.las = joblib.load(self.proxy_file)  # TODO Rethink : Baseline
+        pcloud.las = laspy.read(self.proxy_file)
         # Discard binary proxy file
         self.release()
 

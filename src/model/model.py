@@ -179,7 +179,8 @@ class Model:
         """
         if X is None:
             X = pcloud.get_features_matrix(self.fnames)  # Often named F instead
-        pcloud.proxy_dump()  # Save memory from point cloud data if necessary
+        if pcloud is not None:
+            pcloud.proxy_dump()  # Save memory from pcloud data if necessary
         if self.imputer is not None:
             X = self.imputer.impute(X)
         return self._predict(X)

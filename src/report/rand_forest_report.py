@@ -60,13 +60,13 @@ class RandForestReport(Report):
         # --- Introduction --- #
         s = 'Random forest and importance from training features:\n'
         # --- Head --- #
-        s += 'FEATURE                 , FEATURE IMPORTANCE  '
+        s += 'FEATURE                          , FEATURE IMPORTANCE  '
         if self.permutation_importance_mean is not None:
             s += ', PERM. IMP. MEAN     , PERM. IMP. STDEV'
         # --- Body --- #
         sorted_indices = np.argsort(self.importance)
         for i in sorted_indices:
-            s += f'\n{self.fnames[i]:24.24}, {self.importance[i]:20.6f}'
+            s += f'\n{self.fnames[i]:32.32}, {self.importance[i]:20.6f}'
             if self.permutation_importance_mean is not None:
                 s += f', {self.permutation_importance_mean[i]:20.6f}, '\
                     f'{self.permutation_importance_stdev[i]:20.6f}'
