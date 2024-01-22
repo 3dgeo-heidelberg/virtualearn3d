@@ -288,20 +288,10 @@ class PointCloud:
             extra_bytes.append(
                 laspy.ExtraBytesParams(name=fname, type=ftypes[i])
             )
-        # Create the new point cloud
-        #las = laspy.LasData(self.las.header)  # TODO Restore : Legacy
-        print('Copying LAS points ...')  # TODO Remove
-        #las.points = self.las.points.copy()  # TODO Restore : Legacy
-        print('LAS points copied!')  # TODO Remove
-        # Replace the old point cloud with the new one
-        #self.las, las = las, None  # TODO Restore : Legacy
-        print('LAS replaced!')  # TODO Remove
-        # Update the new point cloud
+        # Update the point cloud
         self.las.add_extra_dims(extra_bytes)
-        print('Added LAS extra bytes!')  # TODO Remove
         for i in range(nfeats):
             self.las[fnames[i]] = feats[:, i]
-        print('Updated features!')  # TODO Remove
         # Return
         return self
 
