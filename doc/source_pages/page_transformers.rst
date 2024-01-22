@@ -588,6 +588,55 @@ example corresponding to a percentile selection on some geometric features).
     *   - anisotropy_r0.1
 
 
+
+
+.. _Explicit selector:
+
+Explicit selector
+---------------------
+
+The :class:`.ExplicitSelector` preserves or discards the requested features,
+thus effectively updating the point cloud in the
+:ref:`pipeline's state <Pipelines page>` (see :class:`.SimplePipelineState`).
+This feature transformation can be especially useful to release memory
+resources by discarding features that are not going to be used by other
+components later on.
+A :class:`.ExplicitSelector` can be defined inside a pipeline using the JSON
+below:
+
+.. code-block:: json
+
+    {
+        "feature_transformer": "ExplicitSelector",
+        "fnames": [
+            "floor_distance_r50_0_sep0_35"
+            "scan_angle_rank_mean_r5_0",
+            "verticality_r25_0"
+        ],
+        "preserve": true
+    },
+
+The JSON above defines a :class:`.ExplicitSelector` that preserves the
+floor distance, mean scan angle, and verticality features. In doing so, all the
+other features are discarded. After calling this selector, only the preserved
+features will be available through the pipeline's state.
+
+
+**Arguments**
+
+--  ``fnames``
+    The names of the features to be either preserved or discarded.
+
+--  ``preserve``
+    The boolean flag that governs whether the given features must
+    be preserved (``true``) or discarded (``false``).
+
+
+**Output**
+
+A transformed point cloud is generated considering only the preserved features.
+
+
 .. _PCA transformer:
 
 PCA transformer

@@ -41,15 +41,16 @@ class PpsSequential(PipelinePredictiveStrategy):
         :meth:`pipeline_predictive_strategy.PipelinePredictiveStrategy.predict`
         .
         """
+        num_points = pcloud.get_num_points()
         LOGGING.LOGGER.info(
-            f'Sequential predictive pipeline on {pcloud.get_num_points()} '
+            f'Sequential predictive pipeline on {num_points} '
             'points ...'
         )
         start = time.perf_counter()
         preds = self._predict(pipeline, pcloud)
         end = time.perf_counter()
         LOGGING.LOGGER.info(
-            f'Sequential predictive pipeline on {pcloud.get_num_points()} '
+            f'Sequential predictive pipeline on {num_points} '
             f'points computed in {end-start:.3f} seconds.'
         )
         return preds
@@ -92,7 +93,9 @@ class PpsSequential(PipelinePredictiveStrategy):
                         'support model training.'
                     )
                 # Handle model prediction
+                print('PPSSequential predicting ...')  # TODO Remove
                 preds = comp(pcloud=pcloud, out_prefix=self.out_path)
+                print('PPSSequential predicted!')  # TODO Remove
             elif isinstance(comp, Imputer):  # Handle imputer
                 pcloud = comp.impute_pcloud(pcloud)
             elif isinstance(comp, FeatureTransformer):  # Handle feat. transf.
@@ -114,12 +117,17 @@ class PpsSequential(PipelinePredictiveStrategy):
                 'The sequential pipeline predictive strategy failed to '
                 'compute predictions.'
             )
+        # Update given state point cloud, if any
+        if self.external_state is not None:
+            print('PPSSequential updating external state ...')  # TODO Remove
+            self.external_state.pcloud.clear_data(proxy_release=True)
+            self.external_state.pcloud = pcloud
+            print('PPSSequential updated external state!')  # TODO Remove
         # Add predictions to point cloud
+        print('PPSSequential adding features to point cloud ...')  # TODO Remove
         pcloud.add_features(
             ['prediction'], preds.reshape((-1, 1)), ftypes=preds.dtype
         )
-        # Update given state point cloud, if any
-        if self.external_state is not None:
-            self.external_state.pcloud = pcloud
+        print('PPSSequential added features to point cloud!')  # TODO Remove
         # Return
         return preds

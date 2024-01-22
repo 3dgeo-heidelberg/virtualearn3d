@@ -169,5 +169,8 @@ doc/build
 out/
 *.log.*
 
+# Profiling files
+memray*
+
 # Custom and temporary scripts
 myvl3d.sh

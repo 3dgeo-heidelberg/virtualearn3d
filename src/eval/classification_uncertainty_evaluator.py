@@ -321,6 +321,7 @@ class ClassificationUncertaintyEvaluator(Evaluator):
                     'available.'
                 )
         # Obtain evaluation
+        pcloud.proxy_dump()  # Save memory from point cloud data if necessary
         ev = self.eval(Zhat, X=X, y=y, yhat=yhat, F=F)
         out_prefix = kwargs.get('out_prefix', None)
         if ev.can_report() and self.report_path is not None:

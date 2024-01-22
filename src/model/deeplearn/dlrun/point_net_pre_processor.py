@@ -44,7 +44,7 @@ class PointNetPreProcessor:
             self.pre_processor = FurthestPointSubsamplingPreProcessor(**kwargs)
         else:  # Unexpected pre-processor
             raise DeepLearningException(
-                'PointNetPreprocessor received an unexpected pre_processor_'
+                'PointNetPreProcessor received an unexpected pre_processor_'
                 f'_type: "{self.pre_processor_type}"'
             )
 
@@ -67,7 +67,6 @@ class PointNetPreProcessor:
             reference values for those points.
         """
         return self.pre_processor(inputs)
-
 
     # ---   POINT-NET METHODS   --- #
     # ----------------------------- #
