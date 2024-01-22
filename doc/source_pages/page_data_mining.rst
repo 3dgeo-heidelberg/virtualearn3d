@@ -461,6 +461,10 @@ neighbor.
     An optional list with the name of the output features. When not given, the
     output features will be named as specified by ``fnames``.
 
+-- ``y_default``
+    An optional value to be considered as the default label/class. If not
+    given, it will be the max integer supported by the system.
+
 -- ``pcloud_pool``
     A list with the paths to the point clouds composing the pool.
 

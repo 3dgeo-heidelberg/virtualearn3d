@@ -29,6 +29,9 @@ class TakeClosestMiner(Miner):
     :ivar frenames: The names of the features in the output point cloud. When
         not given (i.e., None), they will be the feature names.
     :vartype frenames: list of str
+    :ivar y_default: The default value for classification labels. If not given,
+        it is the max value for integers ``np.iinfo(int).max``.
+    :vartype y_default: int
     :ivar pcloud_pool: The list of paths to the point clouds composing the
         pool.
     :vartype pcloud_pool: list of str
@@ -55,6 +58,7 @@ class TakeClosestMiner(Miner):
         kwargs = {
             'fnames': spec.get('fnames', None),
             'frenames': spec.get('frenames', None),
+            'y_default': spec.get('y_default', None),
             'pcloud_pool': spec.get('pcloud_pool', None),
             'distance_upper_bound': spec.get('distance_upper_bound', None),
             'nthreads': spec.get('nthreads', None)
@@ -79,6 +83,7 @@ class TakeClosestMiner(Miner):
         # Basic attributes of the TakeClosestMiner
         self.fnames = kwargs.get('fnames', None)
         self.frenames = kwargs.get('frenames', None)
+        self.y_default = kwargs.get('y_default', np.iinfo(int).max)
         self.pcloud_pool = kwargs.get('pcloud_pool', None)
         self.distance_upper_bound = kwargs.get('distance_upper_bound', np.inf)
         self.nthreads = kwargs.get('nthreads', -1)
@@ -131,7 +136,7 @@ class TakeClosestMiner(Miner):
         F = np.empty((X.shape[0], len(fnames)), dtype=float)
         F.fill(np.nan)
         y = np.empty(X.shape[0], dtype=int)
-        y.fill(np.iinfo(int).max)
+        y.fill(self.y_default)
         # Find features from closest neighbor in pool
         for pcloud_path in self.pcloud_pool:
             # Read input point cloud
