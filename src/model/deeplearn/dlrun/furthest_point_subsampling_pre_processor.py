@@ -65,7 +65,7 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
         self.num_points = kwargs.get('num_points', 8000)
         self.num_encoding_neighbors = kwargs.get('num_encoding_neighbors', 3)
         self.fast = kwargs.get('fast', False)
-        self.neighborhood_spec = kwargs.get('neighborhood', None)
+        self.neighborhood_spec = kwargs.get('neighborhood', None)  # Support
         if self.neighborhood_spec is None:
             raise DeepLearningException(
                 'The FurthestPointSubsamplingPreProcessor did not receive '

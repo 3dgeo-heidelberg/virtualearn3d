@@ -9,11 +9,13 @@ from src.model.deeplearn.dlrun.furthest_point_subsampling_pre_processor import \
     FurthestPointSubsamplingPreProcessor
 from src.utils.ptransf.receptive_field_hierarchical_fps import \
     ReceptiveFieldHierarchicalFPS  # TODO Rethink : Implement ReceptiveFieldHierarchicalFPS
+from src.utils.neighborhood.support_neighborhoods import SupportNeighborhoods
 import src.main.main_logger as LOGGING
 import scipy
 import numpy as np
 import joblib
 import time
+
 
 # ---   CLASS   --- #
 # ----------------- #
@@ -84,6 +86,7 @@ class HierarchicalFPSPreProcecssor(ReceptiveFieldPreProcessor):
         self.num_encoding_neighbors_per_depth = kwargs.get(
             'num_encoding_neighbors_per_depth', [1 for i in range(self.depth)]
         )
+        self.neighborhood_spec = kwargs.get('neighborhood', None)  # Support
         # Validate attributes
         if(
             self.num_downsampling_neighbors is None or
@@ -155,6 +158,11 @@ class HierarchicalFPSPreProcecssor(ReceptiveFieldPreProcessor):
                 f'{len(self.num_upsampling_neighbors)} upsampling '
                 f'neighborhoods but depth is {self.depth} '
                 '(they MUST be equal).'
+            )
+        if self.neighborhood_spec is None:
+            raise DeepLearningException(
+                'The HierarchicalFPSPreProcessor did not receive any '
+                'neighborhood specification.'
             )
 
     # ---   RUN/CALL   --- #
@@ -348,10 +356,17 @@ class HierarchicalFPSPreProcecssor(ReceptiveFieldPreProcessor):
         ))
 
     def find_neighborhood(self, X, y=None):
-        r"""
-        Find the requested neighborhoods
-        :param X:
-        :param y:
-        :return:
         """
-        pass  # TODO Rethink : First, abstract FurestPointSubsamplingPreProcessor.find_neighborhood to utils.neighborhood.support_neighborhoods
+        See :class:`.FurthestPointSubsamplingPreProcessor` and
+        :meth:`furthest_point_subsampling_pre_processor.FurthestPointSubsamplingPreProcessor.find_neighborhood`.
+        """
+        return SupportNeighborhoods(
+            self.neighborhood_spec,
+            support_strategy=self.support_strategy,
+            support_strategy_num_points=self.support_strategy_num_points,
+            support_strategy_fast=self.support_strategy_fast,
+            support_chunk_size=self.support_chunk_size,
+            training_class_distribution=self.training_class_distribution,
+            center_on_pcloud=self.center_on_pcloud,
+            nthreads=self.nthreads
+        ).compute(X, y=y)
