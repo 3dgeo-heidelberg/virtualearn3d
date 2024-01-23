@@ -3,9 +3,14 @@
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
 from src.model.deeplearn.dlrun.receptive_field_pre_processor import \
     ReceptiveFieldPreProcessor
+from src.model.deeplearn.dlrun.grid_subsampling_pre_processor import \
+    GridSubsamplingPreProcessor
+from src.model.deeplearn.dlrun.furthest_point_subsampling_pre_processor import \
+    FurthestPointSubsamplingPreProcessor
 from src.utils.ptransf.receptive_field_hierarchical_fps import \
     ReceptiveFieldHierarchicalFPS  # TODO Rethink : Implement ReceptiveFieldHierarchicalFPS
 import src.main.main_logger as LOGGING
+import scipy
 import numpy as np
 import joblib
 import time
@@ -46,6 +51,10 @@ class HierarchicalFPSPreProcecssor(ReceptiveFieldPreProcessor):
         stochastic approximation (faster) or the exhaustive furthest point
         sampling computation (slower).
     :vartype fast_flag_per_depth: list
+    :ivar num_encoding_neighbors_per_depth: List of integers where the element
+        i gives the number of neighbors that must be considered to encode
+        a value for each point in the receptive field.
+    :vartype num_encoding_neighbors_per_depth: list
     """
     # ---   INIT  --- #
     # --------------- #
@@ -71,6 +80,9 @@ class HierarchicalFPSPreProcecssor(ReceptiveFieldPreProcessor):
         self.depth = len(self.num_points_per_depth)
         self.fast_flag_per_depth = kwargs.get(
             'fast_flag_per_depth', [False for i in range(self.depth)]
+        )
+        self.num_encoding_neighbors_per_depth = kwargs.get(
+            'num_encoding_neighbors_per_depth', [1 for i in range(self.depth)]
         )
         # Validate attributes
         if(
@@ -105,6 +117,18 @@ class HierarchicalFPSPreProcecssor(ReceptiveFieldPreProcessor):
             raise DeepLearningException(
                 'The HierarchicalFPSPreProcessor did not receive '
                 'a non-empty specification for the number of points per depth.'
+            )
+        if(
+            self.num_encoding_neighbors_per_depth is None or
+            not isinstance(
+                self.num_encoding_neighbors_per_depth, (list, tuple, np.ndarray)
+            ) or
+            len(self.num_encoding_neighbors_per_depth) < 1
+        ):
+            raise DeepLearningException(
+                'The HierarchicalFPSPreProcessor did not receive '
+                'a non-empty specification for the number of encoding '
+                'neighbors per depth.'
             )
         if self.depth != len(self.fast_flag_per_depth):
             raise DeepLearningException(
@@ -194,43 +218,36 @@ class HierarchicalFPSPreProcecssor(ReceptiveFieldPreProcessor):
             sup_X, I, self.num_points_per_depth[0]
         )
         # Export support points if requested
-        # TODO Rethink : Implement
+        if inputs.get('plots_and_reports', True):
+            if(
+                inputs.get('training_support_points', False) and
+                self.training_support_points_report_path is not None
+            ):
+                GridSubsamplingPreProcessor.support_points_to_file(
+                    sup_X,
+                    self.training_support_points_report_path
+                )
+            if(
+                inputs.get('support_points', False) and
+                self.support_points_report_path is not None
+            ):
+                GridSubsamplingPreProcessor.support_points_to_file(
+                    sup_X,
+                    self.support_points_report_path
+                )
         self.last_call_neighborhoods = I
-        # Prepare receptive field
+        # Prepare receptive fields
         self.last_call_receptive_fields = [
             ReceptiveFieldHierarchicalFPS(
                 num_points_per_depth=self.num_points_per_depth,
-                num_encoding_neighbors=self.num_encoding_neighbors,
+                num_encoding_neighbors=self.num_encoding_neighbors_per_depth,
                 fast_flag_per_depth=self.fast_flag_per_depth
             )
             for Ii in I
         ]
-        # Extract downsampling neighborhoods
-        self.last_call_receptive_fields = joblib.Parallel(
-            n_jobs=self.nthreads
-        )(
-            joblib.delayed(
-                self.last_call_receptive_fields[i].fit
-            )(
-                X[Ii], sup_X[i]
-            )
-            for i, Ii in enumerate(I)
-        )
+        self.fit_receptive_fields(X, sup_X, I)
         # Neighborhoods ready to be fed into the neural network
-        if self.to_unit_sphere:
-            Xout = np.array([
-                ReceptiveFieldPreProcessor.transform_to_unit_sphere(
-                    self.last_call_receptive_fields[i].centroids_from_points(
-                        None
-                    )
-                )
-                for i in range(len(I))
-            ])
-        else:
-            Xout = np.array([
-                self.last_call_receptive_fields[i].centroids_from_points(None)
-                for i in range(len(I))
-            ])
+        Xout = self.handle_unit_sphere_transform(I)
         end = time.perf_counter()
         LOGGING.LOGGER.info(
             'The hierarchical FPS pre processor generated '
@@ -239,15 +256,18 @@ class HierarchicalFPSPreProcecssor(ReceptiveFieldPreProcessor):
             f'depth: {self.num_points_per_depth}'
         )
         # Features ready to be fed into the neural network
-        rv = lambda rfi, F: [
-            rfi.reduce_values(None, F[:, j]) for j in range(F.shape[1])
-        ]
-        Fout = np.array(joblib.Parallel(n_jobs=self.nthreads)(
-            joblib.delayed(rv)(
-                self.last_call_receptive_fields[i], F
+        Fout = self.handle_features_reduction(
+            F,
+            len(I),  # number of neighborhoods
+            lambda rfi, Xouti, F: [  # reduce function f(rf_i, Xout_i, F)
+                rfi.reduce_values(None, F[:, j]) for j in range(F.shape[1])
+            ]
+        )
+        if Fout is None:
+            raise DeepLearningException(
+                'HierarchicalFPSPreProcessor yielded a null Fout (None). '
+                'This MUST not happen.'
             )
-            for i in range(len(I))
-        )).transpose([0, 2, 1])
         # Neighborhoods for hierarchical representation
         Dout = [
             self.last_call_receptive_fields[i].get_downsampling_matrices()
@@ -276,3 +296,62 @@ class HierarchicalFPSPreProcecssor(ReceptiveFieldPreProcessor):
         )
         # Return without labels
         return [Xout, Fout] + Dout + Nout + Uout
+
+    # ---   UTIL METHODS   --- #
+    # ------------------------ #
+    @staticmethod
+    def clean_support_neighborhoods(sup_X, I, num_points):
+        """
+        See :class:`.FurthestPointSubsamplingPreProcessor` and
+        :meth:`furthest_point_subsampling_pre_processor.FurthestPointSubsamplingPreProcessor.clean_support_neighborhoods`.
+        """
+        return FurthestPointSubsamplingPreProcessor.clean_support_neighborhoods(
+            sup_X, I, num_points
+        )
+
+    def reduce_labels(self, X_rf, y, I=None):
+        r"""
+        Reduce the given labels :math:`\pmb{y} \in \mathbb{Z}_{\geq 0}^{m}`
+        to the receptive field labels
+        :math:`\pmb{y}_{\mathrm{rf}} \in \mathbb{Z}_{\geq 0}^{R}`.
+
+        :param X_rf: The matrices of coordinates representing the receptive
+            fields.
+        :type X_rf: :class:`np.ndarray`
+        :param y: The labels of the original point cloud that must be reduced
+            to the receptive fields.
+        :type y: :class:`np.ndarray`
+        :param I: The list of neighborhoods. Each element of I is itself a list
+            of indices that represents the neighborhood in the point cloud
+            that corresponds to the point in the receptive field.
+        :type I: list
+        :return: The reduced labels for each receptive field.
+        """
+        # Handle automatic neighborhoods from cache
+        if I is None:
+            I = self.last_call_neighborhoods
+        # Validate neighborhoods are given
+        if I is None or len(I) < 1:
+            raise DeepLearningException(
+                'HierarchicalFPSPreProcessor cannot reduce labels '
+                'because no neighborhood indices were given.'
+            )
+        # Compute and return the reduced labels
+        return np.array(joblib.Parallel(n_jobs=self.nthreads)(
+            joblib.delayed(
+                self.last_call_receptive_fields[i].reduce_values
+            )(
+                X_rf[i],
+                y[Ii],
+                reduce_f=lambda x: scipy.stats.mode(x)[0]
+            ) for i, Ii in enumerate(I)
+        ))
+
+    def find_neighborhood(self, X, y=None):
+        r"""
+        Find the requested neighborhoods
+        :param X:
+        :param y:
+        :return:
+        """
+        pass  # TODO Rethink : First, abstract FurestPointSubsamplingPreProcessor.find_neighborhood to utils.neighborhood.support_neighborhoods

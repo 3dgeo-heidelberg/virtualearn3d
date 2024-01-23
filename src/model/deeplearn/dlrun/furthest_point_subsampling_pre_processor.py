@@ -6,8 +6,8 @@ from src.model.deeplearn.dlrun.receptive_field_pre_processor import \
 from src.model.deeplearn.dlrun.grid_subsampling_pre_processor import \
     GridSubsamplingPreProcessor
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
+from src.utils.neighborhood.support_neighborhoods import SupportNeighborhoods
 import src.main.main_logger as LOGGING
-from scipy.spatial import KDTree as KDT
 import scipy.stats
 import numpy as np
 import joblib
@@ -105,24 +105,8 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             )
         self.last_call_neighborhoods = I
         # Export support points if requested
-        if inputs.get('plots_and_reports', True):
-            if(
-                inputs.get('training_support_points', False) and
-                self.training_support_points_report_path is not None
-            ):
-                GridSubsamplingPreProcessor.support_points_to_file(
-                    sup_X,
-                    self.training_support_points_report_path
-                )
-            if(
-                inputs.get('support_points', False) and
-                self.support_points_report_path
-            ):
-                GridSubsamplingPreProcessor.support_points_to_file(
-                    sup_X,
-                    self.support_points_report_path
-                )
-        # Prepare receptive field
+        self.export_support_points(inputs, sup_X)
+        # Prepare receptive fields
         self.last_call_receptive_fields = [
             ReceptiveFieldFPS(
                 num_points=self.num_points,
@@ -131,31 +115,9 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             )
             for Ii in I
         ]
-        self.last_call_receptive_fields = joblib.Parallel(
-            n_jobs=self.nthreads
-        )(
-            joblib.delayed(
-                self.last_call_receptive_fields[i].fit
-            )(
-                X[Ii], sup_X[i]
-            )
-            for i, Ii in enumerate(I)
-        )
+        self.fit_receptive_fields(X, sup_X, I)
         # Neighborhoods ready to be fed into the neural network
-        if self.to_unit_sphere:
-            Xout = np.array([
-                ReceptiveFieldPreProcessor.transform_to_unit_sphere(
-                    self.last_call_receptive_fields[i].centroids_from_points(
-                        None
-                    )
-                )
-                for i in range(len(I))
-            ])
-        else:
-            Xout = np.array([
-                self.last_call_receptive_fields[i].centroids_from_points(None)
-                for i in range(len(I))
-            ])
+        Xout = self.handle_unit_sphere_transform(I)
         end = time.perf_counter()
         LOGGING.LOGGER.info(
             'The furthest point subsampling pre processor generated '
@@ -163,17 +125,13 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             'each.'
         )
         # Features ready to be fed into the neural network
-        Fout = None
-        if F is not None and len(F) > 0:
-            rv = lambda rfi, F: [
+        Fout = self.handle_features_reduction(
+            F,
+            len(I),  # number of neighborhoods
+            lambda rfi, Xouti, F : [  # reduce function f(rf_i, Xout_i, F)
                 rfi.reduce_values(None, F[:, j]) for j in range(F.shape[1])
             ]
-            Fout = np.array(joblib.Parallel(n_jobs=self.nthreads)(
-                joblib.delayed(rv)(
-                    self.last_call_receptive_fields[i], F
-                )
-                for i in range(len(I))
-            )).transpose([0, 2, 1])
+        )
         # Handle labels
         if y is not None:
             yout = self.reduce_labels(Xout, y, I=I)
@@ -239,7 +197,7 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             fields.
         :type X_rf: :class:`np.ndarray`
         :param y: The labels of the original point cloud that must be reduced
-            to the receptive field.
+            to the receptive fields.
         :type y: :class:`np.ndarray`
         :param I: The list of neighborhoods. Each element of I is itself a list
             of indices that represents the neighborhood in the point cloud
@@ -285,147 +243,27 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             in :math:`\pmb{X}` that compose the neighborhood.
         :rtype: tuple
         """
-        # Handle neighborhood finding
-        sup_X, I = None, None
-        ngbhd_type = self.neighborhood_spec['type']
-        ngbhd_type_low = ngbhd_type.lower()
-        class_distr = self.training_class_distribution if y is not None\
-            else None
-        # TODO Rethink : Abstract the neighborhoods to another class ?
-        # Note also used in HeightFeatsMiner.compute_height_features_on_support
-        if self.neighborhood_spec['radius'] == 0:
-            # The neighborhood of radius 0 is said to be the entire point cloud
-            I = [np.arange(len(X), dtype=int).tolist()]
-            sup_X = np.mean(X, axis=0).reshape(1, -1)
-        elif ngbhd_type_low == 'cylinder':
-            # Circumference boundary on xy, infinite on z
-            X2D = X[:, :2]
-            sup_X = GridSubsamplingPreProcessor.build_support_points(
-                X2D,
-                self.neighborhood_spec['separation_factor'],
-                self.neighborhood_spec['radius'],
-                support_strategy=self.support_strategy,
-                support_strategy_num_points=self.support_strategy_num_points,
-                support_strategy_fast=self.support_strategy_fast,
-                y=y,
-                class_distr=class_distr,
-                center_on_X=self.center_on_pcloud,
-                nthreads=self.nthreads
-            )
-            kdt = KDT(X2D)
-            kdt_sup = KDT(sup_X)
-            I = kdt_sup.query_ball_tree(kdt, self.neighborhood_spec['radius'])
-            sup_X = np.hstack([sup_X, np.zeros((sup_X.shape[0], 1))])
-        elif ngbhd_type_low == 'sphere':
-            # Spheres with a greater than zero radius
-            sup_X = GridSubsamplingPreProcessor.build_support_points(
-                X,
-                self.neighborhood_spec['separation_factor'],
-                self.neighborhood_spec['radius'],
-                support_strategy=self.support_strategy,
-                support_strategy_num_points=self.support_strategy_num_points,
-                y=y,
-                class_distr=class_distr,
-                center_on_X=self.center_on_pcloud,
-                nthreads=self.nthreads
-            )
-            kdt = KDT(X)
-            kdt_sup = KDT(sup_X)
-            I = kdt_sup.query_ball_tree(kdt, self.neighborhood_spec['radius'])
-        elif ngbhd_type_low == 'rectangular2d':
-            # 2D rectangular boundary on xy, infinite on z
-            X2D = X[:, :2]
-            radius = self.neighborhood_spec['radius']
-            if not isinstance(radius, list):
-                radius = [radius, radius]
-            sup_X = GridSubsamplingPreProcessor.build_support_points(
-                X2D,
-                self.neighborhood_spec['separation_factor'],
-                np.min(radius),
-                support_strategy=self.support_strategy,
-                support_strategy_num_points=self.support_strategy_num_points,
-                y=y,
-                class_distr=class_distr,
-                center_on_X=self.center_on_pcloud,
-                nthreads=self.nthreads
-            )
-            # Compute the min radius cylindrical neighborhood that contains the
-            # rectangular prism with infinite height
-            boundary_radius = np.sqrt(
-                radius[0]*radius[0]+radius[1]*radius[1]
-            )
-            kdt = KDT(X2D)
-            kdt_sup = KDT(sup_X)
-            I = kdt_sup.query_ball_tree(kdt, boundary_radius)
-            # Discard points outside the 2D rectangular boundary
-            XY = [X2D[Ii][:, 0:2] - sup_X[i] for i, Ii in enumerate(I)]
-            mask = [
-                (XYi[:, 0] >= -radius[0]) * (XYi[:, 0] <= radius[0]) *
-                (XYi[:, 1] >= -radius[1]) * (XYi[:, 1] <= radius[1])
-                for XYi in XY
-            ]
-            I = [np.array(Ii)[mask[i]].tolist() for i, Ii in enumerate(I)]
-            # Fill missing 3D coordinate (z) with zero
-            sup_X = np.hstack([sup_X, np.zeros((sup_X.shape[0], 1))])
-        elif ngbhd_type_low == 'rectangular3d':
-            # 3D rectangular boundary (voxel if all axis share the same length)
-            radius = self.neighborhood_spec['radius']
-            if not isinstance(radius, list):
-                radius = [radius, radius, radius]
-            sup_X = GridSubsamplingPreProcessor.build_support_points(
-                X,
-                self.neighborhood_spec['separation_factor'],
-                np.min(radius),
-                support_strategy=self.support_strategy,
-                support_strategy_num_points=self.support_strategy_num_points,
-                y=y,
-                class_distr=class_distr,
-                center_on_X=self.center_on_pcloud,
-                nthreads=self.nthreads
-            )
-            # Compute the min radius spherical neighborhood that contains the
-            # rectangular prism
-            boundary_radius = np.sqrt(
-                radius[0]*radius[0]+radius[1]*radius[1]+radius[2]*radius[2]
-            )
-            kdt = KDT(X)
-            Iout = []
-            num_chunks, chunk_size = 1,  len(sup_X)
-            if self.support_chunk_size > 0:
-                chunk_size = self.support_chunk_size
-                num_chunks = int(np.ceil(len(sup_X)/chunk_size))
-            for chunk_idx in range(num_chunks):
-                # Extract chunk
-                sup_idx_a = chunk_idx*chunk_size
-                sup_idx_b = min(
-                    (chunk_idx+1)*chunk_size,
-                    len(sup_X)
-                )
-                chunk_sup_X = sup_X[sup_idx_a:sup_idx_b]
-                # Operate on chunk
-                kdt_sup = KDT(chunk_sup_X)
-                chunk_I = kdt_sup.query_ball_tree(kdt, boundary_radius)
-                # Discard points outside 3D rectangular boundary
-                XYZ = [X[Ii] - chunk_sup_X[i] for i, Ii in enumerate(chunk_I)]
-                mask = [
-                    (XYZi[:, 0] >= -radius[0]) * (XYZi[:, 0] <= radius[0]) *
-                    (XYZi[:, 1] >= -radius[1]) * (XYZi[:, 1] <= radius[1]) *
-                    (XYZi[:, 2] >= -radius[2]) * (XYZi[:, 2] <= radius[2])
-                    for XYZi in XYZ
-                ]
-                chunk_I = [
-                    np.array(Ii)[mask[i]].tolist()
-                    for i, Ii in enumerate(chunk_I)
-                ]
-                Iout = Iout + chunk_I
-            I = Iout
-        else:
-            raise DeepLearningException(
-                'FurthestPointSubsamplingPreProcessor does not expect a '
-                f'neighborhood specification of type "{ngbhd_type}"'
-            )
-        # Return found neighborhood
-        return sup_X, I
+        return SupportNeighborhoods(
+            self.neighborhood_spec,
+            support_strategy=self.support_strategy,
+            support_strategy_num_points=self.support_strategy_num_points,
+            support_strategy_fast=self.support_strategy_fast,
+            support_chunk_size=self.support_chunk_size,
+            training_class_distribution=self.training_class_distribution,
+            center_on_pcloud=self.center_on_pcloud,
+            nthreads=self.nthreads
+        ).compute(X, y=y)
+
+    # ---   SUPPORT POINTS EXPORT   --- #
+    # --------------------------------- #
+    def _export_support_points(self, sup_X, path):
+        """
+        See :class:`.ReceptiveFieldPreProcessor`,
+        :meth:`receptive_field_pre_processor.ReceptiveFieldPreProcessor._export_support_points`,
+        :class:`.GridSubsamplingPreProcessor`, and
+        :meth:`grid_subsampling_pre_processor.GridSubsamplingPreProcessor.support_points_to_file`
+        """
+        return GridSubsamplingPreProcessor.support_points_to_file(sup_X, path)
 
     # ---   OTHER METHODS   --- #
     # ------------------------- #
