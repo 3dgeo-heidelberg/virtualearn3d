@@ -340,6 +340,7 @@ below shows how to define a :class:`.SmoothFeatsMiner`:
 
     {
         "miner": "SmoothFeatures",
+        "nan_policy": "propagate",
         "chunk_size": 1000000,
         "subchunk_size": 1000,
         "neighborhood": {
@@ -359,6 +360,14 @@ threads.
 
 
 **Arguments**
+
+-- ``nan_policy``
+    It can be ``"propagate"`` (default) so NaN features will be included
+    in computations (potentially leading to NaN smooth features).
+    Alternatively, it can be ``"replace"`` so NaN values are replaced with the
+    feature-wise mean for each neighborhood. However, using ``"replace"`` leads
+    to longer executions times. Therefore, ``"propagate"`` should be used
+    always that NaN handling is not necessary.
 
 -- ``chunk_size``
     How many points per chunk must be considered for parallel computations.
@@ -460,6 +469,10 @@ neighbor.
 -- ``frenames``
     An optional list with the name of the output features. When not given, the
     output features will be named as specified by ``fnames``.
+
+-- ``y_default``
+    An optional value to be considered as the default label/class. If not
+    given, it will be the max integer supported by the system.
 
 -- ``pcloud_pool``
     A list with the paths to the point clouds composing the pool.

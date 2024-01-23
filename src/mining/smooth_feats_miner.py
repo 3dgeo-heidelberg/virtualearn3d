@@ -59,7 +59,7 @@ class SmoothFeatsMiner(Miner):
     :math:`D = \displaystyle\sum_{j=1}^{\lvert\mathcal{N}\rvert}{\exp\left[-\dfrac{\lVert\pmb{x_{i*}}-\pmb{x_{j*}}\rVert^2}{\omega^2}\right]}`
     .
 
-    One usefult tip to configure a Gaussian RBF with respect to the unitary
+    One useful tip to configure a Gaussian RBF with respect to the unitary
     case, i.e., :math:`\exp\left(-\dfrac{1}{\omega^2}\right)` is to define the
     :math:`\omega` parameter of the non-unitary case as
     :math:`\varphi = \sqrt{\omega^2 r^2}` where :math:`r` is the radius of
@@ -102,6 +102,10 @@ class SmoothFeatsMiner(Miner):
     :ivar gaussian_rbf_omega: The :math:`\omega` parameter for the Gaussian
         RBF strategy.
     :vartype gaussian_rbf_omega: float
+    :ivar nan_policy: The policy specifying how to handle NaN values in the
+        feature space. It can be ``"propagate"`` to propagate NaN values or
+        ``"replace"`` to replace NaN values by the mean of numerical values.
+    :vartype nan_policy: str
     :ivar input_fnames: The list with the name of the input features that must
         be smoothed.
     :vartype input_fnames: list
@@ -136,7 +140,8 @@ class SmoothFeatsMiner(Miner):
             'input_fnames': spec.get('input_fnames', None),
             'fnames': spec.get('fnames', None),
             'frenames': spec.get('frenames', None),
-            'nthreads': spec.get('nthreads', None)
+            'nthreads': spec.get('nthreads', None),
+            'nan_policy': spec.get('nan_policy', None)
         }
         # Delete keys with None value
         kwargs = DictUtils.delete_by_val(kwargs, None)
@@ -188,6 +193,18 @@ class SmoothFeatsMiner(Miner):
                     for fname in self.fnames for infname in self.input_fnames
                 ]
         self.nthreads = kwargs.get('nthreads', -1)
+        self.nan_policy = kwargs.get('nan_policy', 'propagate')
+        # Determine NaN policy function
+        nan_policy = self.nan_policy.lower()
+        if nan_policy == 'propagate':
+            self.nan_policy_f = self.nan_policy_propagate_f
+        elif nan_policy == 'replace':
+            self.nan_policy_f = self.nan_policy_replace_f
+        else:  # Unexpected policy
+            raise MinerException(
+                'SmoothFeatsMiner does not support given NaN policy: '
+                f'"{self.nan_policy}"'
+            )
         # Validate attributes
         if self.input_fnames is None:
             raise MinerException(
@@ -349,7 +366,10 @@ class SmoothFeatsMiner(Miner):
         """
         Fhat = []
         for Ii in I:
-            Fhat.append(np.mean(F[Ii], axis=0))
+            # Apply NaN policy
+            FIi = self.nan_policy_f(F[Ii])
+            # Compute mean
+            Fhat.append(np.mean(FIi, axis=0))
         return Fhat
 
     def weighted_mean_f(self, X, F, X_sub, I):
@@ -363,12 +383,16 @@ class SmoothFeatsMiner(Miner):
         """
         Fhat = []
         for i, x_sub in enumerate(X_sub):
+            # Extract neighborhood
             J = I[i]
+            # Apply nan policy
+            FJ = self.nan_policy_f(F[J])
+            # Compute weighted mean
             d = np.linalg.norm(X[J]-x_sub, axis=1)
             dmax = np.max(d)
             d = dmax - d + self.weighted_mean_omega
             D = np.sum(d)
-            Fhat.append(np.sum((F[J].T*d).T, axis=0) / D)
+            Fhat.append(np.sum((FJ.T*d).T, axis=0) / D)
         return Fhat
 
     def gaussian_rbf(self, X, F, X_sub, I):
@@ -383,10 +407,14 @@ class SmoothFeatsMiner(Miner):
         Fhat = []
         omega_squared = self.gaussian_rbf_omega*self.gaussian_rbf_omega
         for i, x_sub in enumerate(X_sub):
+            # Extract neighborhood
             J = I[i]
+            # Apply nan policy
+            FJ = self.nan_policy_f(F[J])
+            # Compute Guassian RBF
             d = np.exp(-np.sum(np.square(X[J]-x_sub), axis=1)/omega_squared)
             D = np.sum(d)
-            Fhat.append(np.sum((F[J].T*d).T, axis=0) / D)
+            Fhat.append(np.sum((FJ.T*d).T, axis=0) / D)
         return Fhat
 
     # ---  NEIGHBORHOOD FUNCTIONS  --- #
@@ -419,3 +447,42 @@ class SmoothFeatsMiner(Miner):
             other=kdt,
             r=self.neighborhood['radius']
         )
+
+    # ---   NAN POLICY METHODS   --- #
+    # ------------------------------ #
+    @staticmethod
+    def nan_policy_propagate_f(F):
+        """
+        Apply the NaN policy that propagates the matrix of features with no
+        handling at all.
+
+        :param F: The matrix of features given as input.
+        :type F: :class:`np.ndarray`
+        :return: The transformed matrix of features.
+        :rtype: :class:`np.ndarray`
+        """
+        return F
+
+    @staticmethod
+    def nan_policy_replace_f(F):
+        """
+        Apply the NaN policy that replaces the NaN values in the matrix of
+        features by the mean of the numerical values for the corresponding
+        feature (each column of the matrix is assumed to be an independent
+        feature).
+
+        NOTE that this method will modify the F matrix inplace, apart from
+        returning it.
+
+        :param F: The matrix of features given as input.
+        :type F: :class:`np.ndarray`
+        :return: The transformed matrix of features.
+        :rtype: :class:`np.ndarray`
+        """
+        num_feats = F.shape[1]
+        for j in range(num_feats):
+            nan_mask = np.isnan(F[:, j])
+            not_nan_mask = ~nan_mask
+            F[nan_mask, j] = np.mean(F[not_nan_mask, j])
+        return F
+

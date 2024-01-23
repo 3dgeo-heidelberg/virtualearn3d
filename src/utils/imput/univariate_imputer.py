@@ -89,7 +89,7 @@ class UnivariateImputer(Imputer):
         # Impute data
         start = time.perf_counter()
         F = self.imputer.transform(F)
-       end = time.perf_counter()
+        end = time.perf_counter()
         LOGGING.LOGGER.info(
             f'UnivariateImputer imputed {F.shape[0]} points with {F.shape[1]} '
             f'features in {end-start:.3f} seconds.'

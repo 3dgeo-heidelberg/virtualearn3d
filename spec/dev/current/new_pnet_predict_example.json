@@ -1,14 +1,14 @@
 {
   "in_pcloud": [
-    "/data/Hessigheim_Benchmark/Epoch_March2018/LiDAR/Mar18_val.laz"
+    "/hei/Hessigheim_Benchmark/Epoch_March2018/LiDAR/Mar18_val.laz"
   ],
   "out_pcloud": [
-    "/data/Hessigheim_Benchmark/Epoch_March2018/vl3d/out/Rect3D_alt_5m_T1/validation_rfsep0_4/*"
+    "/tmp/vl3d/out/Rect3D_alt_5m_T1/validation_rfsep0_4/*"
   ],
   "sequential_pipeline": [
     {
       "predict": "PredictivePipeline",
-      "model_path": "/data/Hessigheim_Benchmark/Epoch_March2018/vl3d/out/Rect3D_alt_5m_T1/pipe/Rect3D_5m_T1.pipe"
+      "model_path": "/tmp/vl3d/out/Rect3D_alt_5m_T1/pipe/Rect3D_5m_T1.pipe"
     },
     {
         "writer": "ClassifiedPcloudWriter",
