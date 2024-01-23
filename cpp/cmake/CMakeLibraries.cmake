@@ -31,7 +31,7 @@ message("Armadillo include: " ${ARMADILLO_INCLUDE_DIRS})
 # Carma
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/lib/carma)  # Use carma from lib
     # Include from lib directory
-    add_library(armadillo::armadillo ALIAS armadillo)
+    add_library(armadillo:armadillo ALIAS armadillo)
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/carma/)
     set(carma_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/carma/include)
     set(carma_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/lib/carma/include)
