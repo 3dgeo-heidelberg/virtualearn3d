@@ -370,3 +370,53 @@ class HierarchicalFPSPreProcecssor(ReceptiveFieldPreProcessor):
             center_on_pcloud=self.center_on_pcloud,
             nthreads=self.nthreads
         ).compute(X, y=y)
+
+    # ---   SERIALIZATION   --- #
+    # ------------------------- #
+    def __getstate__(self):
+        """
+        Method to be called when saving the serialized hierarchical furthest
+        point sampling receptive field pre-processor.
+
+        :return: The state's dictionary of the object.
+        :rtype: dict
+        """
+        # Obtain parent's state
+        state = super().__getstate__()
+        # Update state
+        state['num_downsampling_neighbors'] = self.num_downsampling_neighbors
+        state['num_pwise_neighbors'] = self.num_pwise_neighbors
+        state['num_upsampling_neighbors'] = self.num_upsampling_neighbors
+        state['num_points_per_depth'] = self.num_points_per_depth
+        state['depth'] = self.depth
+        state['fast_flag_per_depth'] = self.fast_flag_per_depth
+        state['num_encoding_neighbors_per_depth'] = \
+            self.num_encoding_neighbors_per_depth
+        state['neighborhood_spec'] = self.neighborhood_spec
+        # Return
+        return state
+
+    def __setstate__(self, state):
+        """
+        Method to be called when loading and deserializing a previously
+        serialized hierarchical furthest point subsampling pre-processor.
+
+        See :meth:`ReceptiveFieldPreProcessor.__setstate__`.
+
+        :param state: The state's dictionary of the saved hierarchical
+            furthest point subsampling pre-processor.
+        :type state: dict
+        :return: Nothing, but modifies the internal state of the object.
+        """
+        # Call parent
+        super().__setstate__(state)
+        # Assign member attributes from state
+        self.num_downsampling_neighbors = state['num_downsampling_neighbors']
+        self.num_pwise_neighbors = state['num_pwise_neighbors']
+        self.num_upsampling_neighbors = state['num_usampling_neighbors']
+        self.num_points_per_depth = state['num_points_per_depth']
+        self.depth = state['depth']
+        self.fast_flag_per_depth = state['fast_flag_per_depth']
+        self.num_encoding_neighbors_per_depth = \
+            state['num_encoding_neighbors_per_depth']
+        self.neighborhood_spec = state['neighborhood_spec']
