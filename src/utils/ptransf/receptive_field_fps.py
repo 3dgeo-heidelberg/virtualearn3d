@@ -56,6 +56,7 @@ class ReceptiveFieldFPS(ReceptiveField):
     :ivar Y: The subsample representing the original input point cloud, i.e.,
         a matrix of coordinates in a :math:`n`-dimensional space such that
         :math:`\pmb{Y} \in \mathbb{R}^{R \times n}`.
+    :vartype Y: :class.`np.ndarray`
     """
     # ---   INIT   --- #
     # ---------------- #

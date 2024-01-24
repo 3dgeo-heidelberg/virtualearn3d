@@ -20,8 +20,78 @@ class ReceptiveFieldHierarchicalFPS(ReceptiveField):
 
     See :class:`.ReceptiveField`, :class:`.ReceptiveFieldFPS`, and
     :class:`.HierarchicalFPSPreProcessor`.
+
+    :ivar num_points_per_depth: The number of points
+        :math:`R_d \in \mathbb{Z}_{\geq 0}` at depth :math:`d`.
+        In other words, for a given number of input points :math:`m`,
+        and a hierarchy of max depth :math:`d^*` the reduced number of
+        points will be :math:`m \geq R_1 \geq \ldots \geq R_{d^*}`.
+        The value of :math:`R_d` will be the same, even for
+        different numbers of input points.
+    :vartype num_points_per_depth: list or tuple or :class:`np.ndarray` of int
+    :ivar fast_flag_per_depth: A flag for each depth level to enable the
+        fast-computation mode. When True, a random uniform subsampling will be
+        computed before the furthest point sampling so the latest is faster
+        because it is not considering the entire input point cloud.
+    :vartype fast_flag_per_depth: list or tuple or :class:`np.ndarray` of bool
+    :ivar num_downsampling_neighbors: How many neighbors consider at each depth
+        to compute the subsampling. For each depth, the number specifies how
+        many points from the source space will be involved in the
+        computation of each point in the downsampled space. The
+        neighborhoods are made of the k-nearest neighbors. Note that
+        the first value in this list corresponds to the
+        ``num_encoding_neighbors`` attribute of the
+        :class:`.ReceptiveFieldFPS` receptive field.
+    :vartype num_downsampling_neighbors: list or tuple or :class:`np.ndarray`
+        of int
+    :ivar num_pwise_neighbors: How many nearest neighbors consider at each
+        depth-level. In other words, for each point in the structure space at
+        any given depth, the number of nearest neighbors in the same
+        structure space that must be considered.
+    :vartype num_pwise_neighbors: list or tuple or :class:`np.ndarray` of int
+    :ivar num_upsampling_neighbors: How many neighbors consider at each depth
+        to compute the upsampling. For each depth, the number specifies how
+        many points from the source space will be involved in the
+        computation of each point in the upsampled space. The
+        neighborhoods are made of the k-nearest neighbors. Note that
+        the first value in this list corresponds to the reverse
+        indexing matrix (``M`` attribute) of the
+        :class:`.ReceptiveFieldFPS` receptive field.
+    :vartype num_upsampling_neighbors: list or tuple or :class:`np.ndarray`
+        of int
+    :ivar max_depth: The max depth of the hierarchy, i.e., how many receptive
+        fields.
+    :vartype max_depth: int
+    :ivar NDs: The :math:`\pmb{N}^D_d` matrices of
+        indices for downsampling with depth :math:`d=1,\ldots,d^*`.
+        More concretely, :math:`n^D_{dij}`
+        is the index of the j-th neighbor in the structure space before
+        the downsampling of the i-th point in the downsampled structure space
+        (at depth :math:`d`).
+        It can be seen as an indexing tensor whose slices can be seen as
+        indexing matrices.
+    :vartype NDs: list of :class:`np.ndarray` of int
+    :ivar Ns: The :math:`\pmb{N}_d` matrices of indices for neighborhoods
+        with depth :math:`d=1,\ldots,d^*`.
+        More concretely, :math:`n_{dij}` is the index of the j-th neighbor of
+        the i-th point in the structure space at depth :math:`d`.
+        It can be seen as an indexing tensor whose slices can be seen as
+        indexing matrices.
+    :vartype Ns: list of :class:`np.ndarray` of int
+    :ivar NUs: The :math:`\pmb{N}^U_d` matrices of indices for upsampling with
+        depth :math:`d=1,\ldots,d^*`.
+        More concretely, :math:`n^U_{dij}` is the index of the j-th neighbor
+        in the structure space before the upsampling of the i-th point in the
+        upsampled structure space (at depth :math:`d`).
+    :vartype NUs: list of :class:`np.ndarray` of int
+    :ivar x: The center point of the receptive field. It is assigned when
+        calling :meth:`receptive_field_fps.ReceptiveFieldFPS.fit`.
+    :vartype x: :class:`np.ndarray`
+    :ivar Ys: The hierarchical subsamples representing the original input point
+        cloud and, i.e., a matrices of coordinates in a :math:`n_x`-dimensional
+        space such that :math:`\pmb{Y}_d \in \mathbb{R}^{R_d \times n_x}`.
+    :vartype Ys: :class:`np.ndarray`
     """
-    # TODO Rethink : Doc (ivars mostly)
     # ---   INIT   --- #
     # ---------------- #
     def __init__(self, **kwargs):
