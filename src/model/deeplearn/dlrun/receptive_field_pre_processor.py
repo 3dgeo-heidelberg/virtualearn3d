@@ -346,7 +346,7 @@ class ReceptiveFieldPreProcessor:
         :type X: :class:`np.ndarray`
         :param sup_X: The structure space matrix representing the support
             points defining the receptive fields (typically the centers).
-        :type sup_X: :class:`np.ndarray
+        :type sup_X: :class:`np.ndarray`
         :param I: The list of neighborhoods such that I[i] is the i-th
             neighborhood, represented by the indices of the points that belong
             to that neighborhood. Typically, neighborhoods are centered on the
@@ -389,8 +389,8 @@ class ReceptiveFieldPreProcessor:
         :type Xout: list of :class:`np.ndarray` or :class:`np.ndarray` as a
             tensor whose slices represent receptive fields.
         :return: The reduced matrix of features for each receptive field.
-        :rtype: :class:`np.ndarray`as a tensor whose slices represent receptive
-            fields.
+        :rtype: :class:`np.ndarray` as a tensor whose slices represent
+            receptive fields.
         """
         # Check whether there are features to reduce
         if F is None or len(F) <= 0:

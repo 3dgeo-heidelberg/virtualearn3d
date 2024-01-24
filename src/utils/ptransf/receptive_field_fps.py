@@ -57,7 +57,6 @@ class ReceptiveFieldFPS(ReceptiveField):
         a matrix of coordinates in a :math:`n`-dimensional space such that
         :math:`\pmb{Y} \in \mathbb{R}^{R \times n}`.
     """
-
     # ---   INIT   --- #
     # ---------------- #
     def __init__(self, **kwargs):
@@ -116,7 +115,7 @@ class ReceptiveFieldFPS(ReceptiveField):
         :param x: The center point used to define the origin of the receptive
             field.
         :type x: :class:`np.ndarray`
-        :return: The fit receptive field itself (for fluent programming)
+        :return: The fitted receptive field itself (for fluent programming)
         :rtype: :class:`.ReceptiveFieldFPS`
         """
         # Validate input
@@ -140,6 +139,7 @@ class ReceptiveFieldFPS(ReceptiveField):
         # Find the indexing matrix N
         kdt = KDT(X)
         self.N = kdt.query(self.Y, k=self.num_encoding_neighbors)[1]
+        # TODO Rethink : Reshape self.N like self.M below ?
         # Find the indexing matrix M
         kdt = KDT(self.Y)
         self.M = kdt.query(X, k=self.num_encoding_neighbors)[1]
@@ -178,6 +178,12 @@ class ReceptiveFieldFPS(ReceptiveField):
             point or the output as a vector when there is one value per point.
         :rtype: :class:`np.ndarray`
         """
+        return ReceptiveFieldFPS.do_propagate_values(
+            self.M, v, reduce_strategy
+        )
+
+    @staticmethod
+    def do_propagate_values(M, v, reduce_strategy):
         # Determine the dimensionality of each value (both scalar and vectors
         # can be propagated). All values must have the same dimensionality.
         try:
@@ -186,14 +192,14 @@ class ReceptiveFieldFPS(ReceptiveField):
             val_dim = 1
         # Prepare output matrix
         Ytype = v.dtype if isinstance(v, np.ndarray) else type(v[0])
-        Y = np.full([len(self.M), val_dim], 0, dtype=Ytype)
+        Y = np.full([len(M), val_dim], 0, dtype=Ytype)
         # Populate output matrix : Reduce by mean
         if reduce_strategy == 'mean':
-            for i, Mi in enumerate(self.M):
+            for i, Mi in enumerate(M):
                 Y[i] = np.mean(v[Mi], axis=0)
         # Populate output matrix : Take from closest
         elif reduce_strategy == 'closest':
-            for i, Mi in enumerate(self.M):
+            for i, Mi in enumerate(M):
                 Y[i] = v[Mi[0]]
         else:  # Unexpected reduce strategy
             raise ValueError(
@@ -223,9 +229,13 @@ class ReceptiveFieldFPS(ReceptiveField):
         :return: The reduced vector.
         :rtype: :class:`np.ndarray`
         """
+        ReceptiveFieldFPS.do_reduce_values(self.N, X, v, reduce_f)
+
+    @staticmethod
+    def do_reduce_values(N, X, v, reduce_f):
         # Reduce
-        v_reduced = np.zeros(len(self.N))
-        for i, Ni in enumerate(self.N):
+        v_reduced = np.zeros(len(N))
+        for i, Ni in enumerate(N):
             v_reduced[i] = reduce_f(v[Ni])
         # Return
         return v_reduced

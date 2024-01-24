@@ -19,7 +19,7 @@ import time
 
 # ---   CLASS   --- #
 # ----------------- #
-class HierarchicalFPSPreProcecssor(ReceptiveFieldPreProcessor):
+class HierarchicalFPSPreProcessor(ReceptiveFieldPreProcessor):
     """
     :author: Alberto M. Esmoris Pena
 
@@ -53,10 +53,6 @@ class HierarchicalFPSPreProcecssor(ReceptiveFieldPreProcessor):
         stochastic approximation (faster) or the exhaustive furthest point
         sampling computation (slower).
     :vartype fast_flag_per_depth: list
-    :ivar num_encoding_neighbors_per_depth: List of integers where the element
-        i gives the number of neighbors that must be considered to encode
-        a value for each point in the receptive field.
-    :vartype num_encoding_neighbors_per_depth: list
     """
     # ---   INIT  --- #
     # --------------- #
@@ -82,9 +78,6 @@ class HierarchicalFPSPreProcecssor(ReceptiveFieldPreProcessor):
         self.depth = len(self.num_points_per_depth)
         self.fast_flag_per_depth = kwargs.get(
             'fast_flag_per_depth', [False for i in range(self.depth)]
-        )
-        self.num_encoding_neighbors_per_depth = kwargs.get(
-            'num_encoding_neighbors_per_depth', [1 for i in range(self.depth)]
         )
         self.neighborhood_spec = kwargs.get('neighborhood', None)  # Support
         # Validate attributes
@@ -121,18 +114,6 @@ class HierarchicalFPSPreProcecssor(ReceptiveFieldPreProcessor):
                 'The HierarchicalFPSPreProcessor did not receive '
                 'a non-empty specification for the number of points per depth.'
             )
-        if(
-            self.num_encoding_neighbors_per_depth is None or
-            not isinstance(
-                self.num_encoding_neighbors_per_depth, (list, tuple, np.ndarray)
-            ) or
-            len(self.num_encoding_neighbors_per_depth) < 1
-        ):
-            raise DeepLearningException(
-                'The HierarchicalFPSPreProcessor did not receive '
-                'a non-empty specification for the number of encoding '
-                'neighbors per depth.'
-            )
         if self.depth != len(self.fast_flag_per_depth):
             raise DeepLearningException(
                 'The HierarchicalFPSPreProcessor received '
@@ -168,7 +149,7 @@ class HierarchicalFPSPreProcecssor(ReceptiveFieldPreProcessor):
     # ---   RUN/CALL   --- #
     # -------------------- #
     def __call__(self, inputs):
-        """
+        r"""
         Executes the pre-processing logic. It also updates the cache-like
         variables of the preprocessor.
 
@@ -222,7 +203,7 @@ class HierarchicalFPSPreProcecssor(ReceptiveFieldPreProcessor):
         # Extract support neighborhoods
         sup_X, I = self.find_neighborhood(X, y=y)
         # Remove empty neighborhoods and corresponding support points
-        I, sup_X = HierarchicalFPSPreProcecssor.clean_support_neighborhoods(
+        I, sup_X = HierarchicalFPSPreProcessor.clean_support_neighborhoods(
             sup_X, I, self.num_points_per_depth[0]
         )
         # Export support points if requested
@@ -248,8 +229,10 @@ class HierarchicalFPSPreProcecssor(ReceptiveFieldPreProcessor):
         self.last_call_receptive_fields = [
             ReceptiveFieldHierarchicalFPS(
                 num_points_per_depth=self.num_points_per_depth,
-                num_encoding_neighbors=self.num_encoding_neighbors_per_depth,
-                fast_flag_per_depth=self.fast_flag_per_depth
+                fast_flag_per_depth=self.fast_flag_per_depth,
+                num_downsampling_neighbors=self.num_downsampling_neighbors,
+                num_pwise_neighbors=self.num_pwise_neighbors,
+                num_upsampling_neighbors=self.num_upsampling_neighbors
             )
             for Ii in I
         ]
@@ -390,8 +373,6 @@ class HierarchicalFPSPreProcecssor(ReceptiveFieldPreProcessor):
         state['num_points_per_depth'] = self.num_points_per_depth
         state['depth'] = self.depth
         state['fast_flag_per_depth'] = self.fast_flag_per_depth
-        state['num_encoding_neighbors_per_depth'] = \
-            self.num_encoding_neighbors_per_depth
         state['neighborhood_spec'] = self.neighborhood_spec
         # Return
         return state
@@ -417,6 +398,4 @@ class HierarchicalFPSPreProcecssor(ReceptiveFieldPreProcessor):
         self.num_points_per_depth = state['num_points_per_depth']
         self.depth = state['depth']
         self.fast_flag_per_depth = state['fast_flag_per_depth']
-        self.num_encoding_neighbors_per_depth = \
-            state['num_encoding_neighbors_per_depth']
         self.neighborhood_spec = state['neighborhood_spec']
