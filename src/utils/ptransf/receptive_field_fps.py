@@ -230,7 +230,7 @@ class ReceptiveFieldFPS(ReceptiveField):
         :return: The reduced vector.
         :rtype: :class:`np.ndarray`
         """
-        ReceptiveFieldFPS.do_reduce_values(self.N, X, v, reduce_f)
+        return ReceptiveFieldFPS.do_reduce_values(self.N, X, v, reduce_f)
 
     @staticmethod
     def do_reduce_values(N, X, v, reduce_f):

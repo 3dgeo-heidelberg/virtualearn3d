@@ -171,8 +171,10 @@ class ReceptiveFieldHierarchicalFPS(ReceptiveField):
         self.NUs = [  # The upsampling matrices of indices (computed at fit)
             None for i in range(self.max_depth)
         ]
-        self.x = None  # The center point of the receptive field
-        self.Ys = None  # The centroids of the hierarchical receptive fields
+        self.x = None  # The center point of the receptive field (comp at fit)
+        self.Ys = [ # Centroids of the hierarchical receptive fields (at fit)
+            None for i in range(self.max_depth)
+        ]
 
     # ---  RECEPTIVE FIELD METHODS  --- #
     # --------------------------------- #
@@ -219,10 +221,15 @@ class ReceptiveFieldHierarchicalFPS(ReceptiveField):
             )
             # Find the downsampling matrix at depth d (NDd)
             kdt = KDT(Xd)
-            self.NDs[d] = kdt.query(
+            NDd = kdt.query(
                 self.Ys[d], k=self.num_downsampling_neighbors[d]
             )[1]
             # TODO Rethink : Reshape NDd like NUd below ?
+            # It is done below. If it works, recall to update non-hierarchical
+            # FPS receptive field too
+            if len(NDd.shape) < 2:
+                NDd = NDd.reshape(-1, 1)
+            self.NDs[d] = NDd
             # Find the upsampling matrix at depth d (NUd)
             kdt = KDT(self.Ys[d])
             NUd = kdt.query(Xd, k=self.num_upsampling_neighbors[d])[1]
@@ -234,6 +241,8 @@ class ReceptiveFieldHierarchicalFPS(ReceptiveField):
             if len(Nd.shape) < 2:
                 Nd = Nd.reshape(-1, 1)
             self.Ns[d] = Nd
+            # Update Xd for next iteration
+            Xd = self.Ys[d]
         # Return self for fluent programming
         return self
 
