@@ -68,12 +68,11 @@ class HierarchicalReceptiveFieldTest(VL3DTest):
         # Generate the many receptive fields in a hierarchical way
         mu_X = np.mean(X, axis=0)
         hrf.fit(X, mu_X)
-        # Validation thresholds
-        val_max_knn_dist = [0.12, 0.16, 0.23, 0.32, 0.45]
         # Validate the depth
         if hrf.max_depth != len(num_points_per_depth):
             return False
         # Validate the receptive field at each depth in the hierarchy
+        val_max_knn_dist = [0.12, 0.16, 0.23, 0.32, 0.45]
         for d in range(hrf.max_depth):
             # Validate centroids
             Yd = hrf.Ys[d]
