@@ -172,9 +172,7 @@ class RBFNetPwiseClassifModel(ClassificationModel):
         F = None
         if self.fnames is not None and len(self.fnames) > 0:
             F = pcloud.get_features_matrix(self.fnames)
-        return self._predict(
-            X, y=y, F=F, plots_and_reports=plots_and_reports
-        )
+        return self._predict(X, y=y, F=F, plots_and_reports=plots_and_reports)
 
     def get_input_from_pcloud(self, pcloud):
         """

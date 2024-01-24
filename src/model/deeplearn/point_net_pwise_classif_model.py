@@ -142,7 +142,7 @@ class PointNetPwiseClassifModel(ClassificationModel):
         if self.model is not None:
             self.model.update_paths(self.model_args)
 
-    def predict(self, pcloud, X=None, F=None):
+    def predict(self, pcloud, X=None, F=None, plots_and_reports=True):
         """
         Use the model to compute predictions on the input point cloud.
 
@@ -162,7 +162,10 @@ class PointNetPwiseClassifModel(ClassificationModel):
         y = None
         if pcloud.has_classes():
             y = pcloud.get_classes_vector()
-        return self._predict(X, y=y, F=None)
+        F = None
+        if self.fnames is not None and len(self.fnames) > 0:
+            F = pcloud.get_features_matrix(self.fnames)
+        return self._predict(X, y=y, F=F, plots_and_reports=plots_and_reports)
 
     def get_input_from_pcloud(self, pcloud):
         """
@@ -268,6 +271,7 @@ class PointNetPwiseClassifModel(ClassificationModel):
             predictions on training data to generate a thorough representation
             of the receptive fields.
         """
+        X = X if F is None else [X, F]
         return self.model.predict(
             X, y=y, zout=zout, plots_and_reports=plots_and_reports
         )
