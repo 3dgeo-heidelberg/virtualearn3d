@@ -185,6 +185,9 @@ class ReceptiveFieldFPS(ReceptiveField):
 
     @staticmethod
     def do_propagate_values(M, v, reduce_strategy):
+        """
+        See :meth:`ReceptiveFieldFPS.propagate_values`.
+        """
         # Determine the dimensionality of each value (both scalar and vectors
         # can be propagated). All values must have the same dimensionality.
         try:
@@ -234,6 +237,9 @@ class ReceptiveFieldFPS(ReceptiveField):
 
     @staticmethod
     def do_reduce_values(N, X, v, reduce_f):
+        """
+        See :meth:`ReceptiveFieldFPS.reduce_values`.
+        """
         # Reduce
         v_reduced = np.zeros(len(N))
         for i, Ni in enumerate(N):
