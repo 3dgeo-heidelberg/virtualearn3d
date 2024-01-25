@@ -35,6 +35,7 @@ class RBFNet(Architecture, ABC):
         if kwargs.get('arch_name', None) is None:
             kwargs['arch_name'] = 'RBFNet'
         super().__init__(**kwargs)
+        # Assign attributes
         self.fnames = kwargs.get('fnames', None)
         # Update the preprocessing logic
         self.pre_runnable = PointNetPreProcessor(**kwargs['pre_processing'])

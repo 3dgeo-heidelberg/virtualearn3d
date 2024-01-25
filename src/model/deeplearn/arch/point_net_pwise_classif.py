@@ -4,6 +4,7 @@ from src.model.deeplearn.arch.point_net import PointNet
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
 from src.model.deeplearn.layer.features_structuring_layer import \
     FeaturesStructuringLayer
+from src.utils.dl_utils import DLUtils
 import src.main.main_logger as LOGGING
 import tensorflow as tf
 import numpy as np
@@ -42,15 +43,10 @@ class PointNetPwiseClassif(PointNet):
             'final_shared_mlps',
             [512, 256, 128]
         )
-        self.binary_crossentropy = False
         comp_args = kwargs.get('compilation_args', None)
-        if comp_args is not None:
-            loss_args = comp_args.get('loss', None)
-            if loss_args is not None:
-                fun_name = loss_args.get('function', '').lower()
-                self.binary_crossentropy = \
-                    fun_name == 'binary_crossentropy' or \
-                    fun_name == 'class_weighted_binary_crossentropy'
+        self.binary_crossentropy = DLUtils.is_using_binary_crossentropy(
+            comp_args, default=False
+        )
         # Internal cache
         self.fsl_layer = None
 
