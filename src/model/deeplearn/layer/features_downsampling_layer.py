@@ -19,6 +19,8 @@ class FeaturesDownsamplingLayer(Layer):
     see :meth:`FeaturesDownsamplingLayer.mean_filter`) or a gaussian-like
     filter to reduce the features considering the distances between the
     points (see :meth:`FeaturesDownsamplingLayer.gaussian_filter`).
+    Alternatively, a simpler nearest-neighbor filter can be used too
+    (see :meth:`FeaturesDownsamplingLayer.nearest_filter`).
 
     The input feature space is a tensor
     :math:`\mathcal{F} \in \mathbb{R}^{K \times m \times n_f}` whose slices
@@ -27,8 +29,8 @@ class FeaturesDownsamplingLayer(Layer):
     :math:`\mathcal{Y} \in \mathbb{R}^{K \times R \times n_f}`. Where
     :math:`K` is the batch size.
 
-    :ivar filter: The name of the filter to be used. Either ``"mean"`` or
-        ``"gaussian"``.
+    :ivar filter: The name of the filter to be used. Either ``"mean"``,
+        ``"gaussian"``, or ``"nearest"``.
     :vartype filter: str
     :ivar filter_f: The method to be used for filtering, derived from the
         ``filter`` attribute.
@@ -49,6 +51,8 @@ class FeaturesDownsamplingLayer(Layer):
             self.filter_f = self.mean_filter
         elif filter_low == 'gaussian':
             self.filter_f = self.gaussian_filter
+        elif filter_low == 'nearest':
+            self.filter_f = self.nearest_filter
         else:
             raise DeepLearningException(
                 'FeaturesDownsamplingLayer cannot be built for requested '
@@ -172,6 +176,26 @@ class FeaturesDownsamplingLayer(Layer):
         )
         return Fout
 
+    @staticmethod
+    def nearest_filter(Xa, Xb, Fin, ND):
+        r"""
+        .. math::
+            y_{kij} = f_{kn_{ip^*}^Dj}
+
+        Where:
+
+        .. math::
+            p^* = \operatorname*{argmin}_{1 \leq p \leq n_n} \; { \lVert
+                (\mathcal{X}_a)_{kn_{ip}*} -
+                (\mathcal{X}_b)_{ki*}
+            } \rVert^2
+
+        :return: :math:`\mathcal{Y} \in \mathbb{R}^{K \times R \times n_f}`
+        """
+        # Gather input feature from nearest neighbor
+        Fout = FeaturesDownsamplingLayer.gather_input_features(Fin, ND)
+        return Fout[:, :, 0, :]
+
     # ---   UTIL METHODS   --- #
     # ------------------------ #
     @staticmethod
@@ -179,7 +203,7 @@ class FeaturesDownsamplingLayer(Layer):
         r"""
         Compute the squared distances between the downsampled points and those
         points in the non-downsampled space topologically connected to them
-        (typically because they are the closest neighbors).
+        (typically because they are the nearest neighbors).
 
         Let :math:`\pmb{X}_a \in \mathbb{R}^{m \times n_x}` be a structure
         space matrix (i.e., a matrix of point-wise coordinates) representing

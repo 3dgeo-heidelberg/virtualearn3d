@@ -240,7 +240,8 @@ class ConvAutoencPwiseClassif(Architecture):
         x = self.F
         for _ in range(ops_per_depth[0]):
             x = GroupingPointNetLayer(
-                self.feature_extraction['feature_space_dims'][i]
+                self.feature_extraction['feature_space_dims'][i],
+                name=f'GPNet_d1_{i+1}'
             )([x, self.Ns[0]])
             i += 1
         self.skip_links.append(x)
@@ -253,7 +254,8 @@ class ConvAutoencPwiseClassif(Architecture):
             ])
             for _ in range(ops_per_depth[d+1]):
                 x = GroupingPointNetLayer(
-                    self.feature_extraction['feature_space_dims'][i]
+                    self.feature_extraction['feature_space_dims'][i],
+                    name=f'GPNet_d{d+2}_{i+1}'
                 )([x, self.Ns[d+1]])
                 i += 1
             self.skip_links.append(x)
@@ -273,6 +275,7 @@ class ConvAutoencPwiseClassif(Architecture):
         :rtype: :class:`tf.Tensor`
         """
         # Prepare upsampling method
+        # TODO Rethink : Update upsampling layer to be like downsampling layer
         strategy_low = self.upsampling_strategy.lower()
         if strategy_low == 'interpolation':
             upsampling_method = self.build_interp_upsampling_hierarchy
