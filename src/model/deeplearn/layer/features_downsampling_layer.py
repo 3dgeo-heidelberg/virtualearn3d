@@ -12,14 +12,24 @@ class FeaturesDownsamplingLayer(Layer):
     # TODO Rethink : Doc
     # ---   INIT   --- #
     # ---------------- #
-    def __init__(self, **kwargs):
+    def __init__(self, filter='mean', **kwargs):
         """
         See :class:`.Layer` and :meth:`layer.Layer.__init__`.
         """
         # Call parent's init
         super().__init__(**kwargs)
         # Assign attributes
-        self.filter = kwargs.get('filter', 'mean')  # Either mean or gaussian
+        self.filter = filter  # Either mean or gaussian
+        filter_low = self.filter.lower()
+        if filter_low == 'mean':
+            self.filter_f = self.mean_filter
+        elif filter_low == 'gaussian':
+            self.filter_f = self.gaussian_filter
+        else:
+            raise DeepLearningException(
+                'FeaturesDownsamplingLayer cannot be built for requested '
+                f'filter: "{self.filter}"'
+            )
 
     # ---   LAYER METHODS   --- #
     # ------------------------- #
@@ -37,12 +47,7 @@ class FeaturesDownsamplingLayer(Layer):
         Xb = inputs[1]
         Fin = inputs[2]
         ND = inputs[3]
-        # TODO Rethink : Implement
-        # TODO Remove : Debug section ---
-        #out = FeaturesDownsamplingLayer.gaussian_filter(Xa, Xb, Fin, ND)
-        out = FeaturesDownsamplingLayer.mean_filter(Xa, Xb, Fin, ND)
-        return out  # TODO Remove
-        # --- TODO Remove : Debug section
+        return self.filter_f(Xa, Xb, Fin, ND)
 
     # ---  DOWNSAMPLING FILTERS  --- #
     # ------------------------------ #
@@ -78,10 +83,7 @@ class FeaturesDownsamplingLayer(Layer):
     def compute_squared_distances(Xa, Xb, ND):
         # TODO Rethink : Doc
         XaND = tf.gather(Xa, ND, axis=1, batch_dims=1)
-        Xdiff = tf.transpose(
-            tf.transpose(XaND, [3, 0, 1, 2]) - Xb,
-            [1, 2, 3, 0]
-        )
+        Xdiff = tf.transpose(tf.transpose(XaND, [2, 0, 1, 3])-Xb, [1, 2, 0, 3])
         Xsd = tf.reduce_sum(tf.square(Xdiff), axis=3)  # Squared differences
         return Xsd
 
