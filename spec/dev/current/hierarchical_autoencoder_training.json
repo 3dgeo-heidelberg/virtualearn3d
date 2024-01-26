@@ -16,7 +16,7 @@
         "plot_path": "*class_reduction.svg"
     },
     {
-        "train": "HierarchicalAutoencoderPwiseClassifier",
+        "train": "ConvolutionalAutoencoderPwiseClassifier",
         "fnames": ["AUTO"],
         "training_type": "base",
         "random_seed": null,
@@ -55,7 +55,12 @@
 				"operations_per_depth": [2, 1, 1, 1, 1],
 				"feature_space_dims": [64, 64, 128, 256, 512, 1024],	
 			},
+			"downsampling_filter": "mean OR gaussian",
 			"upsampling_strategy": "interpolation OR nearest",
+			"upsampling_bn": true,
+			"upsampling_momentum": 0.0,
+			"conv1d_kernel_initializer": "glorot_normal",
+			"output_kernel_initializer": "glorot_normal",
             "model_handling": {
                 "summary_report_path": "*/model_summary.log",
                 "training_history_dir": "*/training_eval/history",

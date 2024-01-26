@@ -245,7 +245,10 @@ class ConvAutoencPwiseClassif(Architecture):
             i += 1
         self.skip_links.append(x)
         for d in range(self.max_depth-1):
-            x = FeaturesDownsamplingLayer()([
+            x = FeaturesDownsamplingLayer(
+                filter=self.downsampling_filter,
+                name=f'DOWN_{d+2}'
+            )([
                 self.Xs[d], self.Xs[d+1], x, self.NDs[d]
             ])
             for _ in range(ops_per_depth[d+1]):

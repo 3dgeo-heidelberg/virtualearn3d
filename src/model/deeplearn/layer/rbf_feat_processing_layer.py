@@ -222,7 +222,7 @@ class RBFFeatProcessingLayer(Layer):
 
     def call(self, inputs, training=False, mask=False):
         r"""
-        The computation of the :math:`\pmb{Y} \in \mathbb{m \times Kn_f}`
+        The computation of the :math:`\pmb{Y} \in \mathbb{R}^{m \times Kn_f}`
         output matrix.
 
         :return: The processed output features.
