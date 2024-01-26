@@ -171,5 +171,14 @@ class FeaturesUpsamplingLayerTest(VL3DTest):
             I = kdt.query(Xb, k=1)[1]
             ref_out = F[I]
             if not np.allclose(fdl_nearest_out[k], ref_out, atol=self.eps, rtol=0):
-                return False
+                if np.any(
+                    np.linalg.norm(X[I]-Xb, axis=1) -
+                    np.linalg.norm(X[NU[:, 0]]-Xb, axis=1)
+                    != 0
+                ):
+                    # Fail test
+                    return False
+                # Otherwise dont fail the tests because the differences are
+                # explained by nearest-neighbor ambiguity, i.e., more than
+                # one point is at min distance wrt some given point
         return True

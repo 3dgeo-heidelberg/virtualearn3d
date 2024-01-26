@@ -238,13 +238,13 @@ class ConvAutoencPwiseClassif(Architecture):
         # TODO Rethink : Consider operations_per_depth
         self.skip_links = []
         i = 0
-        ops_per_depth= self.feature_extraction['operations_per_depth']
+        ops_per_depth = self.feature_extraction['operations_per_depth']
         x = self.F
         for _ in range(ops_per_depth[0]):
             x = GroupingPointNetLayer(
                 self.feature_extraction['feature_space_dims'][i],
                 name=f'GPNet_d1_{i+1}'
-            )([x, self.Ns[0]])
+            )([self.Xs[0], self.x, self.Ns[0]])
             i += 1
         self.skip_links.append(x)
         for d in range(self.max_depth-1):
@@ -258,12 +258,15 @@ class ConvAutoencPwiseClassif(Architecture):
                 x = GroupingPointNetLayer(
                     self.feature_extraction['feature_space_dims'][i],
                     name=f'GPNet_d{d+2}_{i+1}'
-                )([x, self.Ns[d+1]])
+                )([self.Xs[d+1], x, self.Ns[d+1]])
                 i += 1
             self.skip_links.append(x)
         self.last_downsampling_tensor = x
 
     def build_downsampling_kpconv_hierarchy(self):
+        """
+        Build the downsampling hierarchy based on the KPConv operator.
+        """
         raise DeepLearningException(
             'ConvAutoencPwiseClassif does not support KPConv-based '
             'downsampling hierarchies YET.'

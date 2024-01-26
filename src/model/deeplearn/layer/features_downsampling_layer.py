@@ -45,7 +45,7 @@ class FeaturesDownsamplingLayer(Layer):
         # Call parent's init
         super().__init__(**kwargs)
         # Assign attributes
-        self.filter = filter  # Either mean or gaussian
+        self.filter = filter  # Either mean, gaussian, or nearest
         filter_low = self.filter.lower()
         if filter_low == 'mean':
             self.filter_f = self.mean_filter
@@ -165,7 +165,7 @@ class FeaturesDownsamplingLayer(Layer):
         gaussians = tf.exp(D_sq/tf.expand_dims(omega_sq, 2))
         gaussian_norms = tf.reduce_sum(gaussians, axis=2)
         Fout = FeaturesDownsamplingLayer.gather_input_features(Fin, ND)
-        Fout = tf.transpose(  # Gaussian x F_downsampmled
+        Fout = tf.transpose(  # Gaussian x F_downsampled
             gaussians * tf.transpose(Fout, [3, 0, 1, 2]),
             [1, 2, 3, 0]
         )
