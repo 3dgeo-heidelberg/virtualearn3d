@@ -16,7 +16,7 @@ class FeaturesDownsamplingLayer(Layer):
     :math:`n_f` features each.
 
     It can use a mean-based filter to reduce the features (
-    see :meth:`FeaturesDownsamplingLayer.mean_filter`) or a gaussian-like
+    see :meth:`FeaturesDownsamplingLayer.mean_filter`) or a Gaussian-like
     filter to reduce the features considering the distances between the
     points (see :meth:`FeaturesDownsamplingLayer.gaussian_filter`).
     Alternatively, a simpler nearest-neighbor filter can be used too
@@ -70,7 +70,7 @@ class FeaturesDownsamplingLayer(Layer):
 
     def call(self, inputs, training=False, mask=False):
         r"""
-        Downsample the features for :math:`m` input points to :math:`R`
+        Downsample the features from :math:`m` input points to :math:`R`
         output points, where :math:`R \leq m`.
 
         :param inputs: The inputs such that:
@@ -186,7 +186,7 @@ class FeaturesDownsamplingLayer(Layer):
 
         .. math::
             p^* = \operatorname*{argmin}_{1 \leq p \leq n_n} \; { \lVert
-                (\mathcal{X}_a)_{kn_{ip}*} -
+                (\mathcal{X}_a)_{kn_{ip}^D*} -
                 (\mathcal{X}_b)_{ki*}
             } \rVert^2
 

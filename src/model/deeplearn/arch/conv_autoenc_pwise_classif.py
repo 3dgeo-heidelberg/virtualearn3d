@@ -8,6 +8,8 @@ from src.model.deeplearn.dlrun.hierarchical_fps_post_processor import \
     HierarchicalFPSPostProcessor
 from src.model.deeplearn.layer.features_downsampling_layer import \
     FeaturesDownsamplingLayer
+from src.model.deeplearn.layer.features_upsampling_layer import \
+    FeaturesUpsamplingLayer
 from src.utils.dl_utils import DLUtils
 import tensorflow as tf
 
@@ -53,8 +55,8 @@ class ConvAutoencPwiseClassif(Architecture):
         self.downsampling_filter = kwargs.get(
             'downsampling_filter', 'mean'
         )
-        self.upsampling_strategy = kwargs.get(
-            'upsampling_strategy', 'interpolation'
+        self.upsampling_filter = kwargs.get(
+            'upsampling_strategy', 'mean'
         )
         self.upsampling_bn = kwargs.get('upsampling_bn', True)
         self.upsampling_bn_momentum = kwargs.get(
@@ -248,7 +250,7 @@ class ConvAutoencPwiseClassif(Architecture):
         for d in range(self.max_depth-1):
             x = FeaturesDownsamplingLayer(
                 filter=self.downsampling_filter,
-                name=f'DOWN_{d+2}'
+                name=f'DOWN_d{d+2}'
             )([
                 self.Xs[d], self.Xs[d+1], x, self.NDs[d]
             ])
@@ -274,27 +276,19 @@ class ConvAutoencPwiseClassif(Architecture):
         :return: The last layer of the upsampling hierarchy.
         :rtype: :class:`tf.Tensor`
         """
-        # Prepare upsampling method
-        # TODO Rethink : Update upsampling layer to be like downsampling layer
-        strategy_low = self.upsampling_strategy.lower()
-        if strategy_low == 'interpolation':
-            upsampling_method = self.build_interp_upsampling_hierarchy
-        elif strategy_low == 'nearest':
-            upsampling_method = self.build_nn_upsampling_hierarchy
-        else:
-            raise DeepLearningException(
-                'ConvAutoencPwiseClassif received a '
-                f'"{self.upsampling_strategy}" upsampling strategy. '
-                'It is not supported.'
-            )
-        # Build the upsampling blocks
         x = self.last_downsampling_tensor
         for d in range(self.max_depth-1):
             reverse_d = self.max_depth-2-d
             skip_link = self.skip_links[reverse_d]
             # Upsampling layer itself
-            x = upsampling_method(reverse_d)([x, self.NUs[reverse_d]])
-            x = tf.keras.layers.Concatenate([x, skip_link])
+            x = FeaturesUpsamplingLayer(
+                filter=self.upsampling_filter,
+                name=f'UP_d{reverse_d+2}'
+            )(self.Xs[reverse_d], self.Xs[reverse_d-1], x, self.NUs[reverse_d])
+            x = tf.keras.layers.Concatenate(
+                [x, skip_link],
+                name=f'CONCAT_d{reverse_d+1}'
+            )
             # 1D convolutions after upsampling
             filters = self.feature_extraction['feature_space_dims'][reverse_d]
             x = tf.keras.layers.Conv1D(
@@ -302,24 +296,13 @@ class ConvAutoencPwiseClassif(Architecture):
                 kernel_size=1,
                 stride=1,
                 padding="valid",
-                kernel_initializer=self.conv1d_kernel_initializer
+                kernel_initializer=self.conv1d_kernel_initializer,
+                name=f'Conv1D_d{reverse_d+1}'
             )(x)
             if self.upsampling_bn:
                 x = tf.keras.layers.BatchNormalization(
-                    momentum=self.upsampling_bn_momentum
+                    momentum=self.upsampling_bn_momentum,
+                    name=f'BN_d{reverse_d+1}'
                 )
             x = tf.keras.layers.Activation("relu")(x)
         self.last_upsampling_tensor = x
-
-    def build_interp_upsampling_hierarchy(self, reverse_d):
-        """
-        Build the upsampling hierarchy through interpolation.
-        """
-        return InterpolatedUpsamplingLayer()
-
-    def build_nn_upsampling_hierarchy(self, reverse_d):
-        """
-        Build the upsampling hierarchy by nearest neighbor.
-        """
-        return NearestUpsamplingLayer()
-
