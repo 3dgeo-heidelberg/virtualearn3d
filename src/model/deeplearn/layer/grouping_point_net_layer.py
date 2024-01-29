@@ -97,7 +97,7 @@ class GroupingPointNetLayer(Layer):
         )
         # Build the coefficients for the gamma-functions
         self.gamma = self.add_weight(
-            shape=(self.dim_out, self.calc_full_dimensionality()),
+            shape=(self.dim_out, self.dim_out),
             initializer=self.gamma_kernel_initializer,
             regularizer=self.gamma_kernel_regularizer,
             constraint=self.gamma_kernel_constraint,
@@ -107,7 +107,7 @@ class GroupingPointNetLayer(Layer):
         )
         if self.gamma_bias_enabled:
             self.gamma_bias = self.add_weight(
-                shape=(1, ),
+                shape=(self.dim_out, ),
                 initializer=self.gamma_bias_initializer,
                 regularizer=self.gamma_bias_regularizer,
                 constraint=self.gamma_bias_constraint,
@@ -126,17 +126,21 @@ class GroupingPointNetLayer(Layer):
         # Concatenate X and F to have full dimensionality
         P = tf.concat([X, F], axis=2)  # P = [X | F]
         P_groups = tf.gather(P, N, axis=1, batch_dims=1)
-        PodotH = tf.tile(  # Shared MLP (also Conv1D with win_size 1 and stride 1)
-            tf.expand_dims(P_groups, axis=3),
-            [1, 1, 1, self.dim_out, 1]
-        )*self.H  # odot for LaTeX \odot, typical symbol for Hadamard product
+        PHT = tf.tensordot(  # P x H^T (i.e., SharedMLP, Unitary-1DConv)
+            P_groups,
+            self.H,
+            axes=[[3], [1]]
+        )
         if self.H_activation is not None:
-            PodotH = self.H_activation(PodotH)
-        PodotH_max = tf.reduce_max(  # Component-wise max on features vectors
-            PodotH,
+            PHT = self.H_activation(PHT)
+        PHT_max = tf.reduce_max(  # Component-wise max on features vectors
+            PHT,
             axis=2
         )  # K (batch size) x m (num points) x Dout (dim_out) x n (n_x+n_f)
-        gamma_max = tf.reduce_sum(PodotH_max*self.gamma, axis=3)
+        # Classic MLP (i.e., Dense) with weights in gamma
+        gamma_max = tf.tensordot(PHT_max, self.gamma, axes=[[2], [0]])
+        if self.gamma_bias_enabled:
+            gamma_max = self.gamma_bias + gamma_max
         if self.gamma_activation is not None:
             gamma_max = self.gamma_activation(gamma_max)
         return gamma_max

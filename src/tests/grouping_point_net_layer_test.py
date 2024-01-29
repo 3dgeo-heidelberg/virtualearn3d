@@ -61,5 +61,33 @@ class GroupingPointNetLayerTest(VL3DTest):
         # Compute grouping PointNet layer
         with tf.device("cpu:0"):
             gpnl_out = gpnl.call(inputs)
+        # Validate
+        valid = True
+        valid = valid and self.validate_no_activation(
+            inputs, num_near_neighs, dim_out, gpnl, gpnl_out
+        )
         # TODO Rethink : Implement
+        return valid
+
+    # ---  UTIL METHODS  --- #
+    # ---------------------- #
+    def validate_no_activation(self, inputs, nneighs, Dout, gpnl, gpnl_out):
+        # TODO Rethink : Doc
+        X_batch, F_batch, N_batch = inputs
+        num_elems_in_batch = X_batch.shape[0]
+        gpnl_out = np.array(gpnl_out)
+        H, gamma, gamma_bias = list(map(np.array, [
+            gpnl.H, gpnl.gamma, gpnl.gamma_bias
+        ]))
+        for k in range(num_elems_in_batch):
+            X, F, N = X_batch[k], F_batch[k], N_batch[k]
+            P = np.hstack([X, F])
+            P_groups = np.array([P[Ni] for Ni in N])
+            PHT = np.tensordot(P_groups, H, axes=[[2], [1]])
+            PHT_max = np.max(PHT, axis=1)
+            gamma_max = PHT_max @ gamma + gamma_bias
+            if not np.allclose(gpnl_out[k], gamma_max, atol=self.eps, rtol=0):
+                return False
+            # TODO Rethink : Implement
         return True
+
