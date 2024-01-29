@@ -40,7 +40,6 @@ class GroupingPointNetLayerTest(VL3DTest):
         num_features = 6
         dim_out = 7
         t = np.linspace(0, 2, points_per_axis)
-        o = np.ones(3)
         X1 = np.array([
             [x, y, z]
             for x in t for y in t for z in t
@@ -66,13 +65,23 @@ class GroupingPointNetLayerTest(VL3DTest):
         valid = valid and self.validate_no_activation(
             inputs, num_near_neighs, dim_out, gpnl, gpnl_out
         )
-        # TODO Rethink : Implement
         return valid
 
     # ---  UTIL METHODS  --- #
     # ---------------------- #
     def validate_no_activation(self, inputs, nneighs, Dout, gpnl, gpnl_out):
-        # TODO Rethink : Doc
+        """
+        Check whether the no-activated :class:`.GroupingPointNetLayer` yielded
+        the expected output (True) or not (False).
+
+        :param inputs: The inputs to the layer.
+        :param nneighs: The number of neighbors per group.
+        :param Dout: The output dimensionality.
+        :param gpnl: The layer.
+        :type gpnl: :class:`.GroupingPointNetLayer`
+        :param gpnl_out: The output of the layer.
+        :return: True if the output is okay, False otherwise.
+        """
         X_batch, F_batch, N_batch = inputs
         num_elems_in_batch = X_batch.shape[0]
         gpnl_out = np.array(gpnl_out)
@@ -88,6 +97,4 @@ class GroupingPointNetLayerTest(VL3DTest):
             gamma_max = PHT_max @ gamma + gamma_bias
             if not np.allclose(gpnl_out[k], gamma_max, atol=self.eps, rtol=0):
                 return False
-            # TODO Rethink : Implement
         return True
-

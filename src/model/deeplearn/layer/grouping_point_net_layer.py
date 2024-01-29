@@ -10,8 +10,46 @@ import tensorflow as tf
 class GroupingPointNetLayer(Layer):
     r"""
     :author: Alberto M. Esmoris Pena
+
+    A grouping point net layer receives batches of :math:`R` points with
+    :math:`n` features each (typically, :math:`n=n_x+n_f`, i.e., the sum of
+    the input structure and feature spaces), and :math:`\kappa` known neighbors
+    in the same space. These inputs are used to compute an output feature space
+    of :math:`R` points with :math:`D_{\text{out}}` features each. In doing so,
+    the indexing tensor
+    :math:`\mathcal{N} \in \mathbb{Z}^{K \times R \times \kappa}`
+    is used to link :math:`\kappa` neighbors for each of the :math:`R` input
+    points in each of the :math:`K` input batches.
+
+    The layer is defined by a matrix
+    :math:`\pmb{H} \in \mathbb{R}^{D_{\text{out}} \times n}` that governs the
+    weights for the SharedMLP (also, unitary 1DConv, i.e., win size one and
+    stride one), and a pair (matrix, vector) governing the weights and the bias
+    of the classical MLP (typical Dense layer in Keras):
+
+    .. math::
+        (
+            \pmb{\Gamma} \in
+                \mathbb{R}^{D_{\text{out}} \times D_{\text{out}}},
+            \pmb{\gamma} \in \mathbb{R}^{D_{\text{out}}}
+        )
+
+    The grouping PointNet layer applies a PointNet-like operator:
+
+    .. math::
+        \left(
+            \gamma \circ \operatorname*{MAX}_{1 \leq i \leq \kappa}
+        \right)\left(
+            \left\{h(\pmb{p}_{i*})\right\}
+        \right)
+
+    To each of the neighborhoods, for each point in the batch, for each batch
+    in the input. Where :math:`\pmb{p}_{i*} \in \mathbb{R}^{D_{\text{out}}}`
+    is the vector representation of the :math:`i`-th point inside a given
+    group (the neighborhood of a given input point). Note that
+    :math:`\operatorname{MAX}` is the component-wise max, as explained in the
+    PointNet paper (https://arxiv.org/abs/1612.00593).
     """
-    # TOOD Rethink : Doc class
     # ---   INIT   --- #
     # ---------------- #
     def __init__(
@@ -76,10 +114,18 @@ class GroupingPointNetLayer(Layer):
     # ---   LAYER METHODS   --- #
     # ------------------------- #
     def build(self, dim_in):
-        """
+        r"""
+        Build the :math:`\pmb{H} \in \mathbb{R}^{D_{\text{out}} \times n}`
+        matrix representing the kernel or weights of the 1DConv or SharedMLP,
+        also the
+        :math:`\pmb{\Gamma} \in \mathbb{R}^{D_{\text{out}} \times D_{\text{out}}}`
+        representing the weights of the MLP, and
+        :math:`\pmb{\gamma} \in \mathbb{R}^{D_{\text{out}}}` representing its
+        bias (if requested).
+
+
         See :class:`.Layer` and :meth:`layer.Layer.build`.
         """
-        # TODO Rethink : Doc (see features_structuring_layer)
         # Call parent's build
         super().build(dim_in)
         # Find the dimensionalities
@@ -118,7 +164,69 @@ class GroupingPointNetLayer(Layer):
         self.built = True
 
     def call(self, inputs, training=False, mask=False):
-        # TODO Rethink : Doc
+        r"""
+        The computation of the
+        :math:`\mathcal{Y} \in \mathbb{R}^{K \times R \times D_{\text{out}}}`
+        output feature space.
+
+        First, the structure and feature spaces are concatenated to compose the
+        full point cloud matrix :math:`\pmb{P} = [\pmb{X} | \pmb{F}]` for each
+        neighborhood in each receptive field in the batch. Then, these
+        :math:`\pmb{P} \in \mathbb{R}^{\kappa \times n}` matrices are convolved
+        through a SharedMLP (Unitary-1DConv) such that
+        :math:`(\pmb{P}\pmb{H}^\intercal) \in \mathbb{R}^{\kappa \times D_{\text{out}}}`.
+
+        Then, the component-wise max is computed to achieve a vector
+        representation of each point
+        :math:`\pmb{p}_{i*}^* \in \mathbb{R}^{D_{\text{out}}},\, i=1,\ldots,R`.
+        These representations can be aranged as row-wise vectors in a matrix
+        :math:`\pmb{P}^{*} \in \mathbb{R}^{R \times D_{\text{out}}}`.
+
+        Finally, an MLP must be computed on the :math:`\pmb{P}^*` matrix. It
+        can be done without bias:
+
+        .. math::
+            \pmb{Y} = \pmb{P}^{*} \pmb{\Gamma}
+
+        Or it can be computed with bias:
+
+        .. math::
+            \pmb{Y} = (\pmb{P}^{*} \pmb{\Gamma}) \oplus \pmb{\gamma}
+
+        Where :math:`\oplus` is the broadcast sum typical in machine learning
+        contexts. More concretely, it is a sum of the
+        :math:`\pmb{\gamma} \in \mathbb{R}^{D_{\text{out}}}` vector
+        along the rows of the
+        :math:`(\pmb{P}^* \pmb{\Gamma}) \in \mathbb{R}^{R \times D_{\text{out}}}`
+        matrix.
+
+        :param inputs: The input such that:
+
+            -- inputs[0]
+                is the structure space tensor representing the geometry of the
+                many receptive fields in the batch.
+
+                .. math::
+                    \mathcal{X} \in \mathbb{R}^{K \times R \times n_x}
+
+            -- inputs[1]
+                is the feature space tensor representing the features of the
+                many receptive fields in the batch.
+
+                .. math::
+                    \mathcal{F} \in \mathbb{R}^{K \times R \times n_f}
+
+            -- inputs[2]
+                is the indexing tensor representing the neighborhoods of
+                :math:`\kappa` neighbors for each input point, in the same
+                space.
+
+                .. math::
+                    \mathcal{N} \in \mathbb{R}^{K \times R \times \kappa}
+
+        :return: The output feature space
+            :math:`\mathcal{Y} \in \mathbb{R}^{K \times R \times D_{\text{out}}}`.
+        """
         # Extract input
         X = inputs[0]
         F = inputs[1]
