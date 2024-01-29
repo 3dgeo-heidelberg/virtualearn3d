@@ -200,6 +200,9 @@ class GroupingPointNetLayer(Layer):
         :math:`(\pmb{P}^* \pmb{\Gamma}) \in \mathbb{R}^{R \times D_{\text{out}}}`
         matrix.
 
+        The output tensor is simply a concatenation along the external axis
+        of the many (:math:`K`) :math:`\pmb{Y}` matrices.
+
         :param inputs: The input such that:
 
             -- inputs[0]
@@ -222,7 +225,7 @@ class GroupingPointNetLayer(Layer):
                 space.
 
                 .. math::
-                    \mathcal{N} \in \mathbb{R}^{K \times R \times \kappa}
+                    \mathcal{N} \in \mathbb{Z}^{K \times R \times \kappa}
 
         :return: The output feature space
             :math:`\mathcal{Y} \in \mathbb{R}^{K \times R \times D_{\text{out}}}`.

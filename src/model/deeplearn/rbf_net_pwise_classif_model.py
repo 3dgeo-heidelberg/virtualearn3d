@@ -282,8 +282,8 @@ class RBFNetPwiseClassifModel(ClassificationModel):
             X, y=y, zout=zout, plots_and_reports=plots_and_reports
         )
 
-    # ---  POINT NET PWISE CLASSIF METHODS  --- #
-    # ----------------------------------------- #
+    # ---  RBFNET PWISE CLASSIF METHODS  --- #
+    # -------------------------------------- #
     def compute_pwise_activations(self, X):
         """
         Compute the point wise activations of the last layer before the

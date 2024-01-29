@@ -10,6 +10,8 @@ from src.model.deeplearn.layer.features_downsampling_layer import \
     FeaturesDownsamplingLayer
 from src.model.deeplearn.layer.features_upsampling_layer import \
     FeaturesUpsamplingLayer
+from src.model.deeplearn.layer.grouping_point_net_layer import \
+    GroupingPointNetLayer
 from src.utils.dl_utils import DLUtils
 import tensorflow as tf
 
@@ -145,6 +147,7 @@ class ConvAutoencPwiseClassif(Architecture):
         self.NDs = [
             tf.keras.layers.Input(
                 shape=(None, self.num_downsampling_neighbors[d]),
+                dtype='int32',
                 name=f'ND_{d+1}'
             )
             for d in range(1, self.max_depth)
@@ -153,6 +156,7 @@ class ConvAutoencPwiseClassif(Architecture):
         self.Ns = [
             tf.keras.layers.Input(
                 shape=(None, self.num_pwise_neighbors[d]),
+                dtype='int32',
                 name=f'N_{d+1}'
             )
             for d in range(self.max_depth)
@@ -161,6 +165,7 @@ class ConvAutoencPwiseClassif(Architecture):
         self.NUs = [
             tf.keras.layers.Input(
                 shape=(None, self.num_upsampling_neighbors[d]),
+                dtype='int32',
                 name=f'NU_{d+1}'
             )
             for d in range(1, self.max_depth)
@@ -208,7 +213,7 @@ class ConvAutoencPwiseClassif(Architecture):
             activation='softmax',
             kernel_initializer=self.output_kernel_initializer,
             name='pwise_out'
-        )
+        )(x)
 
     # ---  CONVOLUTIONAL AUTOENCODER PWISE CLASSIF METHODS  --- #
     # --------------------------------------------------------- #
@@ -235,7 +240,6 @@ class ConvAutoencPwiseClassif(Architecture):
         """
         Build the downsampling hierarchy based on the PointNet operator.
         """
-        # TODO Rethink : Consider operations_per_depth
         self.skip_links = []
         i = 0
         ops_per_depth = self.feature_extraction['operations_per_depth']
@@ -243,8 +247,34 @@ class ConvAutoencPwiseClassif(Architecture):
         for _ in range(ops_per_depth[0]):
             x = GroupingPointNetLayer(
                 self.feature_extraction['feature_space_dims'][i],
+                H_activation=self.feature_extraction['H_activation'][i],
+                H_initializer=self.feature_extraction['H_initializer'][i],
+                H_regularizer=self.feature_extraction['H_regularizer'][i],
+                H_constraint=self.feature_extraction['H_constraint'][i],
+                gamma_activation=self.feature_extraction['gamma_activation'][i],
+                gamma_kernel_initializer=self.feature_extraction[
+                    'gamma_kernel_initializer'
+                ][i],
+                gamma_kernel_regularizer=self.feature_extraction[
+                    'gamma_kernel_regularizer'
+                ][i],
+                gamma_kernel_constraint=self.feature_extraction[
+                    'gamma_kernel_constraint'
+                ][i],
+                gamma_bias_enabled=self.feature_extraction[
+                    'gamma_bias_enabled'
+                ][i],
+                gamma_bias_initializer=self.feature_extraction[
+                    'gamma_bias_initializer'
+                ][i],
+                gamma_bias_regularizer=self.feature_extraction[
+                    'gamma_bias_regularizer'
+                ][i],
+                gamma_bias_constraint=self.feature_extraction[
+                    'gamma_bias_constraint'
+                ][i],
                 name=f'GPNet_d1_{i+1}'
-            )([self.Xs[0], self.x, self.Ns[0]])
+            )([self.Xs[0], x, self.Ns[0]])
             i += 1
         self.skip_links.append(x)
         for d in range(self.max_depth-1):
@@ -257,6 +287,32 @@ class ConvAutoencPwiseClassif(Architecture):
             for _ in range(ops_per_depth[d+1]):
                 x = GroupingPointNetLayer(
                     self.feature_extraction['feature_space_dims'][i],
+                    H_activation=self.feature_extraction['H_activation'][i],
+                    H_initializer=self.feature_extraction['H_initializer'][i],
+                    H_regularizer=self.feature_extraction['H_regularizer'][i],
+                    H_constraint=self.feature_extraction['H_constraint'][i],
+                    gamma_activation=self.feature_extraction['gamma_activation'][i],
+                    gamma_kernel_initializer=self.feature_extraction[
+                        'gamma_kernel_initializer'
+                    ][i],
+                    gamma_kernel_regularizer=self.feature_extraction[
+                        'gamma_kernel_regularizer'
+                    ][i],
+                    gamma_kernel_constraint=self.feature_extraction[
+                        'gamma_kernel_constraint'
+                    ][i],
+                    gamma_bias_enabled=self.feature_extraction[
+                        'gamma_bias_enabled'
+                    ][i],
+                    gamma_bias_initializer=self.feature_extraction[
+                        'gamma_bias_initializer'
+                    ][i],
+                    gamma_bias_regularizer=self.feature_extraction[
+                        'gamma_bias_regularizer'
+                    ][i],
+                    gamma_bias_constraint=self.feature_extraction[
+                        'gamma_bias_constraint'
+                    ][i],
                     name=f'GPNet_d{d+2}_{i+1}'
                 )([self.Xs[d+1], x, self.Ns[d+1]])
                 i += 1
@@ -287,17 +343,16 @@ class ConvAutoencPwiseClassif(Architecture):
             x = FeaturesUpsamplingLayer(
                 filter=self.upsampling_filter,
                 name=f'UP_d{reverse_d+2}'
-            )(self.Xs[reverse_d], self.Xs[reverse_d-1], x, self.NUs[reverse_d])
+            )([self.Xs[reverse_d], self.Xs[reverse_d-1], x, self.NUs[reverse_d]])
             x = tf.keras.layers.Concatenate(
-                [x, skip_link],
                 name=f'CONCAT_d{reverse_d+1}'
-            )
+            )([x, skip_link])
             # 1D convolutions after upsampling
             filters = self.feature_extraction['feature_space_dims'][reverse_d]
             x = tf.keras.layers.Conv1D(
                 filters,
                 kernel_size=1,
-                stride=1,
+                strides=1,
                 padding="valid",
                 kernel_initializer=self.conv1d_kernel_initializer,
                 name=f'Conv1D_d{reverse_d+1}'
@@ -306,6 +361,6 @@ class ConvAutoencPwiseClassif(Architecture):
                 x = tf.keras.layers.BatchNormalization(
                     momentum=self.upsampling_bn_momentum,
                     name=f'BN_d{reverse_d+1}'
-                )
+                )(x)
             x = tf.keras.layers.Activation("relu")(x)
         self.last_upsampling_tensor = x

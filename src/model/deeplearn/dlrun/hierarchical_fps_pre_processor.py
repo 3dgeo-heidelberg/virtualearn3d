@@ -260,18 +260,18 @@ class HierarchicalFPSPreProcessor(ReceptiveFieldPreProcessor):
                 'This MUST not happen.'
             )
         # Neighborhoods for hierarchical representation
-        Dout = [
+        Dout = np.array([
             self.last_call_receptive_fields[i].get_downsampling_matrices()
             for i in range(len(I))
-        ]
-        Nout = [
+        ], dtype='object').T.tolist()
+        Nout = np.array([
             self.last_call_receptive_fields[i].get_neighborhood_matrices()
             for i in range(len(I))
-        ]
-        Uout = [
+        ], dtype='object').T.tolist()
+        Uout = np.array([
             self.last_call_receptive_fields[i].get_upsampling_matrices()
             for i in range(len(I))
-        ]
+        ], dtype='object').T.tolist()
         # Handle labels
         if y is not None:
             yout = self.reduce_labels(Xout, y, I=I)
