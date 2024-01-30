@@ -259,6 +259,19 @@ class HierarchicalFPSPreProcessor(ReceptiveFieldPreProcessor):
                 'HierarchicalFPSPreProcessor yielded a null Fout (None). '
                 'This MUST not happen.'
             )
+        # Structure spaces strictly AFTER depth 1
+        Xdout = [
+            np.array([
+                self.last_call_receptive_fields[i].Ys[d]
+                for i in range(len(I))
+            ])
+            for d in range(1, self.depth)
+        ]
+        if self.to_unit_sphere:
+            Xdout = list(map(
+                ReceptiveFieldPreProcessor.transform_to_unit_sphere,
+                Xdout
+            ))
         # Neighborhoods for hierarchical representation
         Dout = np.array([
             self.last_call_receptive_fields[i].get_downsampling_matrices()
@@ -280,7 +293,7 @@ class HierarchicalFPSPreProcessor(ReceptiveFieldPreProcessor):
                 f'The hierarchical FPS pre processor pre-processed '
                 f'{X.shape[0]} points for training in {end-start:.3f} seconds.'
             )
-            return [Xout, Fout] + Dout + Nout + Uout, yout
+            return [Xout, Fout] + Xdout + Dout + Nout + Uout, yout
         LOGGING.LOGGER.info(
             'The hierarchical FPS pre processor pre-processed '
             f'{X.shape[0]} points for predictions in {end-start:.3f} seconds.'

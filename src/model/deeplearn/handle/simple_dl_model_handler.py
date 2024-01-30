@@ -237,6 +237,10 @@ class SimpleDLModelHandler(DLModelHandler):
         if hasattr(self.arch, 'prefit_logic_callback'):
             self.arch.prefit_logic_callback(fit_cache_map)
         # Fit logic
+        # TODO Rethink : Debug section ---
+        # TODO Rethink : Move this to HierarchicalFPSPreProcessor end of call
+        X = [np.array(Xi) for i, Xi in enumerate(X) if i not in [6, 16]]
+        # --- TODO Rethink : Debug section
         self.history = self.compiled.fit(
             X, y_rf,
             epochs=self.training_epochs,
@@ -328,7 +332,8 @@ class SimpleDLModelHandler(DLModelHandler):
             )
         # Compile
         self.compiled.compile(
-            #run_eagerly=True,  # Uncomment for better debugging (but slower)
+            # TODO Rethink : Comment run_eaggerly below
+            run_eagerly=True,  # Uncomment for better debugging (but slower)
             **comp_args
         )
         return self

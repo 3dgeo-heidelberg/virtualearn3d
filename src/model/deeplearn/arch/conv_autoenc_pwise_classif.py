@@ -133,12 +133,12 @@ class ConvAutoencPwiseClassif(Architecture):
         :return: Built layer.
         :rtype: :class:`tf.Tensor`
         """
-        # Handle coordinates as input
+        # Handle coordinates as input (i.e., structure spaces)
         self.Xs = [
             tf.keras.layers.Input(shape=(None, 3), name=f'X_{d+1}')
             for d in range(self.max_depth)
         ]
-        # Handle input features
+        # Handle first receptive field input features
         self.F = tf.keras.layers.Input(
             shape=(None, len(self.fnames)),
             name='Fin'
@@ -171,7 +171,7 @@ class ConvAutoencPwiseClassif(Architecture):
             for d in range(1, self.max_depth)
         ]
         # Return list of inputs
-        return [self.Xs, self.F, self.NDs, self.Ns, self.NUs]
+        return [self.Xs[0], self.F, self.Xs[1:], self.NDs, self.Ns, self.NUs]
 
     def build_hidden(self, x, **kwargs):
         """

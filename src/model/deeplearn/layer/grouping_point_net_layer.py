@@ -281,7 +281,7 @@ class GroupingPointNetLayer(Layer):
         config.update({
             # Base attributes
             'dim_out': self.dim_out,
-            'H_activation': tf.keras.activation.serialize(self.H_activation),
+            'H_activation': tf.keras.activations.serialize(self.H_activation),
             'H_initializer': tf.keras.initializers.serialize(self.H_initializer),
             'H_regularizer': tf.keras.regularizers.serialize(self.H_regularizer),
             'H_constraint': tf.keras.constraints.serialize(self.H_constraint),
