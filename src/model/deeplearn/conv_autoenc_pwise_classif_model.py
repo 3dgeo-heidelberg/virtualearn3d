@@ -6,9 +6,13 @@ from src.model.deeplearn.arch.conv_autoenc_pwise_classif import \
 from src.model.deeplearn.handle.dl_model_handler import DLModelHandler
 from src.model.deeplearn.handle.simple_dl_model_handler import \
     SimpleDLModelHandler
+from src.report.classified_pcloud_report import ClassifiedPcloudReport
+from src.report.pwise_activations_report import PwiseActivationsReport
+from src.report.best_score_selection_report import BestScoreSelectionReport
 import src.main.main_logger as LOGGING
 from src.utils.dict_utils import DictUtils
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
+from sklearn.feature_selection import f_classif
 import numpy as np
 import time
 
@@ -210,19 +214,71 @@ class ConvAutoencClassificationModel(ClassificationModel):
                 f'{end-start:.3f} seconds.'
             )
 
-    def on_training_finished(self, X, y):
+    def on_training_finished(self, X, y, yhat=None):
         """
         See :meth:`model.Model.on_training_finished`.
         """
         # Retrieve F from object's cache
+        # TODO Rethink : Is cache_F necessary? remove it?
         F = self.cache_F
         self.cache_F = None
-        # Report scores for trained model
-        # TODO Rethink : Implement
-        # Report point-wise activation maps
-        # TODO Rethink : Implement
-        # Plot point-wise activation
-        # TODO Rethink : Implement
+        # TODO Rethink : Logic below (not above) to common impl. wrt PNet and RBFNet ?
+        # Compute predictions on training data
+        start = time.perf_counter()
+        zhat = None
+        if yhat is None:
+            zhat = []
+            yhat = self._predict(X, F=None, y=y, zout=zhat)
+            zhat = zhat[-1]
+        end = time.perf_counter()
+        LOGGING.LOGGER.info(
+            'ConvAutoenc point-wise classification on training point cloud '
+            f'computed in {end-start:.3f} seconds.'
+        )
+        # Training evaluation
+        super().on_training_finished(X, y, yhat=yhat)
+        # Get the coordinates matrix even when [X, F] is given
+        _X = X[0] if isinstance(X, list) else X
+        # Write classified point cloud
+        if self.training_classified_point_cloud_path is not None:
+            ClassifiedPcloudReport(
+                X=_X, y=y, yhat=yhat, zhat=zhat, class_names=self.class_names
+            ).to_file(
+                path=self.training_classified_point_cloud_path
+            )
+        # Write point-wise activations
+        if self.training_activations_path is not None:
+            start = time.perf_counter()
+            activations = self.compute_pwise_activations(X)
+            end = time.perf_counter()
+            LOGGING.LOGGER.info(
+                'ConvAutoenc point-wise activations computed in '
+                f'{end-start:.3f} seconds.'
+            )
+            PwiseActivationsReport(
+                X=_X, activations=activations, y=y
+            ).to_file(
+                path=self.training_activations_path
+            )
+            # ANOVA on activations
+            start = time.perf_counter()
+            Fval, pval = f_classif(activations, y)
+            end = time.perf_counter()
+            LOGGING.LOGGER.info(
+                'ANOVA computed on ConvAutoenc point-wise activations in '
+                f'{end-start:.3f} seconds.'
+            )
+            BestScoreSelectionReport(
+                fnames=None,
+                scores=Fval,
+                score_name='F-value',
+                pvalues=pval,
+                selected_features=None
+            ).to_file(
+                path=self.training_activations_path[
+                    :self.training_activations_path.rfind('.')
+                ] + '_ANOVA.csv'
+            )
 
     # ---  PREDICTION METHODS  --- #
     # ---------------------------- #
@@ -237,12 +293,17 @@ class ConvAutoencClassificationModel(ClassificationModel):
             of the receptive fields.
         """
         if F is None:
-            raise DeepLearningException(
-                'ConvAutoencPwiseClassifModel cannot work without features. '
-                'At least a column-wise vector of features must be given.'
-            )
+            if len(X) < 2:
+                raise DeepLearningException(
+                    'ConvAutoencPwiseClassifModel cannot work without features. '
+                    'At least a column-wise vector of features must be given.'
+                )
+            else:
+                P = X
+        else:
+            P = [X, F]
         return self.model.predict(
-            [X, F], y=y, zout=zout, plots_and_reports=plots_and_reports
+            P, y=y, zout=zout, plots_and_reports=plots_and_reports
         )
 
     # ---  RBFNET PWISE CLASSIF METHODS  --- #

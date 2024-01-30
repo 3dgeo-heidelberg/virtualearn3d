@@ -45,7 +45,7 @@ class ConvAutoencPwiseClassif(Architecture):
         self.pre_runnable = HierarchicalFPSPreProcessor(
             **kwargs['pre_processing']
         )
-        self.post_runanble = HierarchicalFPSPostProcessor(self.pre_runnable)
+        self.post_runnable = HierarchicalFPSPostProcessor(self.pre_runnable)
         self.num_classes = kwargs.get('num_classes', None)
         self.feature_extraction = kwargs.get('feature_extraction', None)
         self.num_downsampling_neighbors = \

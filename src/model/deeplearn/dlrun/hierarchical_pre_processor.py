@@ -1,3 +1,5 @@
+# TODO Rethink : Remove this class, no longer used?
+
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.model.deeplearn.deep_learning_exception import DeepLearningException

@@ -25,7 +25,7 @@
             "class_names": ["Ground", "Vegetation", "Building", "Urban furniture", "Vehicle"],
             "pre_processing": {
                 "pre_processor": "hierarchical_fps",
-				"support_strategy_num_points": 2500,
+				"support_strategy_num_points": 5000,
                 "to_unit_sphere": false,
             	"support_strategy": "fps",
             	"support_chunk_size": 2000,
@@ -83,7 +83,7 @@
                 "training_history_dir": "*/training_eval/history",
                 "features_structuring_representation_dir": "*/training_eval/feat_struct_layer/",
                 "class_weight": [0.25, 0.5, 0.5, 1, 1],
-                "training_epochs": 200,
+                "training_epochs": 400,
                 "batch_size": 16,
                 "checkpoint_path": "*/checkpoint.model",
                 "checkpoint_monitor": "loss",

@@ -269,6 +269,10 @@ class SimpleDLModelHandler(DLModelHandler):
             'support_points': True,
             'plots_and_reports': plots_and_reports
         })
+        # TODO Rethink : Debug section ---
+        # TODO Rethink : Move this to HierarchicalFPSPreProcessor end of call
+        X_rf = [np.array(Xi) for i, Xi in enumerate(X_rf) if i not in [6, 16]]
+        # --- TODO Rethink : Debug section
         try:
             zhat_rf = self.compiled.predict(
                 X_rf,
@@ -332,8 +336,7 @@ class SimpleDLModelHandler(DLModelHandler):
             )
         # Compile
         self.compiled.compile(
-            # TODO Rethink : Comment run_eaggerly below
-            run_eagerly=True,  # Uncomment for better debugging (but slower)
+            #run_eagerly=True,  # Uncomment for better debugging (but slower)
             **comp_args
         )
         return self

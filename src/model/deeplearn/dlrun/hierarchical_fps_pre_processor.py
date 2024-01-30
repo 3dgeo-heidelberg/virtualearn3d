@@ -299,7 +299,7 @@ class HierarchicalFPSPreProcessor(ReceptiveFieldPreProcessor):
             f'{X.shape[0]} points for predictions in {end-start:.3f} seconds.'
         )
         # Return without labels
-        return [Xout, Fout] + Dout + Nout + Uout
+        return [Xout, Fout] + Xdout + Dout + Nout + Uout
 
     # ---   UTIL METHODS   --- #
     # ------------------------ #
