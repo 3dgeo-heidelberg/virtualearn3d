@@ -7,82 +7,19 @@ env:
   USER_CONFIG: ${{github.workspace}}/.github/config/boost/user-config.jam
 
 jobs:
-   build-virtuallearn3d:
-     #needs: [build-libs, build-boost]
-     runs-on: ubuntu-22.04
+    build:
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
 
-     name: 'Build VirtualLearn3d'
+        # Output build artifacts to /github/workspace on the container.
+        - name: Build action
+          uses: ./ # Uses an action in the root directory
+          id: build
 
-
-     defaults:
-       run:
-         working-directory: ${{github.workspace}}
-         shell: bash -l {0}
-
-
-    #  strategy:
-    #    matrix:
-    #      python-version: ['3.6', '3.7', '3.8', '3.9', '3.10']
-
-     steps:
-       - name: Check out repository code
-         uses: actions/checkout@v4
-
-       - name: Install dependencies
-         uses: conda-incubator/setup-miniconda@v2
-         with:
-           miniconda-version: "latest"
-           python-version: 3.10.13
-           channels: conda-forge, defaults
-           activate-environment: vl3d
-           environment-file: vl3d_lin.yml
-           
-       - run: conda install -c conda-forge pdal python-pdal gdal conda-forge::libpcap conda-forge::armadillo conda-forge::numpy conda-forge::pybind11 conda-forge::boost conda-forge::flann
-       - run: sudo apt-get update && sudo apt install libpcl-dev python-numpy libarmadillo-dev -y
-         
-       - run: conda activate vl3d
-         
-       - run: sudo ln -s /usr/include/python3.10/numpy /usr/include/numpy 
-         
-       - run: sudo cat /usr/include/python3.10/numpy/arrayobject.h
-      
-
-       - name: Fetch carma
-         working-directory: ./cpp
-         run: mkdir lib && cd lib && git clone https://github.com/RUrlus/carma
-        
-
-       - name: Fetch pcl
-         working-directory: ./cpp/lib
-         run: wget https://github.com/PointCloudLibrary/pcl/releases/download/pcl-1.13.0/source.tar.gz && tar -xf source.tar.gz
-       
-       - name: Fetch Armadillo
-         working-directory: ./cpp/lib
-         run: wget https://sourceforge.net/projects/arma/files/armadillo-12.6.7.tar.xz && tar -xf armadillo-12.6.7.tar.xz && mv armadillo-12.6.7 armadillo
-          # && cd armadillo && ./configure -DCMAKE_INSTALL_PREFIX=. && make && make install
-          #  cd .. && rm armadillo-12.6.7.tar.xz
-           
-       - name: Configure CMake
-         working-directory: ./cpp
-         # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-         # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-         
-         run: | 
-          mkdir build && cd build && cmake -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DBoost_NO_BOOST_CMAKE=ON -DPython3_EXECUTABLE=$(which python3) ..
-
-       - name: Build
-         working-directory: ./cpp
-         # Build your program with the given configuration
-         run: cd build && make
-
-       - name: ls
-         working-directory: ./cpp
-         run: ls -al .
-
-       - name: Save compiled executable
-         uses: actions/upload-artifact@v3
-         with:
-             name: ${{ runner.os}}-vl3dpp-pybinds-3.10
-             path: |
-               ${{github.workspace}}/run/vl3dpp
-               ${{github.workspace}}/run/pyvl3dpp.so
+        - name: Upload Build Artifacts
+          uses: actions/upload-artifact@v4
+          with:
+            name: workspace_artifacts
+            path: ${{ github.workspace }}/run

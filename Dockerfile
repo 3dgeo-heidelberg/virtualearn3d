@@ -8,6 +8,11 @@ RUN apt-get update \
     python3.10-dev pypy libpdal-dev gdal-bin libgdal-dev cython3 \
     libboost-all-dev libflann-dev libvtk9-dev libqhull-dev libpcl-dev git
 
+# Setup vcpkg
+# WORKDIR /home
+# RUN git clone https://github.com/Microsoft/vcpkg.git
+# WORKDIR /home/vcpkg
+# RUN ./bootstrap-vcpkg.sh
 
 # Set the working directory
 WORKDIR /app
@@ -38,22 +43,21 @@ RUN wget https://github.com/PointCloudLibrary/pcl/releases/download/pcl-1.13.0/s
     && cd ../..
 
 
-
-
 RUN mkdir /app/cpp/build
 
 WORKDIR /app/cpp/build
 
-RUN python3 -c "import numpy"
+# Check python
+# RUN python3 -c "import numpy"
 
-RUN ls /app/cpp/lib/pcl/build/lib && which python3 && python3 --version \
-&& cmake -DPCL_LIBRARIES=/app/cpp/lib/pcl/build/lib -DPCL_1.13_INCLUDE_DIR=/app/cpp/lib/pcl/build/include ..
+RUN cmake -DPCL_LIBRARIES=/app/cpp/lib/pcl/build/lib -DPCL_1.13_INCLUDE_DIR=/app/cpp/lib/pcl/build/include ..
 
 RUN LDFLAGS="-L/app/cpp/lib/pcl/build/lib" CFLAGS="-I/app/cpp/lib/pcl/build/include" make
 
+
 # Copy the built binaries to the out folder
-RUN ls /app/cpp/build && mkdir /app/out && \
-    cp /app/cpp/build/libvl3dpp.so /app/out && \
-    cp /app/cpp/build/pyvl3dpp.cpython-310-x86_64-linux-gnu.so /app/out/pyvl3dpp.so
+RUN mkdir -p /github/workspace && \
+    cp /app/cpp/build/libvl3dpp.so /github/workspace && \
+    cp /app/cpp/build/pyvl3dpp.cpython-310-x86_64-linux-gnu.so /github/workspace/pyvl3dpp.so
 
 
