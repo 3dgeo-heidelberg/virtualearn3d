@@ -4,7 +4,6 @@ on: [push, pull_request]
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
-  USER_CONFIG: ${{github.workspace}}/.github/config/boost/user-config.jam
 
 jobs:
     build:
@@ -15,7 +14,7 @@ jobs:
 
         # Output build artifacts to /github/workspace on the container.
         - name: Build action
-          uses: ./ # Uses an action in the root directory
+          uses: ./.github/actions/build_action
           id: build
 
         - name: Upload Build Artifacts
