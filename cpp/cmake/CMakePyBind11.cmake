@@ -2,7 +2,7 @@
 # -------------------------- #
 
 # Add PyBind11
-find_package(Python3 COMPONENTS Interpreter Development NumPy)
+find_package(Python3 COMPONENTS Development NumPy)
 include_directories(${Python3_INCLUDE_DIRS})
 # Try to find PyBind11
 find_package(pybind11 QUIET)
