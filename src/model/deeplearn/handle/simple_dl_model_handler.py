@@ -237,10 +237,6 @@ class SimpleDLModelHandler(DLModelHandler):
         if hasattr(self.arch, 'prefit_logic_callback'):
             self.arch.prefit_logic_callback(fit_cache_map)
         # Fit logic
-        # TODO Rethink : Debug section ---
-        # TODO Rethink : Move this to HierarchicalFPSPreProcessor end of call
-        X = [np.array(Xi) for i, Xi in enumerate(X) if i not in [6, 16]]
-        # --- TODO Rethink : Debug section
         self.history = self.compiled.fit(
             X, y_rf,
             epochs=self.training_epochs,
@@ -269,12 +265,8 @@ class SimpleDLModelHandler(DLModelHandler):
             'support_points': True,
             'plots_and_reports': plots_and_reports
         })
-        # TODO Rethink : Debug section ---
-        # TODO Rethink : Move this to HierarchicalFPSPreProcessor end of call
-        X_rf = [np.array(Xi) for i, Xi in enumerate(X_rf) if i not in [6, 16]]
-        # --- TODO Rethink : Debug section
         try:
-            zhat_rf = self.compiled.predict(
+             zhat_rf = self.compiled.predict(
                 X_rf,
                 batch_size=self.batch_size,
                 verbose=self.predict_verbose

@@ -328,7 +328,7 @@ class PointNetPwiseClassifModel(ClassificationModel):
             for i, rfi in enumerate(rf)
         )
         # Reduce overlapping propagations to mean
-        I = self.model.arch.pre_runnable.pre_processor\
+        I = self.model.arch.pre_runnable.pre_processor \
             .last_call_neighborhoods
         npoints = X[0].shape[0] if isinstance(X, list) else X.shape[0]
         activations = GridSubsamplingPostProcessor.pwise_reduce(

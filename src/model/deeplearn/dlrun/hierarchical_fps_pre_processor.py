@@ -285,6 +285,9 @@ class HierarchicalFPSPreProcessor(ReceptiveFieldPreProcessor):
             self.last_call_receptive_fields[i].get_upsampling_matrices()
             for i in range(len(I))
         ], dtype='object').T.tolist()
+        # Prepare basic output
+        out = [Xout, Fout] + Xdout + Dout[1:] + Nout + Uout[1:]
+        out = [np.array(X) for X in out]
         # Handle labels
         if y is not None:
             yout = self.reduce_labels(Xout, y, I=I)
@@ -293,13 +296,13 @@ class HierarchicalFPSPreProcessor(ReceptiveFieldPreProcessor):
                 f'The hierarchical FPS pre processor pre-processed '
                 f'{X.shape[0]} points for training in {end-start:.3f} seconds.'
             )
-            return [Xout, Fout] + Xdout + Dout + Nout + Uout, yout
+            return out, yout
         LOGGING.LOGGER.info(
             'The hierarchical FPS pre processor pre-processed '
             f'{X.shape[0]} points for predictions in {end-start:.3f} seconds.'
         )
-        # Return without labels
-        return [Xout, Fout] + Xdout + Dout + Nout + Uout
+        # Return with no labels
+        return out
 
     # ---   UTIL METHODS   --- #
     # ------------------------ #

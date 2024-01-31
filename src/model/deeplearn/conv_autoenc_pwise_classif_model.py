@@ -6,6 +6,8 @@ from src.model.deeplearn.arch.conv_autoenc_pwise_classif import \
 from src.model.deeplearn.handle.dl_model_handler import DLModelHandler
 from src.model.deeplearn.handle.simple_dl_model_handler import \
     SimpleDLModelHandler
+from src.model.deeplearn.dlrun.grid_subsampling_post_processor import \
+    GridSubsamplingPostProcessor
 from src.report.classified_pcloud_report import ClassifiedPcloudReport
 from src.report.pwise_activations_report import PwiseActivationsReport
 from src.report.best_score_selection_report import BestScoreSelectionReport
@@ -13,6 +15,8 @@ import src.main.main_logger as LOGGING
 from src.utils.dict_utils import DictUtils
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
 from sklearn.feature_selection import f_classif
+import joblib
+import tensorflow as tf
 import numpy as np
 import time
 
@@ -74,7 +78,7 @@ class ConvAutoencClassificationModel(ClassificationModel):
         # Basic attributes of the ConvAutoencClassificationModel
         self.model = None  # By default, internal model is not instantiated
         self.training_activations_path = kwargs.get(
-            'training_activation_paths', None
+            'training_activations_path', None
         )
 
     # ---   MODEL METHODS   --- #
@@ -311,4 +315,65 @@ class ConvAutoencClassificationModel(ClassificationModel):
     def compute_pwise_activations(self, X):
         # TODO Rethink : Doc
         # TODO Rethink : Abstract to common logic also for RBFNet and PNet
-        return None  # TODO Rethink : Implement
+        # Prepare model to compute activations
+        remodel = tf.keras.Model(
+            inputs=self.model.compiled.inputs,
+            outputs=self.model.compiled.get_layer(index=-2).output
+        )
+        remodel.compile(
+            **SimpleDLModelHandler.build_compilation_args(
+                self.model.compilation_args
+            )
+        )
+        # Compute the activations
+        X_rf = self.model.arch.run_pre({'X': X})
+        with tf.device("cpu:0"):
+            start_cpu_activations = time.perf_counter()
+            activations = remodel.predict(
+                X_rf, batch_size=self.model.batch_size
+            )
+            end_cpu_activations = time.perf_counter()
+            LOGGING.LOGGER.debug(
+                'Activations computed on CPU {t:.3f} seconds'.format(
+                    t=end_cpu_activations-start_cpu_activations
+                )
+            )
+        # Propagate activations to original dimensionality
+        # TODO Restore : Section (for properly wrapped preproc) ---
+        """rf = self.model.arch.pre_runnable.pre_processor\
+            .last_call_receptive_fields
+        propagated_activations = joblib.Parallel(
+            n_jobs=self.model.arch.pre_runnable.pre_processor.nthreads
+        )(
+            joblib.delayed(
+                rfi.propagate_values
+            )(
+                activations[i], reduce_strategy='mean'
+            )
+            for i, rfi in enumerate(rf)
+        )
+        # Reduce overlapping propagations to mean
+        I = self.model.arch.pre_runnable.pre_processor \
+            .last_call_neighborhoods"""
+        # --- TODO Restore : Section (for properly wrapped preproc)
+        # TODO Remove : Section (for unfinished preproc) ---
+        rf = self.model.arch.pre_runnable.last_call_receptive_fields
+        propagated_activations = joblib.Parallel(
+            n_jobs=self.model.arch.pre_runnable.nthreads
+        )(
+            joblib.delayed(
+                rfi.propagate_values
+            )(
+                activations[i], reduce_strategy='mean'
+            )
+            for i, rfi in enumerate(rf)
+        )
+        # Reduce overlapping propagations to mean
+        I = self.model.arch.pre_runnable.last_call_neighborhoods
+        # --- TODO Remove : Section (for unfinished preproc)
+        npoints = X[0].shape[0] if isinstance(X, list) else X.shape[0]
+        activations = GridSubsamplingPostProcessor.pwise_reduce(
+            npoints, activations.shape[-1], I, propagated_activations
+        )
+        # Return
+        return activations
