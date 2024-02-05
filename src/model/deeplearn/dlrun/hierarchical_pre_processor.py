@@ -1,9 +1,3 @@
-# TODO Rethink : Remove this class, no longer used?
-# TODO Rethink : Better, it should be used as a wrapper for
-# HierarchicalFPSPreProcessor as PointNetPreProcessor is to others.
-# Also, do a wrapper for post-processing.
-
-
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.model.deeplearn.deep_learning_exception import DeepLearningException

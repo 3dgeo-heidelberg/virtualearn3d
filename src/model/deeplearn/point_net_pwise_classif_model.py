@@ -121,18 +121,26 @@ class PointNetPwiseClassifModel(ClassificationModel):
         See :meth:`model.Model.overwrite_pretrained_model`.
         """
         super().overwrite_pretrained_model(spec)
+        PointNetPwiseClassifModel.update_pretrained_model(self, spec)
+
+    @staticmethod
+    def update_pretrained_model(dlmodel, spec):
+        """
+        See :meth:`PointNetPwiseClassifModel.overwrite_pretrained_model`.
+        """
         # Overwrite training activations attributes
         spec_keys = spec.keys()
         if 'training_activations_path' in spec_keys:
-            self.training_activations_path = spec['training_activations_path']
+            dlmodel.training_activations_path = spec['training_activations_path']
         # Overwrite model handler
         if 'model_args' in spec_keys:
-            if not isinstance(self.model, DLModelHandler):
+            if not isinstance(dlmodel.model, DLModelHandler):
                 raise DeepLearningException(
-                    'PointNetPwiseClassifModel cannot overwrite model handler '
+                    'Deep learning model cannot overwrite model handler '
                     'because it is not a DLModelHandler.'
                 )
-            self.model.overwrite_pretrained_model(spec['model_args'])
+            dlmodel.model.overwrite_pretrained_model(spec['model_args'])
+
 
     def update_paths(self):
         """

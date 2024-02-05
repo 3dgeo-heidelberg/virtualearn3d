@@ -95,7 +95,7 @@
                 "summary_report_path": "*/model_summary.log",
                 "training_history_dir": "*/training_eval/history",
                 "features_structuring_representation_dir": "*/training_eval/feat_struct_layer/",
-                "class_weight": [0.2, 0.3, 0.4, 0.4, 0.3, 0.4, 0.4, 0.3, 0.3, 0.4, 1.5],
+                "class_weight": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
                 "training_epochs": 400,
                 "batch_size": 8,
                 "checkpoint_path": "*/checkpoint.model",

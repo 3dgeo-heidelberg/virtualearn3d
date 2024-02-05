@@ -77,18 +77,7 @@ class RBFNet(Architecture, ABC):
         :return: Built layer.
         :rtype: :class:`tf.Tensor`
         """
-        # Handle coordinates as input
-        self.X = tf.keras.layers.Input(shape=(None, 3), name='Xin')
-        # Handle input features, if any
-        if self.fnames is not None:
-            self.F = tf.keras.layers.Input(
-                shape=(None, len(self.fnames)),
-                name='Fin'
-            )
-        # Return
-        if self.F is None:
-            return self.X
-        return [self.X, self.F]
+        return PointNet.build_point_net_input(self)
 
     def build_hidden(self, x, **kwargs):
         """

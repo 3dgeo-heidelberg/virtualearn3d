@@ -128,22 +128,10 @@ class ConvAutoencClassificationModel(ClassificationModel):
         """
         See :meth:`model.Model.overwrite_pretrained_model`.
         """
-        # TODO Rethink : In general training_activations_path is used for
         # PointNet, RBFNet and ConvAutoenc.
         # Abstract it to a common logic (DRY, implement only once)
         super().overwrite_pretrained_model(spec)
-        # Overwrite training activations attributes
-        spec_keys = spec.keys()
-        if 'training_activations_path' in spec_keys:
-            self.training_activations_path = spec['training_activations_path']
-        # Overwrite model handler
-        if 'model_args' in spec_keys:
-            if not isinstance(self.model, DLModelHandler):
-                raise DeepLearningException(
-                    'RBFNetPwiseClassifModel cannot overwrite model handler '
-                    'because it is not a DLModelHandler.'
-                )
-            self.model.overwrite_pretrained_model(spec['model_args'])
+        PointNetPwiseClassifModel.update_pretrained_model(self, spec)
 
     def update_paths(self):
         """
