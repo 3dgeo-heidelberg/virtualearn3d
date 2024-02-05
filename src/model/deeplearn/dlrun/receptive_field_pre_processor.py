@@ -1,7 +1,9 @@
 # ---   IMPORTS   --- #
 # ------------------- #
-from abc import abstractmethod
+from src.model.deeplearn.deep_learning_exception import DeepLearningException
+import joblib
 import numpy as np
+from abc import abstractmethod
 
 
 # ---   CLASS   --- #
@@ -134,6 +136,62 @@ class ReceptiveFieldPreProcessor:
         """
         pass
 
+    # ---   SUPPORT POINTS EXPORT   --- #
+    # --------------------------------- #
+    def export_support_points(self, inputs, sup_X):
+        """
+        Handle the logic to export the support points.
+
+        :param inputs: A key-word input where the key "X" gives the input
+            dataset and the "y" (OPTIONALLY) gives the reference values that
+            can be used to fit/train the model. If "X" is a list, then the
+            first element is assumed to be the matrix X of coordinates and
+            the second the matrix F of features.
+        :type inputs: dict
+        :param sup_X: The structure space matrix representing the support
+            points.
+        :type sup_X: :class:`np.ndarray`
+        :return: Nothing at all, but output files might be written.
+        """
+        # Check whether exporting support points is required
+        if not inputs.get('plots_and_reports', True):
+            return
+        # Check if particularly training support points must be exported
+        if(
+            inputs.get('training_support_points', False) and
+            self.training_support_points_report_path is not None
+        ):
+            self._export_support_points(
+                sup_X, self.training_support_points_report_path
+            )
+        # Check if particularly non-trainign support points must be exported
+        if(
+            inputs.get('support_points', False) and
+            self.support_points_report_path is not None
+        ):
+            self._export_support_points(
+                sup_X,
+                self.support_points_report_path
+            )
+
+    def _export_support_points(self, sup_X, path):
+        """
+        Any receptive field pre-processor that needs to export support points
+        must override this method to implement the corresponding logic.
+
+        :param sup_X: The support points to be exported
+        :type sup_X: :class:`np.ndarray`
+        :param path: The path where the support points must be written.
+        :type path: str
+        :return: Nothing at all, but an output file is generated.
+        """
+        raise DeepLearningException(
+            'ReceptiveFieldPreProcessor._export_support_points must not '
+            'be called. Any receptive field pre-processor that must handle '
+            'the exporting of support points needs to override the '
+            '_export_support_points method to provide a valid logic.'
+        )
+
     # ---   OTHER METHODS   --- #
     # ------------------------- #
     def overwrite_pretrained_model(self, spec):
@@ -241,6 +299,112 @@ class ReceptiveFieldPreProcessor:
         squared_distances = np.sum(np.power(X, 2), axis=1)
         r = np.sqrt(np.max(squared_distances))
         return X/r
+
+    def handle_unit_sphere_transform(self, I, **kwargs):
+        """
+        Handle the transformation to the unit sphere of the point-wise
+        coordinates for each input structure space, if requested.
+
+        Note that this method might be overriden or ignored by pre-processors
+        providing an alternative strategy to handle the transform of the
+        coordinates to the unit sphere.
+
+        :param I: The list of neighborhoods such that I[i] is the i-th
+            neighborhood, represented by the indices of the points that belong
+            to that neighborhood. Typically, neighborhoods are centered on the
+            support points.
+        :type I: list of list
+        :param kwargs: Any extra argument given as a key-value pair.
+        :type kwargs: dict
+        :return: The structure space matrices ready to be fed into the neural
+            network.
+        :rtype: :class:`np.ndarray`
+        """
+        if self.to_unit_sphere:
+            Xout = np.array([
+                ReceptiveFieldPreProcessor.transform_to_unit_sphere(
+                    self.last_call_receptive_fields[i].centroids_from_points(
+                        None
+                    )
+                )
+                for i in range(len(I))
+            ])
+        else:
+            Xout = np.array([
+                self.last_call_receptive_fields[i].centroids_from_points(None)
+                for i in range(len(I))
+            ])
+        return Xout
+
+    def fit_receptive_fields(self, X, sup_X, I):
+        """
+        Update the self.last_call_receptive_fields attribute by calling the
+        fit method of each receptive field. The fitted receptive fields
+        replace the previously available receptive fields.
+
+        :param X: The structure space matrix representing the point cloud.
+        :type X: :class:`np.ndarray`
+        :param sup_X: The structure space matrix representing the support
+            points defining the receptive fields (typically the centers).
+        :type sup_X: :class:`np.ndarray`
+        :param I: The list of neighborhoods such that I[i] is the i-th
+            neighborhood, represented by the indices of the points that belong
+            to that neighborhood. Typically, neighborhoods are centered on the
+            support points.
+        :type I: list of list
+        :return: The self.fit_receptive_fields attribute after the update.
+        :rtype: list
+        """
+        self.last_call_receptive_fields = joblib.Parallel(n_jobs=self.nthreads)(
+            joblib.delayed(
+                self.last_call_receptive_fields[i].fit
+            )(
+                X[Ii], sup_X[i]
+            )
+            for i, Ii in enumerate(I)
+        )
+        return self.last_call_receptive_fields
+
+    def handle_features_reduction(self, F, num_neighborhoods, rv, Xout=None):
+        """
+        Handle the features reduction operation when the receptive field is
+        called. In doing so, a reduce value function (rv) from the
+        corresponding type of receptive field is often used.
+
+        See :class:`.ReceptiveField` and
+        :meth:`receptive_field.ReceptiveField.reduce_values`.
+
+        :param F: The matrix of features.
+        :param num_neighborhoods: The number of neighborhoods involved in the
+            reduction.
+        :param rv: The reduce value function that receives three arguments as
+            input. The i-th receptive field (rf_i), the structure space matrix
+            for the i-th receptive field (Xout_i), and the matrix of features
+            (F).
+        :type rv: Callable
+        :param Xout: The structure space matrix for each receptive field. It
+            can be None (default). In this case, it will be considered that
+            each receptive field has a None structure space matrix and that it
+            will be handled by the logic of the receptive field.
+        :type Xout: list of :class:`np.ndarray` or :class:`np.ndarray` as a
+            tensor whose slices represent receptive fields.
+        :return: The reduced matrix of features for each receptive field.
+        :rtype: :class:`np.ndarray` as a tensor whose slices represent
+            receptive fields.
+        """
+        # Check whether there are features to reduce
+        if F is None or len(F) <= 0:
+            return None
+        # Handle Xout
+        if Xout is None:
+            Xout = [None for i in range(num_neighborhoods)]
+        # Reduce features
+        return np.array(joblib.Parallel(n_jobs=self.nthreads)(
+            joblib.delayed(rv)(
+                self.last_call_receptive_fields[i], Xout[i], F
+            )
+            for i in range(num_neighborhoods)
+        )).transpose([0, 2, 1])
 
     # ---   SERIALIZATION   --- #
     # ------------------------- #

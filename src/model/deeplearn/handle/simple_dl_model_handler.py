@@ -266,7 +266,7 @@ class SimpleDLModelHandler(DLModelHandler):
             'plots_and_reports': plots_and_reports
         })
         try:
-            zhat_rf = self.compiled.predict(
+             zhat_rf = self.compiled.predict(
                 X_rf,
                 batch_size=self.batch_size,
                 verbose=self.predict_verbose

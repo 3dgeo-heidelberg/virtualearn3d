@@ -89,7 +89,7 @@
 				"pre_processor": "furthest_point_subsampling",
 				"to_unit_sphere": true,
 				"support_strategy": "fps",
-				"support_strategy_num_points": 250, 
+				"support_strategy_num_points": 1000, 
 				"support_strategy_fast": false,
 				"support_chunk_size": 2000,
 				"_training_class_distribution": [2500, 2500],
@@ -196,7 +196,7 @@
 				"training_history_dir": "*/training_eval/history",
 				"features_structuring_representation_dir": "*/training_eval/feat_struct_layer/",
 				"class_weight": [1, 0.5],
-				"training_epochs": 20,
+				"training_epochs": 50,
 				"batch_size": 16,
 				"checkpoint_path": "*/checkpoint.model",
 				"checkpoint_monitor": "loss",
@@ -224,7 +224,7 @@
 						"schedule": "exponential_decay",
 						"schedule_args": {
 							"initial_learning_rate": 1e-2,
-							"decay_steps": 1000,
+							"decay_steps": 150,
 							"decay_rate": 0.96,
 							"staircase": false
 						}
@@ -266,7 +266,7 @@
 	  "writer": "PredictivePipelineWriter",
 	  "out_pipeline": "*pipe/pnet_lw_T1.pipe",
 	  "include_writer": false,
-	  "include_imputer": false,
+	  "include_imputer": true,
 	  "include_feature_transformer": true,
 	  "include_miner": false,
 	  "include_class_transformer": false

@@ -115,7 +115,11 @@ class PointCloud:
         """
         self.proxy_load()
         try:
-            return np.array([self.las[fname] for fname in fnames]).T
+            return np.array([
+                self.las[fname] if fname != 'ones' \
+                else np.ones(self.get_num_points())
+                for fname in fnames
+            ]).T
         except Exception as ex:
             raise PointCloudException(
                 'PointCloud get_features_matrix method received unexpected '

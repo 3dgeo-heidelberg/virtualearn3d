@@ -121,18 +121,25 @@ class PointNetPwiseClassifModel(ClassificationModel):
         See :meth:`model.Model.overwrite_pretrained_model`.
         """
         super().overwrite_pretrained_model(spec)
+        PointNetPwiseClassifModel.update_pretrained_model(self, spec)
+
+    @staticmethod
+    def update_pretrained_model(dlmodel, spec):
+        """
+        See :meth:`PointNetPwiseClassifModel.overwrite_pretrained_model`.
+        """
         # Overwrite training activations attributes
         spec_keys = spec.keys()
         if 'training_activations_path' in spec_keys:
-            self.training_activations_path = spec['training_activations_path']
+            dlmodel.training_activations_path = spec['training_activations_path']
         # Overwrite model handler
         if 'model_args' in spec_keys:
-            if not isinstance(self.model, DLModelHandler):
+            if not isinstance(dlmodel.model, DLModelHandler):
                 raise DeepLearningException(
-                    'PointNetPwiseClassifModel cannot overwrite model handler '
+                    'Deep learning model cannot overwrite model handler '
                     'because it is not a DLModelHandler.'
                 )
-            self.model.overwrite_pretrained_model(spec['model_args'])
+            dlmodel.model.overwrite_pretrained_model(spec['model_args'])
 
     def update_paths(self):
         """
@@ -142,7 +149,7 @@ class PointNetPwiseClassifModel(ClassificationModel):
         if self.model is not None:
             self.model.update_paths(self.model_args)
 
-    def predict(self, pcloud, X=None, F=None):
+    def predict(self, pcloud, X=None, F=None, plots_and_reports=True):
         """
         Use the model to compute predictions on the input point cloud.
 
@@ -162,13 +169,15 @@ class PointNetPwiseClassifModel(ClassificationModel):
         y = None
         if pcloud.has_classes():
             y = pcloud.get_classes_vector()
-        return self._predict(X, y=y, F=None)
+        F = None
+        if self.fnames is not None and len(self.fnames) > 0:
+            F = pcloud.get_features_matrix(self.fnames)
+        return self._predict(X, y=y, F=F, plots_and_reports=plots_and_reports)
 
     def get_input_from_pcloud(self, pcloud):
         """
         See :meth:`model.Model.get_input_from_pcloud`.
         """
-        # TODO Rethink : Common impl. wrt RBFNetPwiseClassifModel.get_input_from_pcloud
         # No features
         if self.fnames is None:
             return pcloud.get_coordinates_matrix()
@@ -200,48 +209,70 @@ class PointNetPwiseClassifModel(ClassificationModel):
         See :meth:`model.Model.on_training_finished`.
         """
         # Compute predictions on training data
+        zhat, yhat = PointNetPwiseClassifModel.on_training_finished_predict(
+            self, X, y, yhat
+        )
+        # Call parent's on_training_finished
+        super().on_training_finished(X, y, yhat=yhat)
+        # Evaluate computed predictions
+        PointNetPwiseClassifModel.on_training_finished_evaluate(
+            self, X, y, zhat, yhat
+        )
+
+    @staticmethod
+    def on_training_finished_predict(dlmodel, X, y, yhat):
+        """
+        See :meth:`PointNetPwiseClassifModel.on_training_finished` and
+        :meth:`PointNetPwiseClassifModel.on_training_finished_evaluate`.
+        """
         start = time.perf_counter()
         zhat = None
         if yhat is None:
             zhat = []
-            yhat = self._predict(X, F=None, y=y, zout=zhat)
+            yhat = dlmodel._predict(X, F=None, y=y, zout=zhat)
             zhat = zhat[-1]
         end = time.perf_counter()
         LOGGING.LOGGER.info(
-            'PointNet point-wise classification on training point cloud '
-            f'computed in {end-start:.3f} seconds.'
+            'After-training deep learning model '
+            f'computed in {end-start:.3f} seconds on training point cloud.'
         )
-        # Training evaluation
-        super().on_training_finished(X, y, yhat=yhat)
+        return zhat, yhat
+
+    @staticmethod
+    def on_training_finished_evaluate(dlmodel, X, y, zhat, yhat):
+        """
+        See :meth:`PointNetPwiseClassifModel.on_training_finished` and
+        :meth:`PointNetPwiseClassifModel.on_training_finished_predict`.
+        """
         # Get the coordinates matrix even when [X, F] is given
         _X = X[0] if isinstance(X, list) else X
         # Write classified point cloud
-        if self.training_classified_point_cloud_path is not None:
+        if dlmodel.training_classified_point_cloud_path is not None:
             ClassifiedPcloudReport(
-                X=_X, y=y, yhat=yhat, zhat=zhat, class_names=self.class_names
+                X=_X, y=y, yhat=yhat, zhat=zhat, class_names=dlmodel.class_names
             ).to_file(
-                path=self.training_classified_point_cloud_path
+                path=dlmodel.training_classified_point_cloud_path
             )
         # Write point-wise activations
-        if self.training_activations_path is not None:
+        if dlmodel.training_activations_path is not None:
             start = time.perf_counter()
-            activations = self.compute_pwise_activations(X)
+            activations = dlmodel.compute_pwise_activations(X)
             end = time.perf_counter()
             LOGGING.LOGGER.info(
-                'PointNet point-wise activations computed in '
+                'Point-wise activations of deep learning model computed in '
                 f'{end-start:.3f} seconds.'
             )
             PwiseActivationsReport(
                 X=_X, activations=activations, y=y
             ).to_file(
-                path=self.training_activations_path
+                path=dlmodel.training_activations_path
             )
             # ANOVA on activations
             start = time.perf_counter()
             Fval, pval = f_classif(activations, y)
             end = time.perf_counter()
             LOGGING.LOGGER.info(
-                'ANOVA computed on PointNet point-wise activations in '
+                'ANOVA computed on point-wise deep learning activations in '
                 f'{end-start:.3f} seconds.'
             )
             BestScoreSelectionReport(
@@ -251,9 +282,9 @@ class PointNetPwiseClassifModel(ClassificationModel):
                 pvalues=pval,
                 selected_features=None
             ).to_file(
-                path=self.training_activations_path[
-                    :self.training_activations_path.rfind('.')
-                ] + '_ANOVA.csv'
+                path=dlmodel.training_activations_path[
+                     :dlmodel.training_activations_path.rfind('.')
+                     ] + '_ANOVA.csv'
             )
 
     # ---  PREDICTION METHODS  --- #
@@ -268,6 +299,7 @@ class PointNetPwiseClassifModel(ClassificationModel):
             predictions on training data to generate a thorough representation
             of the receptive fields.
         """
+        X = X if F is None else [X, F]
         return self.model.predict(
             X, y=y, zout=zout, plots_and_reports=plots_and_reports
         )
@@ -292,17 +324,28 @@ class PointNetPwiseClassifModel(ClassificationModel):
             inputs=self.model.compiled.inputs,
             outputs=self.model.compiled.get_layer(index=-2).output
         )
+        # Compute and return
+        return PointNetPwiseClassifModel.do_pwise_activations(
+            self.model, remodel, X
+        )
+
+    @staticmethod
+    def do_pwise_activations(model, remodel, X):
+        """
+        Assist the
+        :meth:`PointNetPwiseClassifModel.compute_pwise_activations` method.
+        """
         remodel.compile(
             **SimpleDLModelHandler.build_compilation_args(
-                self.model.compilation_args
+                model.compilation_args
             )
         )
         # Compute the activations
-        X_rf = self.model.arch.run_pre({'X': X})
+        X_rf = model.arch.run_pre({'X': X})
         with tf.device("cpu:0"):
             start_cpu_activations = time.perf_counter()
             activations = remodel.predict(
-                X_rf, batch_size=self.model.batch_size
+                X_rf, batch_size=model.batch_size
             )
             end_cpu_activations = time.perf_counter()
             LOGGING.LOGGER.debug(
@@ -311,10 +354,10 @@ class PointNetPwiseClassifModel(ClassificationModel):
                 )
             )
         # Propagate activations to original dimensionality
-        rf = self.model.arch.pre_runnable.pre_processor\
+        rf = model.arch.pre_runnable.pre_processor \
             .last_call_receptive_fields
         propagated_activations = joblib.Parallel(
-            n_jobs=self.model.arch.pre_runnable.pre_processor.nthreads
+            n_jobs=model.arch.pre_runnable.pre_processor.nthreads
         )(
             joblib.delayed(
                 rfi.propagate_values
@@ -324,7 +367,7 @@ class PointNetPwiseClassifModel(ClassificationModel):
             for i, rfi in enumerate(rf)
         )
         # Reduce overlapping propagations to mean
-        I = self.model.arch.pre_runnable.pre_processor\
+        I = model.arch.pre_runnable.pre_processor \
             .last_call_neighborhoods
         npoints = X[0].shape[0] if isinstance(X, list) else X.shape[0]
         activations = GridSubsamplingPostProcessor.pwise_reduce(

@@ -9,35 +9,36 @@ import time
 
 # ---   CLASS   --- #
 # ----------------- #
-class FurthestPointSubsamplingPostProcessor:
+class HierarchicalFPSPostProcessor:
     """
     :author: Alberto M. Esmoris Pena
 
-    Postprocess an input in the furthest point subsampling space back to the
-    original space before the subsampling.
+    Postprocess an input in the first level of the FPS hierarchy back to the
+    original space.
 
-    See :class:`.FurthestPointSubsamplingPreProcessor`.
+    See :class:`.HierarchicalFPSPreProcessor` and
+    :class:`.FurthestPointSubsamplingPostProcessor`.
 
-    :ivar fps_preproc: The preprocessor that generated the furthest point
+    :ivar hfps_preproc: The preprocessor that generated the furthest point
         subsampling that must be reverted by the post-processor.
-    :vartype fps_preproc: :class:`.FurthestPointSubsamplingPreProcessor`
+    :vartype hfps_preproc: :class:`.HierarchicalFPSPreProcessor`.
     """
     # ---   INIT   --- #
     # ---------------- #
-    def __init__(self, fps_preproc, **kwargs):
+    def __init__(self, hfps_preproc, **kwargs):
         """
-        Initialization/instantiation of a Furthest Point Subsampling
-        post-processor.
+        Initialization/instantiation of a hierarchical FPS post-processor.
 
+        :param hfps_preproc: The corresponding hierarchical FPS pre-processor.
         :param kwargs: The key-word arguments for the
-            FurthestPointSubsamplingPostProcessor.
+            HierarchicalFPSPostProcessor.
         """
         # Assign attributes
-        self.fps_preproc = fps_preproc
-        if self.fps_preproc is None:
+        self.hfps_preproc = hfps_preproc
+        if self.hfps_preproc is None:
             raise DeepLearningException(
-                'FurthestPointSubsamplingPostProcessor needs the '
-                'corresponding FurthestPointSubsamplingPreProcessor.'
+                'HierarchicalFPSPostProcessor needs the '
+                'corresponding HierarchicalFPSPreProcessor.'
             )
 
     # ---   RUN/CALL   --- #
@@ -48,9 +49,9 @@ class FurthestPointSubsamplingPostProcessor:
 
         :param inputs: A key-word input where the key "X" gives the coordinates
             of the points in the original point cloud. Also, the key "z" gives
-            the predictions computed on a receptive field of :math:`R` points
-            that must be propagated back to the :math:`m` points of the
-            original point cloud.
+            the predictions computed on a receptive field of :math:`R_1` points
+            (i.e., at depth :math:`d=1`) that must be propagated back to the
+            :math:`m` points of the original point cloud.
         :type inputs: dict
         :return: The :math:`m` point-wise predictions derived from the
             :math:`R` input predictions on the receptive field.
@@ -64,13 +65,13 @@ class FurthestPointSubsamplingPostProcessor:
             }
         z = GridSubsamplingPostProcessor.post_process(
             _inputs,
-            self.fps_preproc.last_call_receptive_fields,
-            self.fps_preproc.last_call_neighborhoods,
-            nthreads=self.fps_preproc.nthreads
+            self.hfps_preproc.last_call_receptive_fields,
+            self.hfps_preproc.last_call_neighborhoods,
+            nthreads=self.hfps_preproc.nthreads
         )
         end = time.perf_counter()
         LOGGING.LOGGER.info(
-            f'The furthest point subsampling post processor generated {len(z)} '
+            f'The hierarchical FPS post processor generated {len(z)} '
             f'propagations from {len(inputs["z"][0])} reduced predictions '
             f'for each of the {len(inputs["z"])} FPS receptive fields '
             f'in {end-start:.3f} seconds.'

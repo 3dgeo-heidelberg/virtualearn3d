@@ -93,9 +93,7 @@ class PpsSequential(PipelinePredictiveStrategy):
                         'support model training.'
                     )
                 # Handle model prediction
-                print('PPSSequential predicting ...')  # TODO Remove
                 preds = comp(pcloud=pcloud, out_prefix=self.out_path)
-                print('PPSSequential predicted!')  # TODO Remove
             elif isinstance(comp, Imputer):  # Handle imputer
                 pcloud = comp.impute_pcloud(pcloud)
             elif isinstance(comp, FeatureTransformer):  # Handle feat. transf.
@@ -119,15 +117,11 @@ class PpsSequential(PipelinePredictiveStrategy):
             )
         # Update given state point cloud, if any
         if self.external_state is not None:
-            print('PPSSequential updating external state ...')  # TODO Remove
             self.external_state.pcloud.clear_data(proxy_release=True)
             self.external_state.pcloud = pcloud
-            print('PPSSequential updated external state!')  # TODO Remove
         # Add predictions to point cloud
-        print('PPSSequential adding features to point cloud ...')  # TODO Remove
         pcloud.add_features(
             ['prediction'], preds.reshape((-1, 1)), ftypes=preds.dtype
         )
-        print('PPSSequential added features to point cloud!')  # TODO Remove
         # Return
         return preds

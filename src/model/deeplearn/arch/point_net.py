@@ -111,18 +111,24 @@ class PointNet(Architecture, ABC):
         :return: Built layer.
         :rtype: :class:`tf.Tensor`
         """
-        # TODO Rethink : PointNet and RBFNet build_input to shared impl.
-        self.X = tf.keras.layers.Input(shape=(None, 3), name='Xin')
+        return PointNet.build_point_net_input(self)
+
+    @staticmethod
+    def build_point_net_input(pnet):
+        """
+        See :meth:`PointNet.build_input`.
+        """
+        pnet.X = tf.keras.layers.Input(shape=(None, 3), name='Xin')
         # Handle input features, if any
-        if self.fnames is not None:
-            self.F = tf.keras.layers.Input(
-                shape=(None, len(self.fnames)),
+        if pnet.fnames is not None:
+            pnet.F = tf.keras.layers.Input(
+                shape=(None, len(pnet.fnames)),
                 name='Fin'
             )
         # Return
-        if self.F is None:
-            return self.X
-        return [self.X, self.F]
+        if pnet.F is None:
+            return pnet.X
+        return [pnet.X, pnet.F]
 
     def build_hidden(self, x, **kwargs):
         """
