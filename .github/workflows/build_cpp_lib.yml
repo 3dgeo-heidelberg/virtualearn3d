@@ -11,6 +11,8 @@ jobs:
       steps:
         - name: Checkout
           uses: actions/checkout@v4
+          with:
+            submodules: true
 
         # Output build artifacts to /github/workspace on the container.
         - name: Build action
