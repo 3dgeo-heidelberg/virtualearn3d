@@ -339,8 +339,7 @@ class ConvAutoencClassificationModel(ClassificationModel):
                 )
             )
         # Propagate activations to original dimensionality
-        # TODO Restore : Section (for properly wrapped preproc) ---
-        """rf = self.model.arch.pre_runnable.pre_processor\
+        rf = self.model.arch.pre_runnable.pre_processor\
             .last_call_receptive_fields
         propagated_activations = joblib.Parallel(
             n_jobs=self.model.arch.pre_runnable.pre_processor.nthreads
@@ -354,23 +353,7 @@ class ConvAutoencClassificationModel(ClassificationModel):
         )
         # Reduce overlapping propagations to mean
         I = self.model.arch.pre_runnable.pre_processor \
-            .last_call_neighborhoods"""
-        # --- TODO Restore : Section (for properly wrapped preproc)
-        # TODO Remove : Section (for unfinished preproc) ---
-        rf = self.model.arch.pre_runnable.last_call_receptive_fields
-        propagated_activations = joblib.Parallel(
-            n_jobs=self.model.arch.pre_runnable.nthreads
-        )(
-            joblib.delayed(
-                rfi.propagate_values
-            )(
-                activations[i], reduce_strategy='mean'
-            )
-            for i, rfi in enumerate(rf)
-        )
-        # Reduce overlapping propagations to mean
-        I = self.model.arch.pre_runnable.last_call_neighborhoods
-        # --- TODO Remove : Section (for unfinished preproc)
+            .last_call_neighborhoods
         npoints = X[0].shape[0] if isinstance(X, list) else X.shape[0]
         activations = GridSubsamplingPostProcessor.pwise_reduce(
             npoints, activations.shape[-1], I, propagated_activations

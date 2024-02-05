@@ -271,7 +271,8 @@ class FurthestPointSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
         """
         See
         :meth:`point_net_pre_processor.PointNetPreProcessor.overwrite_pretrained_model`
-        method.
+        method and
+        :meth:`receptive_field_pre_processor.ReceptiveFieldPreProcessor.overwrite_pretrained_model`.
         """
         # Overwrite from parent
         super().overwrite_pretrained_model(spec)

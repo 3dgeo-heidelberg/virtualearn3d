@@ -44,7 +44,7 @@ class GroupingPointNetLayer(Layer):
         \right)
 
     To each of the neighborhoods, for each point in the batch, for each batch
-    in the input. Where :math:`\pmb{p}_{i*} \in \mathbb{R}^{D_{\text{out}}}`
+    in the input. Where :math:`\pmb{p}_{i*} \in \mathbb{R}^{n}`
     is the vector representation of the :math:`i`-th point inside a given
     group (the neighborhood of a given input point). Note that
     :math:`\operatorname{MAX}` is the component-wise max, as explained in the

@@ -2,10 +2,10 @@
 # ------------------- #
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
 from src.model.deeplearn.arch.architecture import Architecture
-from src.model.deeplearn.dlrun.hierarchical_fps_pre_processor import \
-    HierarchicalFPSPreProcessor
-from src.model.deeplearn.dlrun.hierarchical_fps_post_processor import \
-    HierarchicalFPSPostProcessor
+from src.model.deeplearn.dlrun.hierarchical_pre_processor import \
+    HierarchicalPreProcessor
+from src.model.deeplearn.dlrun.hierarchical_post_processor import \
+    HierarchicalPostProcessor
 from src.model.deeplearn.layer.features_downsampling_layer import \
     FeaturesDownsamplingLayer
 from src.model.deeplearn.layer.features_upsampling_layer import \
@@ -42,18 +42,19 @@ class ConvAutoencPwiseClassif(Architecture):
         self.fnames = kwargs.get('fnames', None)
         if self.fnames is None:
             self.fnames = ['ones']  # If no features are given, use ones
-        self.pre_runnable = HierarchicalFPSPreProcessor(
+        self.pre_runnable = HierarchicalPreProcessor(
             **kwargs['pre_processing']
         )
-        self.post_runnable = HierarchicalFPSPostProcessor(self.pre_runnable)
+        self.post_runnable = HierarchicalPostProcessor(self.pre_runnable)
         self.num_classes = kwargs.get('num_classes', None)
         self.feature_extraction = kwargs.get('feature_extraction', None)
+        pre_processor = self.pre_runnable.pre_processor
         self.num_downsampling_neighbors = \
-            self.pre_runnable.num_downsampling_neighbors
+            pre_processor.num_downsampling_neighbors
         self.num_pwise_neighbors = \
-            self.pre_runnable.num_pwise_neighbors
+            pre_processor.num_pwise_neighbors
         self.num_upsampling_neighbors = \
-            self.pre_runnable.num_upsampling_neighbors
+            pre_processor.num_upsampling_neighbors
         self.downsampling_filter = kwargs.get(
             'downsampling_filter', 'mean'
         )

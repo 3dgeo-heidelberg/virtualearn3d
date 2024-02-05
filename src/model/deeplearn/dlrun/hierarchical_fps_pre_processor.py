@@ -370,6 +370,34 @@ class HierarchicalFPSPreProcessor(ReceptiveFieldPreProcessor):
             nthreads=self.nthreads
         ).compute(X, y=y)
 
+    # ---   OTHER METHODS   --- #
+    # ------------------------- #
+    def overwrite_pretrained_model(self, spec):
+        """
+        See
+        :meth:`hierarchical_pre_processor.HierarchicalPreProcessor.overwrite_pretrained_model`
+        method and
+        :meth:`receptive_field_pre_processor.ReceptiveFieldPreProcessor.overwrite_pretrained_model`.
+        """
+        # Overwrite from parent
+        super().overwrite_pretrained_model(spec)
+        spec_keys = spec.keys()
+        # Overwrite the attributes of the hierarchical FPS pre-processor
+        if 'num_downsampling_neighbors' in spec_keys:
+            self.num_downsampling_neighbors = spec['num_downsampling_neighbors']
+        if 'num_pwise_neighbors' in spec_keys:
+            self.num_pwise_neighbors = spec['num_pwise_neighbors']
+        if 'num_upsampling_neighbors' in spec_keys:
+            self.num_upsampling_neighbors = spec['num_upsampling_neighbors']
+        if 'num_points_per_depth' in spec_keys:
+            self.num_points_per_depth = spec['num_points_per_depth']
+        if 'depth' in spec_keys:
+            self.depth = spec['depth']
+        if 'fast_flag_per_depth' in spec_keys:
+            self.fast_flag_per_depth = spec['fast_flag_per_depth']
+        if 'neighborhood_spec' in spec_keys:
+            self.neighborhood_spec = spec['neighborhood_spec']
+
     # ---   SERIALIZATION   --- #
     # ------------------------- #
     def __getstate__(self):
