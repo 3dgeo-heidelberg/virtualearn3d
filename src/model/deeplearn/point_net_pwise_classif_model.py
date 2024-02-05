@@ -141,7 +141,6 @@ class PointNetPwiseClassifModel(ClassificationModel):
                 )
             dlmodel.model.overwrite_pretrained_model(spec['model_args'])
 
-
     def update_paths(self):
         """
         Consider the current specification of model args (self.model_args)
@@ -211,48 +210,70 @@ class PointNetPwiseClassifModel(ClassificationModel):
         See :meth:`model.Model.on_training_finished`.
         """
         # Compute predictions on training data
+        zhat, yhat = PointNetPwiseClassifModel.on_training_finished_predict(
+            self, X, y, yhat
+        )
+        # Call parent's on_training_finished
+        super().on_training_finished(X, y, yhat=yhat)
+        # Evaluate computed predictions
+        PointNetPwiseClassifModel.on_training_finished_evaluate(
+            self, X, y, zhat, yhat
+        )
+
+    @staticmethod
+    def on_training_finished_predict(dlmodel, X, y, yhat):
+        """
+        See :meth:`PointNetPwiseClassifModel.on_training_finished` and
+        :meth:`PointNetPwiseClassifModel.on_training_finished_evaluate`.
+        """
         start = time.perf_counter()
         zhat = None
         if yhat is None:
             zhat = []
-            yhat = self._predict(X, F=None, y=y, zout=zhat)
+            yhat = dlmodel._predict(X, F=None, y=y, zout=zhat)
             zhat = zhat[-1]
         end = time.perf_counter()
         LOGGING.LOGGER.info(
-            'PointNet point-wise classification on training point cloud '
-            f'computed in {end-start:.3f} seconds.'
+            'After-training deep learning model '
+            f'computed in {end-start:.3f} seconds on training point cloud.'
         )
-        # Training evaluation
-        super().on_training_finished(X, y, yhat=yhat)
+        return zhat, yhat
+
+    @staticmethod
+    def on_training_finished_evaluate(dlmodel, X, y, zhat, yhat):
+        """
+        See :meth:`PointNetPwiseClassifModel.on_training_finished` and
+        :meth:`PointNetPwiseClassifModel.on_training_finished_predict`.
+        """
         # Get the coordinates matrix even when [X, F] is given
         _X = X[0] if isinstance(X, list) else X
         # Write classified point cloud
-        if self.training_classified_point_cloud_path is not None:
+        if dlmodel.training_classified_point_cloud_path is not None:
             ClassifiedPcloudReport(
-                X=_X, y=y, yhat=yhat, zhat=zhat, class_names=self.class_names
+                X=_X, y=y, yhat=yhat, zhat=zhat, class_names=dlmodel.class_names
             ).to_file(
-                path=self.training_classified_point_cloud_path
+                path=dlmodel.training_classified_point_cloud_path
             )
         # Write point-wise activations
-        if self.training_activations_path is not None:
+        if dlmodel.training_activations_path is not None:
             start = time.perf_counter()
-            activations = self.compute_pwise_activations(X)
+            activations = dlmodel.compute_pwise_activations(X)
             end = time.perf_counter()
             LOGGING.LOGGER.info(
-                'PointNet point-wise activations computed in '
+                'Point-wise activations of deep learning model computed in '
                 f'{end-start:.3f} seconds.'
             )
             PwiseActivationsReport(
                 X=_X, activations=activations, y=y
             ).to_file(
-                path=self.training_activations_path
+                path=dlmodel.training_activations_path
             )
             # ANOVA on activations
             start = time.perf_counter()
             Fval, pval = f_classif(activations, y)
             end = time.perf_counter()
             LOGGING.LOGGER.info(
-                'ANOVA computed on PointNet point-wise activations in '
+                'ANOVA computed on point-wise deep learning activations in '
                 f'{end-start:.3f} seconds.'
             )
             BestScoreSelectionReport(
@@ -262,9 +283,9 @@ class PointNetPwiseClassifModel(ClassificationModel):
                 pvalues=pval,
                 selected_features=None
             ).to_file(
-                path=self.training_activations_path[
-                    :self.training_activations_path.rfind('.')
-                ] + '_ANOVA.csv'
+                path=dlmodel.training_activations_path[
+                     :dlmodel.training_activations_path.rfind('.')
+                     ] + '_ANOVA.csv'
             )
 
     # ---  PREDICTION METHODS  --- #

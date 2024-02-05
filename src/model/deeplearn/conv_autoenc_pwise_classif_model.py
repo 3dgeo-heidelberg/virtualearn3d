@@ -198,7 +198,6 @@ class ConvAutoencClassificationModel(ClassificationModel):
         self.prepare_model()
         # Train the model
         start = time.perf_counter()
-        self.cache_F = F  # Cache F for on training finished
         self.model = self.model.fit(X, y)
         end = time.perf_counter()
         # Log end of execution
@@ -212,67 +211,16 @@ class ConvAutoencClassificationModel(ClassificationModel):
         """
         See :meth:`model.Model.on_training_finished`.
         """
-        # Retrieve F from object's cache
-        # TODO Rethink : Is cache_F necessary? remove it?
-        F = self.cache_F
-        self.cache_F = None
-        # TODO Rethink : Logic below (not above) to common impl. wrt PNet and RBFNet ?
         # Compute predictions on training data
-        start = time.perf_counter()
-        zhat = None
-        if yhat is None:
-            zhat = []
-            yhat = self._predict(X, F=None, y=y, zout=zhat)
-            zhat = zhat[-1]
-        end = time.perf_counter()
-        LOGGING.LOGGER.info(
-            'ConvAutoenc point-wise classification on training point cloud '
-            f'computed in {end-start:.3f} seconds.'
+        zhat, yhat = PointNetPwiseClassifModel.on_training_finished_predict(
+            self, X, y, yhat
         )
-        # Training evaluation
+        # Call parent's on_training_finished
         super().on_training_finished(X, y, yhat=yhat)
-        # Get the coordinates matrix even when [X, F] is given
-        _X = X[0] if isinstance(X, list) else X
-        # Write classified point cloud
-        if self.training_classified_point_cloud_path is not None:
-            ClassifiedPcloudReport(
-                X=_X, y=y, yhat=yhat, zhat=zhat, class_names=self.class_names
-            ).to_file(
-                path=self.training_classified_point_cloud_path
-            )
-        # Write point-wise activations
-        if self.training_activations_path is not None:
-            start = time.perf_counter()
-            activations = self.compute_pwise_activations(X)
-            end = time.perf_counter()
-            LOGGING.LOGGER.info(
-                'ConvAutoenc point-wise activations computed in '
-                f'{end-start:.3f} seconds.'
-            )
-            PwiseActivationsReport(
-                X=_X, activations=activations, y=y
-            ).to_file(
-                path=self.training_activations_path
-            )
-            # ANOVA on activations
-            start = time.perf_counter()
-            Fval, pval = f_classif(activations, y)
-            end = time.perf_counter()
-            LOGGING.LOGGER.info(
-                'ANOVA computed on ConvAutoenc point-wise activations in '
-                f'{end-start:.3f} seconds.'
-            )
-            BestScoreSelectionReport(
-                fnames=None,
-                scores=Fval,
-                score_name='F-value',
-                pvalues=pval,
-                selected_features=None
-            ).to_file(
-                path=self.training_activations_path[
-                    :self.training_activations_path.rfind('.')
-                ] + '_ANOVA.csv'
-            )
+        # Evaluate computed predictions
+        PointNetPwiseClassifModel.on_training_finished_evaluate(
+            self, X, y, zhat, yhat
+        )
 
     # ---  PREDICTION METHODS  --- #
     # ---------------------------- #

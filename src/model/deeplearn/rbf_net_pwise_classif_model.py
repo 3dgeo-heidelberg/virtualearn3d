@@ -5,22 +5,16 @@ from src.model.deeplearn.arch.rbfnet_pwise_classif import \
     RBFNetPwiseClassif
 from src.model.deeplearn.point_net_pwise_classif_model import \
     PointNetPwiseClassifModel
-from src.model.deeplearn.handle.dl_model_handler import \
-    DLModelHandler
 from src.model.deeplearn.handle.simple_dl_model_handler import \
     SimpleDLModelHandler
-from src.model.deeplearn.dlrun.grid_subsampling_post_processor import \
-    GridSubsamplingPostProcessor
 from src.report.classified_pcloud_report import ClassifiedPcloudReport
 from src.report.pwise_activations_report import PwiseActivationsReport
 from src.report.best_score_selection_report import BestScoreSelectionReport
 from src.utils.dict_utils import DictUtils
-from src.model.deeplearn.deep_learning_exception import DeepLearningException
 import src.main.main_logger as LOGGING
 from sklearn.feature_selection import f_classif
 import tensorflow as tf
 import numpy as np
-import joblib
 import time
 
 
@@ -200,61 +194,15 @@ class RBFNetPwiseClassifModel(ClassificationModel):
         See :meth:`model.Model.on_training_finished`.
         """
         # Compute predictions on training data
-        start = time.perf_counter()
-        zhat = None
-        if yhat is None:
-            zhat = []
-            yhat = self._predict(X, F=None, y=y, zout=zhat)
-            zhat = zhat[-1]
-        end = time.perf_counter()
-        LOGGING.LOGGER.info(
-            'RBFNet point-wise classification on training point cloud '
-            f'computed in {end-start:.3f} seconds.'
+        zhat, yhat = PointNetPwiseClassifModel.on_training_finished_predict(
+            self, X, y, yhat
         )
-        # Training evaluation
+        # Call parent's on_training_finished
         super().on_training_finished(X, y, yhat=yhat)
-        # Get the coordinates matrix even when [X, F] is given
-        _X = X[0] if isinstance(X, list) else X
-        # Write classified point cloud
-        if self.training_classified_point_cloud_path is not None:
-            ClassifiedPcloudReport(
-                X=_X, y=y, yhat=yhat, zhat=zhat, class_names=self.class_names
-            ).to_file(
-                path=self.training_classified_point_cloud_path
-            )
-        # Write point-wise activations
-        if self.training_activations_path is not None:
-            start = time.perf_counter()
-            activations = self.compute_pwise_activations(X)
-            end = time.perf_counter()
-            LOGGING.LOGGER.info(
-                'RBFNet point-wise activations computed in '
-                f'{end-start:.3f} seconds.'
-            )
-            PwiseActivationsReport(
-                X=_X, activations=activations, y=y
-            ).to_file(
-                path=self.training_activations_path
-            )
-            # ANOVA on activations
-            start = time.perf_counter()
-            Fval, pval = f_classif(activations, y)
-            end = time.perf_counter()
-            LOGGING.LOGGER.info(
-                'ANOVA computed on RBFNet point-wise activations in '
-                f'{end-start:.3f} seconds.'
-            )
-            BestScoreSelectionReport(
-                fnames=None,
-                scores=Fval,
-                score_name='F-value',
-                pvalues=pval,
-                selected_features=None
-            ).to_file(
-                path=self.training_activations_path[
-                     :self.training_activations_path.rfind('.')
-                     ] + '_ANOVA.csv'
-            )
+        # Evaluate computed predictions
+        PointNetPwiseClassifModel.on_training_finished_evaluate(
+            self, X, y, zhat, yhat
+        )
 
     # ---  PREDICTION METHODS  --- #
     # ---------------------------- #
