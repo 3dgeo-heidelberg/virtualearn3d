@@ -60,9 +60,10 @@ class PointNetPostProcessor:
         Executes the post-processing logic.
 
         :param inputs: A key-word input where the key "X" gives the coordinates
-        of the points in the original point cloud. Also, the key "z" gives the
-        predictions computed on a receptive field of :math:`R` points that must
-        be propagated back to the :math:`m` points of the original point cloud.
+            of the points in the original point cloud. Also, the key "z" gives
+            the predictions computed on a receptive field of :math:`R` points
+            that must be propagated back to the :math:`m` points of the
+            original point cloud.
         :type inputs: dict
         :return: The :math:`m` point-wise predictions.
         """

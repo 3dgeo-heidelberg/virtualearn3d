@@ -28,8 +28,8 @@ class FeaturesStructuringLayerTest(VL3DTest):
         """
         Run features structuring layer test.
 
-        :return: True if FeaturesStructuringLayer works as expected for the
-            test cases, False otherwise.
+        :return: True if :class:`.FeaturesStructuringLayer` works as expected
+            for the test cases, False otherwise.
         :rtype: bool
         """
         # Instantiate test layer

@@ -11,6 +11,8 @@ from src.model.deeplearn.point_net_pwise_classif_model import \
     PointNetPwiseClassifModel
 from src.model.deeplearn.rbf_net_pwise_classif_model import \
     RBFNetPwiseClassifModel
+from src.model.deeplearn.conv_autoenc_pwise_classif_model import \
+    ConvAutoencPwiseClassifModel
 import os
 import time
 
@@ -111,6 +113,11 @@ class MainTrain:
             return PointNetPwiseClassifModel
         if model_low == 'rbfnetpwiseclassifier':
             return RBFNetPwiseClassifModel
+        if (
+            model_low == 'convolutionalautoencoderpwiseclassifier' or
+            model_low == 'hierarchicalautoencoderpwiseclassifier'
+        ):
+            return ConvAutoencPwiseClassifModel
         # An unknown model was specified
         raise ValueError(f'There is no known model "{model}"')
 

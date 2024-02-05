@@ -131,24 +131,9 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
         I, sup_X = GridSubsamplingPreProcessor.clean_support_neighborhoods(
             sup_X, I
         )
-        # Export support points if requested
-        if(
-            inputs.get('training_support_points', False) and
-            self.training_support_points_report_path is not None
-        ):
-            GridSubsamplingPreProcessor.support_points_to_file(
-                sup_X,
-                self.training_support_points_report_path
-            )
-        if(
-            inputs.get('support_points', False) and
-            self.support_points_report_path
-        ):
-            GridSubsamplingPreProcessor.support_points_to_file(
-                sup_X,
-                self.support_points_report_path
-            )
         self.last_call_neighborhoods = I
+        # Export support points if requested
+        self.export_support_points(inputs, sup_X)
         # Prepare receptive field
         self.last_call_receptive_fields = [
             ReceptiveFieldGS(
@@ -159,51 +144,23 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             )
             for Ii in I
         ]
-        self.last_call_receptive_fields = joblib.Parallel(n_jobs=self.nthreads)(
-            joblib.delayed(
-                self.last_call_receptive_fields[i].fit
-            )(
-                X[Ii], sup_X[i]
-            )
-            for i, Ii in enumerate(I)
-        )
-        # Centroid from points (baseline)
-        cfp = lambda rfi, XIi, i : rfi.centroids_from_points(
-            XIi,
-            interpolate=self.interpolate,
-            fill_centroid=not self.interpolate
-        )
-        if self.to_unit_sphere:  # Centroid from points (to unit sphere)
-            cfp = lambda rfi, XIi, i : ReceptiveFieldPreProcessor.\
-                transform_to_unit_sphere(rfi.centroids_from_points(
-                    XIi,
-                    interpolate=self.interpolate,
-                    fill_centroid=not self.interpolate
-                ))
+        self.fit_receptive_fields(X, sup_X, I)
         # Neighborhoods ready to be fed into the neural network
-        Xout = np.array(joblib.Parallel(n_jobs=self.nthreads)(
-            joblib.delayed(cfp)(
-                self.last_call_receptive_fields[i], X[Ii], i
-            ) for i, Ii in enumerate(I)
-        ))
+        Xout = self.handle_unit_sphere_transform(I, X=X)
         end = time.perf_counter()
         LOGGING.LOGGER.info(
             f'The grid subsampling pre processor generated {Xout.shape[0]} '
             'receptive fields. '
         )
         # Features ready to be fed into the neural network
-        Fout = None
-        if F is not None and len(F) > 0:
-            rv = lambda rfi, Xouti, F : [
+        Fout = self.handle_features_reduction(
+            F,
+            len(I),  # number of neighborhoods
+            lambda rfi, Xouti, F : [  # reduce function f(rf_i, Xout_i, f)
                 rfi.reduce_values(Xouti, F[:, j], fill_nan=True)
                 for j in range(F.shape[1])
             ]
-            Fout = np.array(joblib.Parallel(n_jobs=self.nthreads)(
-                joblib.delayed(rv)(
-                    self.last_call_receptive_fields[i], Xout[i], F
-                )
-                for i in range(len(I))
-            )).transpose([0, 2, 1])
+        )
         # Handle labels
         if y is not None:
             yout = self.reduce_labels(Xout, y, I=I)
@@ -270,6 +227,11 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             class_distr is given.
         :param support_strategy_num_points: The number of points to be
             considered when using a furthest point sampling support strategy.
+        :param support_strategy_fast: Whether to use a random sampling strategy
+            to approximate the FPS (True), or not (False). The approximation
+            strategy is significantly faster than the exhaustive FPS
+            computation, but it only converges for sets with enough points
+            (at least thousands of points).
         :param nthreads: How many threads use for parallel computations, if
             any.
         :return: The support points as a matrix where rows are support points
@@ -396,7 +358,7 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             fields.
         :type X_rf: :class:`np.ndarray`
         :param y: The labels of the original point cloud that must be reduced
-            to the receptive field.
+            to the receptive fields.
         :type y: :class:`np.ndarray`
         :param I: The list of neighborhoods. Each element of I is itself a list
             of indices that represents the neighborhood in the point cloud
@@ -462,6 +424,16 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
         # Return found neighborhood
         return sup_X, I
 
+    # ---   SUPPORT POINTS EXPORT   --- #
+    # --------------------------------- #
+    def _export_support_points(self, sup_X, path):
+        """
+        See :class:`.ReceptiveFieldPreProcessor`,
+        :meth:`receptive_field_pre_processor.ReceptiveFieldPreProcessor._export_support_points`, and
+        :meth:`GridSubsamplingPreProcessor.support_points_to_file`.
+        """
+        return GridSubsamplingPreProcessor.support_points_to_file(sup_X, path)
+
     # ---   OTHER METHODS   --- #
     # ------------------------- #
     def overwrite_pretrained_model(self, spec):
@@ -482,6 +454,41 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
             self.cell_size = spec['cell_size']
         if 'interpolate' in spec_keys:
             self.interpolate = spec['interpolate']
+
+    def handle_unit_sphere_transform(self, I, **kwargs):
+        """
+        Override the :meth:`handle_unit_sphere_transform` method to make it
+        adequate for the logic of the :class:`.GridSubsamplingPreProcessor`.
+
+        See :class:`.ReceptiveFieldPreProcessor` and
+        :meth:`receptive_field_pre_processor.ReceptiveFieldPreProcessor.handle_unit_sphere_transform`.
+        """
+        # Extract structure space matrix from kwargs
+        X = kwargs.get('X', None)
+        if X is None:
+            raise DeepLearningException(
+                'GridSubsamplingPreProcessor.handle_unit_sphere_transform '
+                'needs an X matrix from the input kwargs.'
+            )
+        # Centroid from points (baseline)
+        cfp = lambda rfi, XIi, i : rfi.centroids_from_points(
+            XIi,
+            interpolate=self.interpolate,
+            fill_centroid=not self.interpolate
+        )
+        if self.to_unit_sphere:  # Centroid from points (to unit sphere)
+            cfp = lambda rfi, XIi, i : ReceptiveFieldPreProcessor.\
+                transform_to_unit_sphere(rfi.centroids_from_points(
+                    XIi,
+                    interpolate=self.interpolate,
+                    fill_centroid=not self.interpolate
+                ))
+        # Neighborhoods ready to be fed into the neural network
+        return np.array(joblib.Parallel(n_jobs=self.nthreads)(
+            joblib.delayed(cfp)(
+                self.last_call_receptive_fields[i], X[Ii], i
+            ) for i, Ii in enumerate(I)
+        ))
 
     # ---   SERIALIZATION   --- #
     # ------------------------- #

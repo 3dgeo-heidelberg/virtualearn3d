@@ -31,7 +31,7 @@ class PointCloudFactoryFacade:
         return PointCloudFileFactory(path).make()
 
     @staticmethod
-    def make_from_arrays(X, F, y=None, header=None, fnames=None):
+    def make_from_arrays(X, F, y=None, header=None, fnames=None, scale=0.001):
         """
         Build a PointCloud from given arrays, and (optionally) header.
 
@@ -41,6 +41,8 @@ class PointCloudFactoryFacade:
         :param header: The LAS header. If None, default header is used.
         :param fnames: The name of each feature. If None, then features will be
             named f1,...,fn.
+        :param scale: The scale for the LAS header. It governs the spatial
+            precision of the points.
         :return: Built PointCloud
         :rtype: :class:`.PointCloud`
         """

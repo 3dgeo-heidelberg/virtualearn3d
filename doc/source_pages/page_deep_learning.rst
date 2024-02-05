@@ -74,7 +74,10 @@ as shown in the JSON below:
             "num_pwise_feats": 16,
             "pre_processing": {
                 "pre_processor": "furthest_point_subsampling",
+                "to_unit_sphere": false,
+                "support_strategy": "grid",
                 "support_chunk_size": 2000,
+                "support_strategy_fast": false,
                 "_training_class_distribution": [1000, 1000, 1000, 1000, 1000],
                 "center_on_pcloud": true,
                 "num_points": 4096,
@@ -130,6 +133,17 @@ as shown in the JSON below:
             ],
             "tnet_pre_filters_spec": [32, 64, 128],
             "tnet_post_filters_spec": [128, 64, 32],
+            "final_shared_mlps": [512, 256, 128],
+            "skip_link_features_X": false,
+            "include_pretransf_feats_X": false,
+            "include_transf_feats_X": true,
+            "include_postransf_feats_X": false,
+            "include_global_feats_X": true,
+            "skip_link_features_F": false,
+            "include_pretransf_feats_F": false,
+            "include_transf_feats_F": true,
+            "include_postransf_feats_F": false,
+            "include_global_feats_F": true,
             "model_handling": {
                 "summary_report_path": "*/model_summary.log",
                 "training_history_dir": "*/training_eval/history",
@@ -157,7 +171,6 @@ as shown in the JSON below:
             "compilation_args": {
                 "optimizer": {
                     "algorithm": "SGD",
-                    "_learning_rate": 1e-3,
                     "learning_rate": {
                         "schedule": "exponential_decay",
                         "schedule_args": {
@@ -210,7 +223,6 @@ for class weights. The class weights can be used to handle data imbalance.
 
 -- ``fnames``
     The names of the features that must be considered by the neural network.
-    **Currently not supported**
 
 -- ``training_type``
     Typically it should be ``"base"`` for neural networks. For further
@@ -266,7 +278,68 @@ for class weights. The class weights can be used to handle data imbalance.
 
     -- ``tnet_post_filters_spec``
         A list of integers where each integer specifies the output dimensionality
-        of a danse layer (MLP) placed after the global pooling.
+        of a dense layer (MLP) placed after the global pooling.
+
+    -- ``final_shared_mlps``
+        A list of integers where each integer specifies the output dimensionality
+        of the shared MLP (i.e., 1D Conv with unitary window and stride). These
+        are called final because they are applied immediately before the
+        convolution that reduces the number of point-wise features that
+        constitute the input of the final layer.
+
+    -- ``skip_link_features_X``
+        Whether to propagate the input structure space to the final
+        concatenation of features (True) or not (False).
+
+    -- ``include_pretransf_feats_X``
+        Whether to propagate the values of the hidden layers that processed
+        the structure space before the second transformation block to the final
+        concatenation of features (True) or not (False).
+
+    -- ``include_transf_feats_X``
+        Whether to propagate the values of the hidden layers that processed the
+        structure space in the second transformation block to the final
+        concatenation of features (True) or not (False).
+
+    -- ``include_postransf_feats_X``
+        Whether to propagate the values of the hidden layers that processed
+        the structure space after the second transformation block to the
+        final concatenation of features (True) or not (False).
+
+    -- ``include_global_feats_X``
+        Whether to propagate the global features derived from the structure
+        space to the final concatenation of features (True) or not (False).
+
+    -- ``skip_link_features_F``
+        Whether to propagate the input feature space to the final
+        concatenation of features (True) or not (False).
+
+    -- ``include_pretransf_feats_F``
+        Whether to propagate the values of the hidden layers that processed
+        the feature space before the second transformation block to the final
+        concatenation of features (True) or not (False).
+
+    -- ``include_transf_feats_F``
+        Whether to propagate the values of the hidden layers that processed the
+        feature space in the second transformation block to the final
+        concatenation of features (True) or not (False).
+
+    -- ``include_postransf_feats_F``
+        Whether to propagate the values of the hidden layers that processed
+        the feature space after the second transformation block to the
+        final concatenation of features (True) or not (False).
+
+    -- ``include_global_feats_F``
+        Whether to propagate the global features derived from the feature
+        space to the final concatenation of features (True) or not (False).
+
+    -- ``features_structuring_layer``  **EXPERIMENTAL**
+        Specification for the :class:`.FeaturesStructuringLayer` that uses
+        radial basis functions to transform the features. This layer is
+        experimental and it is not part of typical PointNet-like architectures.
+        Users are strongly encouraged to avoid using this layer. At the moment
+        it is experimental and should only be used for development and research
+        purposes.
 
     -- ``architecture_graph_path``
         Path where the plot representing the neural network's architecture wil be
@@ -465,7 +538,10 @@ below:
 
     "pre_processing": {
         "pre_processor": "furthest_point_subsampling",
+        "to_unit_sphere": false,
+        "support_strategy": "grid",
         "support_chunk_size": 2000,
+        "support_strategy_fast": false,
         "training_class_distribution": [10000, 10000],
         "center_on_pcloud": true,
         "num_points": 8192,
@@ -495,10 +571,32 @@ cloud.
 
 **Arguments**
 
+-- ``to_unit_sphere``
+    Whether to transform the structure space (spatial coordinates) of each
+    receptive field (True) to the unit sphere (i.e., the distance between the center
+    point and its furthest neighbor must be one) or not (False).
+
 -- ``support_chunk_size``
     When given and distinct than zero, it will define the chunk size. The
     chunk size will be used to group certain tasks into chunks with a max
     size to prevent memory exhaustion.
+
+-- ``support_strategy``
+    Either ``"grid"`` to find the support points as the closest neighbors to
+    the nodes of a grid, or ``"fps"`` to select the support points through
+    furthest point subsampling. The grid covers the space inside the minimum
+    axis-aligned bounding box representing the point cloud's boundary.
+
+-- ``support_strategy_num_points``
+    When using the ``"fps"`` support strategy, this parameter governs the
+    number of furthest points that must be considered.
+
+-- ``support_strategy_fast``
+    When using the ``"fps"`` support strategy, setting this parameter to true
+    will use a significantly faster random sampling-based approximation of the
+    furthest point subsampling strategy. Note that this approximation is only
+    reliable for high enough values of ``"support_strategy_num_points"``
+    (at least thousands).
 
 -- ``training_class_distribution``
     When given, the support points to be considered as the centers of the
@@ -762,132 +860,146 @@ The JSON below corresponds to the described training pipeline.
             "plot_path": "*class_reduction.svg"
         },
         {
-            "train": "PointNetPwiseClassifier",
-            "fnames": ["AUTO"],
-            "training_type": "base",
-            "random_seed": null,
-            "model_args": {
-                "num_classes": 5,
-                "class_names": ["Ground", "Vegetation", "Building", "Urban furniture", "Vehicle"],
-                "num_pwise_feats": 20,
-                "pre_processing": {
-                    "pre_processor": "furthest_point_subsampling",
-                    "support_chunk_size": 2000,
-                    "center_on_pcloud": true,
-                    "num_points": 8192,
-                    "num_encoding_neighbors": 1,
-                    "fast": false,
-                    "neighborhood": {
-                        "type": "rectangular3D",
-                        "radius": 5.0,
-                        "separation_factor": 0.4
-                    },
-                    "nthreads": 12,
-                    "training_receptive_fields_distribution_report_path": "*/training_eval/training_receptive_fields_distribution.log",
-                    "training_receptive_fields_distribution_plot_path": "*/training_eval/training_receptive_fields_distribution.svg",
-                    "training_receptive_fields_dir": "*/training_eval/training_receptive_fields/",
-                    "receptive_fields_distribution_report_path": "*/training_eval/receptive_fields_distribution.log",
-                    "receptive_fields_distribution_plot_path": "*/training_eval/receptive_fields_distribution.svg",
-                    "receptive_fields_dir": "*/training_eval/receptive_fields/",
-                    "training_support_points_report_path": "*/training_eval/training_support_points.laz",
-                    "support_points_report_path": "*/training_eval/support_points.laz"
+          "train": "PointNetPwiseClassifier",
+          "fnames": ["AUTO"],
+          "training_type": "base",
+          "random_seed": null,
+          "model_args": {
+            "num_classes": 5,
+            "class_names": ["Ground", "Vegetation", "Building", "Urban furniture", "Vehicle"],
+            "num_pwise_feats": 20,
+            "pre_processing": {
+                "pre_processor": "furthest_point_subsampling",
+                "to_unit_sphere": false,
+            	"support_strategy": "grid",
+            	"support_chunk_size": 2000,
+            	"support_strategy_fast": false,
+                "center_on_pcloud": true,
+                "num_points": 8192,
+                "num_encoding_neighbors": 1,
+                "fast": false,
+                "neighborhood": {
+                    "type": "rectangular3D",
+                    "radius": 5.0,
+                    "separation_factor": 0.8
                 },
-                "kernel_initializer": "he_normal",
-                "pretransf_feats_spec": [
-                    {
-                        "filters": 64,
-                        "name": "prefeats64_A"
-                    },
-                    {
-                        "filters": 64,
-                        "name": "prefeats_64B"
-                    },
-                    {
-                        "filters": 128,
-                        "name": "prefeats_128"
-                    },
-                    {
-                        "filters": 192,
-                        "name": "prefeats_192"
-                    }
-                ],
-                "postransf_feats_spec": [
-                    {
-                        "filters": 128,
-                        "name": "posfeats_128"
-                    },
-                    {
-                        "filters": 192,
-                        "name": "posfeats_192"
-                    },
-                    {
-                        "filters": 256,
-                        "name": "posfeats_end_64"
-                    }
-                ],
-                "tnet_pre_filters_spec": [64, 128, 192],
-                "tnet_post_filters_spec": [192, 128, 64],
-                "model_handling": {
-                    "summary_report_path": "*/model_summary.log",
-                    "training_history_dir": "*/training_eval/history",
-                    "features_structuring_representation_dir": "*/training_eval/feat_struct_layer/",
-                    "class_weight": [0.25, 0.5, 0.5, 1, 1],
-                    "training_epochs": 200,
-                    "batch_size": 16,
-                    "checkpoint_path": "*/checkpoint.model",
-                    "checkpoint_monitor": "loss",
-                    "learning_rate_on_plateau": {
-                        "monitor": "loss",
-                        "mode": "min",
-                        "factor": 0.1,
-                        "patience": 2000,
-                        "cooldown": 5,
-                        "min_delta": 0.01,
-                        "min_lr": 1e-6
-                    },
+                "nthreads": 12,
+                "training_receptive_fields_distribution_report_path": "*/training_eval/training_receptive_fields_distribution.log",
+                "training_receptive_fields_distribution_plot_path": "*/training_eval/training_receptive_fields_distribution.svg",
+                "training_receptive_fields_dir": "*/training_eval/training_receptive_fields/",
+                "receptive_fields_distribution_report_path": "*/training_eval/receptive_fields_distribution.log",
+                "receptive_fields_distribution_plot_path": "*/training_eval/receptive_fields_distribution.svg",
+                "receptive_fields_dir": "*/training_eval/receptive_fields/",
+                "training_support_points_report_path": "*/training_eval/training_support_points.laz",
+                "support_points_report_path": "*/training_eval/support_points.laz"
+            },
+            "kernel_initializer": "he_normal",
+            "pretransf_feats_spec": [
+                {
+                    "filters": 64,
+                    "name": "prefeats64_A"
                 },
-                "compilation_args": {
-                    "optimizer": {
-                        "algorithm": "SGD",
-                        "learning_rate": {
-                            "schedule": "exponential_decay",
-                            "schedule_args": {
-                                "initial_learning_rate": 1e-2,
-                                "decay_steps": 2000,
-                                "decay_rate": 0.96,
-                                "staircase": false
-                            }
-                        }
-                    },
-                    "loss": {
-                        "function": "class_weighted_categorical_crossentropy"
-                    },
-                    "metrics": [
-                        "categorical_accuracy"
-                    ]
+                {
+                    "filters": 64,
+                    "name": "prefeats_64B"
                 },
-                "architecture_graph_path": "*/model_graph.png",
-                "architecture_graph_args": {
-                    "show_shapes": true,
-                    "show_dtype": true,
-                    "show_layer_names": true,
-                    "rankdir": "TB",
-                    "expand_nested": true,
-                    "dpi": 300,
-                    "show_layer_activations": true
+                {
+                    "filters": 128,
+                    "name": "prefeats_128"
+                },
+                {
+                    "filters": 192,
+                    "name": "prefeats_192"
+                }
+            ],
+            "postransf_feats_spec": [
+                {
+                    "filters": 128,
+                    "name": "posfeats_128"
+                },
+                {
+                    "filters": 192,
+                    "name": "posfeats_192"
+                },
+                {
+                    "filters": 256,
+                    "name": "posfeats_end_64"
+                }
+            ],
+            "tnet_pre_filters_spec": [64, 128, 192],
+            "tnet_post_filters_spec": [192, 128, 64],
+            "final_shared_mlps": [256, 192, 128],
+            "skip_link_features_X": false,
+            "include_pretransf_feats_X": false,
+            "include_transf_feats_X": true,
+            "include_postransf_feats_X": false,
+            "include_global_feats_X": true,
+            "skip_link_features_F": false,
+            "include_pretransf_feats_F": false,
+            "include_transf_feats_F": false,
+            "include_postransf_feats_F": false,
+            "include_global_feats_F": false,
+            "model_handling": {
+                "summary_report_path": "*/model_summary.log",
+                "training_history_dir": "*/training_eval/history",
+                "features_structuring_representation_dir": "*/training_eval/feat_struct_layer/",
+                "class_weight": [0.25, 0.5, 0.5, 1, 1],
+                "training_epochs": 200,
+                "batch_size": 16,
+                "checkpoint_path": "*/checkpoint.model",
+                "checkpoint_monitor": "loss",
+                "learning_rate_on_plateau": {
+                    "monitor": "loss",
+                    "mode": "min",
+                    "factor": 0.1,
+                    "patience": 2000,
+                    "cooldown": 5,
+                    "min_delta": 0.01,
+                    "min_lr": 1e-6
                 }
             },
-            "autoval_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
-            "training_evaluation_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
-            "training_class_evaluation_metrics": ["P", "R", "F1", "IoU"],
-            "training_evaluation_report_path": "*/training_eval/evaluation.log",
-            "training_class_evaluation_report_path": "*/training_eval/class_evaluation.log",
-            "training_confusion_matrix_report_path": "*/training_eval/confusion.log",
-            "training_confusion_matrix_plot_path": "*/training_eval/confusion.svg",
-            "training_class_distribution_report_path": "*/training_eval/class_distribution.log",
-            "training_class_distribution_plot_path": "*/training_eval/class_distribution.svg",
-            "training_classified_point_cloud_path": "*/training_eval/classified_point_cloud.laz",
-            "training_activations_path": "*/training_eval/activations.laz"
+            "compilation_args": {
+                "optimizer": {
+                    "algorithm": "SGD",
+                    "learning_rate": {
+                        "schedule": "exponential_decay",
+                        "schedule_args": {
+                            "initial_learning_rate": 1e-2,
+                            "decay_steps": 2000,
+                            "decay_rate": 0.96,
+                            "staircase": false
+                        }
+                    }
+                },
+                "loss": {
+                    "function": "class_weighted_categorical_crossentropy"
+                },
+                "metrics": [
+                    "categorical_accuracy"
+                ]
+            },
+            "architecture_graph_path": "*/model_graph.png",
+            "architecture_graph_args": {
+                "show_shapes": true,
+                "show_dtype": true,
+                "show_layer_names": true,
+                "rankdir": "TB",
+                "expand_nested": true,
+                "dpi": 300,
+                "show_layer_activations": true
+            }
+          },
+          "autoval_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
+          "training_evaluation_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
+          "training_class_evaluation_metrics": ["P", "R", "F1", "IoU"],
+          "training_evaluation_report_path": "*/training_eval/evaluation.log",
+          "training_class_evaluation_report_path": "*/training_eval/class_evaluation.log",
+          "training_confusion_matrix_report_path": "*/training_eval/confusion.log",
+          "training_confusion_matrix_plot_path": "*/training_eval/confusion.svg",
+          "training_class_distribution_report_path": "*/training_eval/class_distribution.log",
+          "training_class_distribution_plot_path": "*/training_eval/class_distribution.svg",
+          "training_classified_point_cloud_path": "*/training_eval/classified_point_cloud.laz",
+          "training_activations_path": "*/training_eval/activations.laz"
         },
         {
           "writer": "PredictivePipelineWriter",

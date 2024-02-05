@@ -26,6 +26,12 @@ class TakeClosestMiner(Miner):
     :ivar fnames: The names of the features that must be taken from the closest
         neighbor in the pool.
     :vartype fnames: list of str
+    :ivar frenames: The names of the features in the output point cloud. When
+        not given (i.e., None), they will be the feature names.
+    :vartype frenames: list of str
+    :ivar y_default: The default value for classification labels. If not given,
+        it is the max value for integers ``np.iinfo(int).max``.
+    :vartype y_default: int
     :ivar pcloud_pool: The list of paths to the point clouds composing the
         pool.
     :vartype pcloud_pool: list of str
@@ -51,6 +57,8 @@ class TakeClosestMiner(Miner):
         # Initialize
         kwargs = {
             'fnames': spec.get('fnames', None),
+            'frenames': spec.get('frenames', None),
+            'y_default': spec.get('y_default', None),
             'pcloud_pool': spec.get('pcloud_pool', None),
             'distance_upper_bound': spec.get('distance_upper_bound', None),
             'nthreads': spec.get('nthreads', None)
@@ -74,6 +82,8 @@ class TakeClosestMiner(Miner):
         super().__init__(**kwargs)
         # Basic attributes of the TakeClosestMiner
         self.fnames = kwargs.get('fnames', None)
+        self.frenames = kwargs.get('frenames', None)
+        self.y_default = kwargs.get('y_default', np.iinfo(int).max)
         self.pcloud_pool = kwargs.get('pcloud_pool', None)
         self.distance_upper_bound = kwargs.get('distance_upper_bound', np.inf)
         self.nthreads = kwargs.get('nthreads', -1)
@@ -84,6 +94,14 @@ class TakeClosestMiner(Miner):
             raise MinerException(
                 'TakeClosestMiner cannot be computed without feature names.'
             )
+        if self.frenames is not None:
+            if len(self.fnames) != len(self.frenames):
+                raise MinerException(
+                    f'TakeClosestMiner received {len(self.fnames)} feature '
+                    f'names but {len(self.frenames)} feature renames. '
+                    'The must be the same number. Alternatively, frenames '
+                    'can be None so fnames will be used instead.'
+                )
         if self.pcloud_pool is None:
             raise MinerException(
                 'TakeClosestMiner cannot be computed without a pool of '
@@ -102,13 +120,6 @@ class TakeClosestMiner(Miner):
         """
         # Obtain coordinates
         X = pcloud.get_coordinates_matrix()
-        # Initialize distances, features, and labels matrices and vectors
-        D = np.empty(X.shape[0], dtype=float)
-        D.fill(np.inf)
-        F = np.empty((X.shape[0], len(self.fnames)), dtype=float)
-        F.fill(np.nan)
-        y = np.empty(X.shape[0], dtype=int)
-        y.fill(np.iinfo(int).max)
         # Prepare fnames
         fnames = []
         take_classes = False
@@ -119,6 +130,13 @@ class TakeClosestMiner(Miner):
                 fnames.append(fname)
         if len(fnames) < 1:
             fnames = None
+        # Initialize distances, features, and labels matrices and vectors
+        D = np.empty(X.shape[0], dtype=float)
+        D.fill(np.inf)
+        F = np.empty((X.shape[0], len(fnames)), dtype=float)
+        F.fill(np.nan)
+        y = np.empty(X.shape[0], dtype=int)
+        y.fill(self.y_default)
         # Find features from closest neighbor in pool
         for pcloud_path in self.pcloud_pool:
             # Read input point cloud
@@ -172,7 +190,10 @@ class TakeClosestMiner(Miner):
         if take_classes:
             pcloud = pcloud.set_classes_vector(y)
         if fnames is not None:
-            pcloud = pcloud.add_features(self.fnames, F)
+            frenames = fnames
+            if self.frenames is not None:
+                frenames = self.frenames
+            pcloud = pcloud.add_features(frenames, F)
         return pcloud
 
 

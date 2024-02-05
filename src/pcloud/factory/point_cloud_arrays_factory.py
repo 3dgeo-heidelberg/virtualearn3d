@@ -61,7 +61,7 @@ class PointCloudArraysFactory(PointCloudFactory):
 
     # ---  FACTORY METHODS  --- #
     # ------------------------- #
-    def make(self):
+    def make(self, scale=0.001):
         """
         Make a point cloud from arrays.
         See :meth:`point_cloud_factory.PointCloudFactory.make`
@@ -73,11 +73,14 @@ class PointCloudArraysFactory(PointCloudFactory):
                 file_version="1.2"
             )
             las.header.offsets = np.min(self.X, axis=0)
-            las.header.scales = [0.01]*3
+            las.header.scales = [scale]*3
             if self.F is not None:
                 extra_bytes = [
                     laspy.ExtraBytesParams(name=fname, type='f')
-                    for fname in self.fnames
+                    for fname in self.fnames if fname not in [
+                        # Exclude default features like intensity
+                        'intensity'
+                    ]
                 ]
                 las.add_extra_dims(extra_bytes)
         else:  # Initialize from previous header
