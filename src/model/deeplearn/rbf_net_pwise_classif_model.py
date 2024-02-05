@@ -7,15 +7,10 @@ from src.model.deeplearn.point_net_pwise_classif_model import \
     PointNetPwiseClassifModel
 from src.model.deeplearn.handle.simple_dl_model_handler import \
     SimpleDLModelHandler
-from src.report.classified_pcloud_report import ClassifiedPcloudReport
-from src.report.pwise_activations_report import PwiseActivationsReport
-from src.report.best_score_selection_report import BestScoreSelectionReport
 from src.utils.dict_utils import DictUtils
 import src.main.main_logger as LOGGING
-from sklearn.feature_selection import f_classif
 import tensorflow as tf
 import numpy as np
-import time
 
 
 # ---   CLASS   --- #

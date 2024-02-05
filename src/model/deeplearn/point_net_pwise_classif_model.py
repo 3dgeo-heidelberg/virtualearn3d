@@ -178,7 +178,6 @@ class PointNetPwiseClassifModel(ClassificationModel):
         """
         See :meth:`model.Model.get_input_from_pcloud`.
         """
-        # TODO Rethink : Common impl. wrt RBFNetPwiseClassifModel.get_input_from_pcloud
         # No features
         if self.fnames is None:
             return pcloud.get_coordinates_matrix()

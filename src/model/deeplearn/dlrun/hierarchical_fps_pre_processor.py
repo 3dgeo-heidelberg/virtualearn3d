@@ -8,7 +8,7 @@ from src.model.deeplearn.dlrun.grid_subsampling_pre_processor import \
 from src.model.deeplearn.dlrun.furthest_point_subsampling_pre_processor import \
     FurthestPointSubsamplingPreProcessor
 from src.utils.ptransf.receptive_field_hierarchical_fps import \
-    ReceptiveFieldHierarchicalFPS  # TODO Rethink : Implement ReceptiveFieldHierarchicalFPS
+    ReceptiveFieldHierarchicalFPS
 from src.utils.neighborhood.support_neighborhoods import SupportNeighborhoods
 import src.main.main_logger as LOGGING
 import scipy

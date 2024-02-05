@@ -140,7 +140,8 @@ class ReceptiveFieldFPS(ReceptiveField):
         # Find the indexing matrix N
         kdt = KDT(X)
         self.N = kdt.query(self.Y, k=self.num_encoding_neighbors)[1]
-        # TODO Rethink : Reshape self.N like self.M below ?
+        if len(self.N.shape) < 2:
+            self.N = self.N.reshape(-1, 1)
         # Find the indexing matrix M
         kdt = KDT(self.Y)
         self.M = kdt.query(X, k=self.num_encoding_neighbors)[1]

@@ -224,9 +224,6 @@ class ReceptiveFieldHierarchicalFPS(ReceptiveField):
             NDd = kdt.query(
                 self.Ys[d], k=self.num_downsampling_neighbors[d]
             )[1]
-            # TODO Rethink : Reshape NDd like NUd below ?
-            # It is done below. If it works, recall to update non-hierarchical
-            # FPS receptive field too
             if len(NDd.shape) < 2:
                 NDd = NDd.reshape(-1, 1)
             self.NDs[d] = NDd
