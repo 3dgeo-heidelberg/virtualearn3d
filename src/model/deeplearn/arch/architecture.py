@@ -10,6 +10,12 @@ from src.model.deeplearn.layer.rbf_feat_extract_layer import \
     RBFFeatExtractLayer
 from src.model.deeplearn.layer.rbf_feat_processing_layer import \
     RBFFeatProcessingLayer
+from src.model.deeplearn.layer.features_downsampling_layer import \
+    FeaturesDownsamplingLayer
+from src.model.deeplearn.layer.features_upsampling_layer import \
+    FeaturesUpsamplingLayer
+from src.model.deeplearn.layer.grouping_point_net_layer import \
+    GroupingPointNetLayer
 from src.inout.io_utils import IOUtils
 import src.main.main_logger as LOGGING
 import tensorflow as tf
@@ -315,7 +321,10 @@ class Architecture:
                         FeaturesOrthogonalRegularizer,
                     'FeaturesStructuringLayer': FeaturesStructuringLayer,
                     "RBFFeatExtractLayer": RBFFeatExtractLayer,
-                    'RBFFeatProcessingLayer': RBFFeatProcessingLayer
+                    'RBFFeatProcessingLayer': RBFFeatProcessingLayer,
+                    'FeaturesDownsamplingLayer': FeaturesDownsamplingLayer,
+                    'FeaturesUpsamplingLayer': FeaturesUpsamplingLayer,
+                    'GroupingPointNetLayer': GroupingPointNetLayer
 
                 },
                 compile=False

@@ -365,3 +365,53 @@ class ConvAutoencPwiseClassif(Architecture):
                 )(x)
             x = tf.keras.layers.Activation("relu")(x)
         self.last_upsampling_tensor = x
+
+    # ---   SERIALIZATION   --- #
+    # ------------------------- #
+    def __getstate__(self):
+        """
+        Method to be called when saving the serialized ConvAutoencPwiseClassif
+        architecture.
+
+        :return: The state's dictionary of the object.
+        :rtype: dict
+        """
+        # Call parent's method
+        state = super().__getstate__()
+        # Add ConvAutoencPwiseClassif's attributes to state dictionary
+        state['fnames'] = self.fnames
+        state['num_classes'] = self.num_classes
+        state['feature_extraction'] = self.feature_extraction
+        state['downsampling_filter'] = self.downsampling_filter
+        state['upsampling_filter'] = self.upsampling_filter
+        state['upsampling_bn'] = self.upsampling_bn
+        state['upsampling_bn_momentum'] = self.upsampling_bn_momentum
+        state['conv1d_kernel_initializer'] = self.conv1d_kernel_initializer
+        state['output_kernel_initializer'] = self.output_kernel_initializer
+        state['max_depth'] = self.max_depth
+        # Return
+        return state
+
+    def __setstate__(self, state):
+        """
+        Method to be called when loading and deserializing a previously
+        serialized ConvAutoencPwiseClassif architecture.
+
+        :param state: The state's dictionary of the saved
+            ConvAutoencPwiseClassif architecture.
+        :type state: dict
+        :return: Nothing, but modifies the internal state of the object.
+        """
+        # Assign ConvAutoencPwiseClassif's attributes from state dictionary
+        self.fnames = state['fnames']
+        self.num_classes = state['num_classes']
+        self.feature_extraction = state['feature_extraction']
+        self.downsampling_filter = state['downsampling_filter']
+        self.upsampling_filter = state['upsampling_filter']
+        self.upsampling_bn = state['upsampling_bn']
+        self.upsampling_bn_momentum = state['upsampling_bn_momentum']
+        self.conv1d_kernel_initializer = state['conv1d_kernel_initializer']
+        self.output_kernel_initializer = state['output_kernel_initializer']
+        self.max_depth = state['max_depth']
+        # Call parent's set state
+        super().__setstate__(state)

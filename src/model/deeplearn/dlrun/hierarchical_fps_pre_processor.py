@@ -438,7 +438,7 @@ class HierarchicalFPSPreProcessor(ReceptiveFieldPreProcessor):
         # Assign member attributes from state
         self.num_downsampling_neighbors = state['num_downsampling_neighbors']
         self.num_pwise_neighbors = state['num_pwise_neighbors']
-        self.num_upsampling_neighbors = state['num_usampling_neighbors']
+        self.num_upsampling_neighbors = state['num_upsampling_neighbors']
         self.num_points_per_depth = state['num_points_per_depth']
         self.depth = state['depth']
         self.fast_flag_per_depth = state['fast_flag_per_depth']
