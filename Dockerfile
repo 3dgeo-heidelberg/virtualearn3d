@@ -24,6 +24,7 @@ COPY cpp /app/cpp
 WORKDIR /app
 
 RUN pip install -r requirements.txt
+RUN pip install pybind11
 # Install Python packages
 
 RUN mkdir -p /app/cpp/lib 
