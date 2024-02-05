@@ -296,17 +296,28 @@ class PointNetPwiseClassifModel(ClassificationModel):
             inputs=self.model.compiled.inputs,
             outputs=self.model.compiled.get_layer(index=-2).output
         )
+        # Compute and return
+        return PointNetPwiseClassifModel.do_pwise_activations(
+            self.model, remodel, X
+        )
+
+    @staticmethod
+    def do_pwise_activations(model, remodel, X):
+        """
+        Assist the
+        :meth:`PointNetPwiseClassifModel.compute_pwise_activations` method.
+        """
         remodel.compile(
             **SimpleDLModelHandler.build_compilation_args(
-                self.model.compilation_args
+                model.compilation_args
             )
         )
         # Compute the activations
-        X_rf = self.model.arch.run_pre({'X': X})
+        X_rf = model.arch.run_pre({'X': X})
         with tf.device("cpu:0"):
             start_cpu_activations = time.perf_counter()
             activations = remodel.predict(
-                X_rf, batch_size=self.model.batch_size
+                X_rf, batch_size=model.batch_size
             )
             end_cpu_activations = time.perf_counter()
             LOGGING.LOGGER.debug(
@@ -315,10 +326,10 @@ class PointNetPwiseClassifModel(ClassificationModel):
                 )
             )
         # Propagate activations to original dimensionality
-        rf = self.model.arch.pre_runnable.pre_processor\
+        rf = model.arch.pre_runnable.pre_processor \
             .last_call_receptive_fields
         propagated_activations = joblib.Parallel(
-            n_jobs=self.model.arch.pre_runnable.pre_processor.nthreads
+            n_jobs=model.arch.pre_runnable.pre_processor.nthreads
         )(
             joblib.delayed(
                 rfi.propagate_values
@@ -328,7 +339,7 @@ class PointNetPwiseClassifModel(ClassificationModel):
             for i, rfi in enumerate(rf)
         )
         # Reduce overlapping propagations to mean
-        I = self.model.arch.pre_runnable.pre_processor \
+        I = model.arch.pre_runnable.pre_processor \
             .last_call_neighborhoods
         npoints = X[0].shape[0] if isinstance(X, list) else X.shape[0]
         activations = GridSubsamplingPostProcessor.pwise_reduce(

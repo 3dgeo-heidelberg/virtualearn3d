@@ -3,6 +3,8 @@
 from src.model.classification_model import ClassificationModel
 from src.model.deeplearn.arch.conv_autoenc_pwise_classif import \
     ConvAutoencPwiseClassif
+from src.model.deeplearn.point_net_pwise_classif_model import \
+    PointNetPwiseClassifModel
 from src.model.deeplearn.handle.dl_model_handler import DLModelHandler
 from src.model.deeplearn.handle.simple_dl_model_handler import \
     SimpleDLModelHandler
@@ -313,50 +315,25 @@ class ConvAutoencClassificationModel(ClassificationModel):
     # ---  RBFNET PWISE CLASSIF METHODS  --- #
     # -------------------------------------- #
     def compute_pwise_activations(self, X):
-        # TODO Rethink : Doc
-        # TODO Rethink : Abstract to common logic also for RBFNet and PNet
+        """
+        Compute the point-wise activations of the last layer before the output
+        softmax (or sigomid for binary classification) layer in the
+        convolutional autoencoder point-wise classification model.
+
+        :param X: The matrix of coordinates representing the point cloud.
+            Alternatively, it can be a list such that X[0] is the matrix of
+            coordinates and X[1] the matrix of features.
+        :type X: :class:`np.ndarray` or list
+        :return: The matrix of point-wise activations where points are rows
+            and the columns are the components of the output activation
+            function (activated vector or point-wise features).
+        :rtype: :class:`np.ndarray`
+        """
         # Prepare model to compute activations
         remodel = tf.keras.Model(
             inputs=self.model.compiled.inputs,
             outputs=self.model.compiled.get_layer(index=-2).output
         )
-        remodel.compile(
-            **SimpleDLModelHandler.build_compilation_args(
-                self.model.compilation_args
-            )
+        return PointNetPwiseClassifModel.do_pwise_activations(
+            self.model, remodel, X
         )
-        # Compute the activations
-        X_rf = self.model.arch.run_pre({'X': X})
-        with tf.device("cpu:0"):
-            start_cpu_activations = time.perf_counter()
-            activations = remodel.predict(
-                X_rf, batch_size=self.model.batch_size
-            )
-            end_cpu_activations = time.perf_counter()
-            LOGGING.LOGGER.debug(
-                'Activations computed on CPU {t:.3f} seconds'.format(
-                    t=end_cpu_activations-start_cpu_activations
-                )
-            )
-        # Propagate activations to original dimensionality
-        rf = self.model.arch.pre_runnable.pre_processor\
-            .last_call_receptive_fields
-        propagated_activations = joblib.Parallel(
-            n_jobs=self.model.arch.pre_runnable.pre_processor.nthreads
-        )(
-            joblib.delayed(
-                rfi.propagate_values
-            )(
-                activations[i], reduce_strategy='mean'
-            )
-            for i, rfi in enumerate(rf)
-        )
-        # Reduce overlapping propagations to mean
-        I = self.model.arch.pre_runnable.pre_processor \
-            .last_call_neighborhoods
-        npoints = X[0].shape[0] if isinstance(X, list) else X.shape[0]
-        activations = GridSubsamplingPostProcessor.pwise_reduce(
-            npoints, activations.shape[-1], I, propagated_activations
-        )
-        # Return
-        return activations
