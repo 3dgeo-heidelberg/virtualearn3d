@@ -5,19 +5,11 @@ from src.model.deeplearn.arch.conv_autoenc_pwise_classif import \
     ConvAutoencPwiseClassif
 from src.model.deeplearn.point_net_pwise_classif_model import \
     PointNetPwiseClassifModel
-from src.model.deeplearn.handle.dl_model_handler import DLModelHandler
 from src.model.deeplearn.handle.simple_dl_model_handler import \
     SimpleDLModelHandler
-from src.model.deeplearn.dlrun.grid_subsampling_post_processor import \
-    GridSubsamplingPostProcessor
-from src.report.classified_pcloud_report import ClassifiedPcloudReport
-from src.report.pwise_activations_report import PwiseActivationsReport
-from src.report.best_score_selection_report import BestScoreSelectionReport
 import src.main.main_logger as LOGGING
 from src.utils.dict_utils import DictUtils
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
-from sklearn.feature_selection import f_classif
-import joblib
 import tensorflow as tf
 import numpy as np
 import time
@@ -25,7 +17,7 @@ import time
 
 # ---   CLASS   --- #
 # ----------------- #
-class ConvAutoencClassificationModel(ClassificationModel):
+class ConvAutoencPwiseClassifModel(ClassificationModel):
     """
     :author: Alberto M. Esmoris Pena
 
@@ -65,9 +57,9 @@ class ConvAutoencClassificationModel(ClassificationModel):
     # ---------------- #
     def __init__(self, **kwargs):
         """
-        Initialize an instance of ConvAutoencClassificationModel.
+        Initialize an instance of ConvAutoencPwiseClassifModel.
 
-        :param kwargs: The attributes for the ConvAutoencClassificationModel
+        :param kwargs: The attributes for the ConvAutoencPwiseClassifModel
             that will also be passed to the parent.
         """
         # Call parent init
@@ -77,7 +69,7 @@ class ConvAutoencClassificationModel(ClassificationModel):
             else:
                 kwargs['fnames'] = []  # Avoid None fnames exception for ConvAutoenc
         super().__init__(**kwargs)
-        # Basic attributes of the ConvAutoencClassificationModel
+        # Basic attributes of the ConvAutoencPwiseClassifModel
         self.model = None  # By default, internal model is not instantiated
         self.training_activations_path = kwargs.get(
             'training_activations_path', None
@@ -106,7 +98,7 @@ class ConvAutoencClassificationModel(ClassificationModel):
                 self.model = ConvAutoencPwiseClassif(**self.model_args)
             else:
                 LOGGING.LOGGER.info(
-                    "Preparing a ConvAutoencClassificationModel with no "
+                    "Preparing a ConvAutoencPwiseClassifModel with no "
                     "`model_args`"
                 )
                 self.model = ConvAutoencPwiseClassif()
@@ -203,7 +195,7 @@ class ConvAutoencClassificationModel(ClassificationModel):
         # Log end of execution
         if info:
             LOGGING.LOGGER.info(
-                'ConvAutoencClassificationModel trained in '
+                'ConvAutoencPwiseClassifModel trained in '
                 f'{end-start:.3f} seconds.'
             )
 

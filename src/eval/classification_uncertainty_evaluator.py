@@ -8,6 +8,8 @@ from src.model.deeplearn.point_net_pwise_classif_model import \
     PointNetPwiseClassifModel
 from src.model.deeplearn.rbf_net_pwise_classif_model import \
     RBFNetPwiseClassifModel
+from src.model.deeplearn.conv_autoenc_pwise_classif_model import \
+    ConvAutoencPwiseClassifModel
 from src.model.deeplearn.handle.dl_model_handler import DLModelHandler
 import src.main.main_logger as LOGGING
 from src.utils.dict_utils import DictUtils
@@ -269,7 +271,11 @@ class ClassificationUncertaintyEvaluator(Evaluator):
         X = None
         if isinstance(
             model,
-            (PointNetPwiseClassifModel, RBFNetPwiseClassifModel)
+            (
+                PointNetPwiseClassifModel,
+                RBFNetPwiseClassifModel,
+                ConvAutoencPwiseClassifModel
+            )
         ):
             X = pcloud.get_coordinates_matrix()
             if hasattr(model, "model") and isinstance(
