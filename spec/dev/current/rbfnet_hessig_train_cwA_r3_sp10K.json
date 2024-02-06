@@ -1,0 +1,392 @@
+{
+  "_in_pcloud": [
+	"/hei/Hessigheim_Benchmark/Epoch_March2018/vl3d/mined/Mar18_train_rbfnet_feats.laz"
+  ],
+  "in_pcloud": [
+	"/hei/Hessigheim_Benchmark/Epoch_March2018/vl3d/mined/Mar18_val_rbfnet_feats.laz"
+  ],
+  "out_pcloud": [
+	"/hei/Hessigheim_Benchmark/Epoch_March2018/vl3d/out/FeatsRBFNet_cwA_r3_sp10K/*"
+  ],
+  "sequential_pipeline": [
+	{
+	  "imputer": "UnivariateImputer",
+	  "fnames": [
+	    "Reflectance", "floor_distance_r50.0_sep0.35",
+		"HSV_Hrad", "HSV_S", "HSV_V",
+		"Reflectance_mean_r1.0", "floor_distance_r50.0_sep0.35_mea",
+		"HSV_Hrad_mean_r1.0", "HSV_S_mean_r1.0", "HSV_V_mean_r1.0"
+	  ],
+	  "target_val": "NaN",
+	  "strategy": "mean",
+	  "constant_val": 0
+	},
+	{
+		"feature_transformer": "Standardizer",
+		"fnames": [
+			"Reflectance", "floor_distance_r50.0_sep0.35",
+			"HSV_Hrad", "HSV_S", "HSV_V",
+			"Reflectance_mean_r1.0", "floor_distance_r50.0_sep0.35_mea",
+			"HSV_Hrad_mean_r1.0", "HSV_S_mean_r1.0", "HSV_V_mean_r1.0"
+	  	],
+		"center": true,
+		"scale": true,
+		"report_path": "*standardization.log"
+	},
+	{
+		"feature_transformer": "MinmaxNormalizer",
+		"fnames": [
+			"Reflectance", "floor_distance_r50.0_sep0.35",
+			"HSV_Hrad", "HSV_S", "HSV_V",
+			"Reflectance_mean_r1.0", "floor_distance_r50.0_sep0.35_mea",
+			"HSV_Hrad_mean_r1.0", "HSV_S_mean_r1.0", "HSV_V_mean_r1.0"
+	  	],
+		"target_range": [0, 1],
+		"clip": true,
+		"report_path": "*minmax_normalization.log"
+	},
+	{
+		"writer": "Writer",
+		"out_pcloud": "*preprocessed_feats.laz"
+	},
+	{
+		"train": "RBFNetPwiseClassifier",
+		"training_type": "base",
+		"random_seed": null,
+		"model_args": {
+			"fnames": [
+				"Reflectance", "floor_distance_r50.0_sep0.35",
+				"HSV_Hrad", "HSV_S", "HSV_V",
+				"Reflectance_mean_r1.0", "floor_distance_r50.0_sep0.35_mea",
+				"HSV_Hrad_mean_r1.0", "HSV_S_mean_r1.0", "HSV_V_mean_r1.0"
+		  	],
+			"num_classes": 11,
+			"class_names": ["LowVeg", "ImpSurf", "Vehicle", "UrbanFurni", "Roof", "Facade", "Shrub", "Tree", "Soil/Gravel", "VertSurf", "Chimney"],
+			"_pre_processing": {
+				"pre_processor": "grid_subsampling",
+				"to_unit_sphere": true,
+				"support_strategy": "grid",
+				"sphere_radius": 3.0,
+				"separation_factor": 1.5,
+				"cell_size": [0.2, 0.2, 0.2],
+				"interpolate": false,
+				"nthreads": 12,
+				"training_receptive_fields_distribution_report_path": "*/training_eval/training_receptive_fields_distribution.log",
+				"training_receptive_fields_distribution_plot_path": "*/training_eval/training_receptive_fields_distribution.svg",
+				"training_receptive_fields_dir": "*/training_eval/training_receptive_fields/",			
+				"receptive_fields_distribution_report_path": "*/training_eval/receptive_fields_distribution.log",
+				"receptive_fields_distribution_plot_path": "*/training_eval/receptive_fields_distribution.svg",
+				"receptive_fields_dir": "*/training_eval/receptive_fields/",
+				"training_support_points_report_path": "*/training_eval/training_support_points.laz",
+				"support_points_report_path": "*/training_eval/support_points.laz"
+			},
+			"pre_processing": {
+				"pre_processor": "furthest_point_subsampling",
+				"to_unit_sphere": true,
+				"support_strategy": "fps",
+				"support_strategy_num_points": 15000, 
+				"_support_strategy_num_points": 10000, 
+				"support_strategy_fast": false,
+				"support_chunk_size": 2000,
+				"_training_class_distribution": [2500, 2500, 2500, 2500],
+				"center_on_pcloud": true,
+				"num_points": 6000,
+				"num_encoding_neighbors": 1,
+				"fast": false,
+				"neighborhood": {	
+					"type": "rectangular3D",
+					"radius": 3.0,
+					"separation_factor": 1.5
+				},
+				"nthreads": 12,
+				"training_receptive_fields_distribution_report_path": "*/training_eval/training_receptive_fields_distribution.log",
+				"training_receptive_fields_distribution_plot_path": "*/training_eval/training_receptive_fields_distribution.svg",
+				"training_receptive_fields_dir": "*/training_eval/training_receptive_fields/",			
+				"receptive_fields_distribution_report_path": "*/training_eval/receptive_fields_distribution.log",
+				"receptive_fields_distribution_plot_path": "*/training_eval/receptive_fields_distribution.svg",
+				"receptive_fields_dir": "*/training_eval/receptive_fields/",
+				"training_support_points_report_path": "*/training_eval/training_support_points.laz",
+				"support_points_report_path": "*/training_eval/support_points.laz"
+			},
+			"rbfs": [
+				{
+					"max_radii": [1.0, 1.0, 1.0],
+					"radii_resolution": 2,
+					"angular_resolutions": [1, 6],
+					"structure_initialization_type": "concentric_grids",
+					"trainable_kernel_structure": true,
+					"trainable_kernel_sizes": true,
+					"kernel_function_type": "Gaussian",
+					"batch_normalization": false,
+					"activation": null
+				},
+				{
+					"max_radii": [0.6, 0.6, 0.6],
+					"radii_resolution": 2,
+					"angular_resolutions": [1, 6],
+					"structure_initialization_type": "concentric_grids",
+					"trainable_kernel_structure": true,
+					"trainable_kernel_sizes": true,
+					"kernel_function_type": "Gaussian",
+					"batch_normalization": false,
+					"activation": null
+				},
+				{
+					"max_radii": [0.3, 0.3, 0.3],
+					"radii_resolution": 2,
+					"angular_resolutions": [1, 6],
+					"structure_initialization_type": "concentric_grids",
+					"trainable_kernel_structure": true,
+					"trainable_kernel_sizes": true,
+					"kernel_function_type": "Gaussian",
+					"batch_normalization": false,
+					"activation": null
+				},
+				{
+					"max_radii": [1.0, 1.0, 1.0],
+					"radii_resolution": 5,
+					"angular_resolutions": [1, 2, 4, 6, 8],
+					"structure_initialization_type": "concentric_rectangulars",
+					"trainable_kernel_structure": true,
+					"trainable_kernel_sizes": true,
+					"kernel_function_type": "Gaussian",
+					"batch_normalization": false,
+					"activation": null
+				},
+				{
+					"max_radii": [1.0, 1.0, 1.0],
+					"radii_resolution": 2,
+					"angular_resolutions": [1, 9],
+					"structure_initialization_type": "concentric_cylinders",
+					"trainable_kernel_structure": true,
+					"trainable_kernel_sizes": true,
+					"kernel_function_type": "Gaussian",
+					"batch_normalization": false,
+					"activation": null
+				},
+				{
+					"max_radii": [0.6, 0.6, 0.6],
+					"radii_resolution": 2,
+					"angular_resolutions": [1, 9],
+					"structure_initialization_type": "concentric_cylinders",
+					"trainable_kernel_structure": true,
+					"trainable_kernel_sizes": true,
+					"kernel_function_type": "Gaussian",
+					"batch_normalization": false,
+					"activation": null
+				},
+				{
+					"max_radii": [0.3, 0.3, 0.3],
+					"radii_resolution": 2,
+					"angular_resolutions": [1, 9],
+					"structure_initialization_type": "concentric_cylinders",
+					"trainable_kernel_structure": true,
+					"trainable_kernel_sizes": true,
+					"kernel_function_type": "Gaussian",
+					"batch_normalization": false,
+					"activation": null
+				},
+				{
+					"max_radii": [1.0, 1.0, 1.0],
+					"radii_resolution": 2,
+					"angular_resolutions": [1, 18],
+					"structure_initialization_type": "concentric_ellipsoids",
+					"trainable_kernel_structure": true,
+					"trainable_kernel_sizes": true,
+					"kernel_function_type": "Gaussian",
+					"batch_normalization": false,
+					"activation": null
+				},	
+				{
+					"max_radii": [0.6, 0.6, 0.6],
+					"radii_resolution": 2,
+					"angular_resolutions": [1, 18],
+					"structure_initialization_type": "concentric_ellipsoids",
+					"trainable_kernel_structure": true,
+					"trainable_kernel_sizes": true,
+					"kernel_function_type": "Gaussian",
+					"batch_normalization": false,
+					"activation": null
+				},
+				{
+					"max_radii": [0.3, 0.3, 0.3],
+					"radii_resolution": 2,
+					"angular_resolutions": [1, 18],
+					"structure_initialization_type": "concentric_ellipsoids",
+					"trainable_kernel_structure": true,
+					"trainable_kernel_sizes": true,
+					"kernel_function_type": "Gaussian",
+					"batch_normalization": false,
+					"activation": null
+				},
+				{
+					"max_radii": [1.0, 1.0, 1.0],
+					"radii_resolution": 2,
+					"angular_resolutions": [1, 20],
+					"structure_initialization_type": "cone",
+					"trainable_kernel_structure": true,
+					"trainable_kernel_sizes": true,
+					"kernel_function_type": "Gaussian",
+					"batch_normalization": false,
+					"activation": null
+				},
+				{
+					"max_radii": [0.6, 0.6, 0.6],
+					"radii_resolution": 2,
+					"angular_resolutions": [1, 20],
+					"structure_initialization_type": "cone",
+					"trainable_kernel_structure": true,
+					"trainable_kernel_sizes": true,
+					"kernel_function_type": "Gaussian",
+					"batch_normalization": false,
+					"activation": null
+				},
+				{
+					"max_radii": [0.3, 0.3, 0.3],
+					"radii_resolution": 2,
+					"angular_resolutions": [1, 20],
+					"structure_initialization_type": "cone",
+					"trainable_kernel_structure": true,
+					"trainable_kernel_sizes": true,
+					"kernel_function_type": "Gaussian",
+					"batch_normalization": false,
+					"activation": null
+				},
+				{
+					"max_radii": [1.0, 1.0, 1.0],
+					"radii_resolution": 1,
+					"angular_resolutions": [1],
+					"structure_initialization_type": "zeros",
+					"trainable_kernel_structure": true,
+					"trainable_kernel_sizes": true,
+					"kernel_function_type": "Gaussian",
+					"batch_normalization": false,
+					"activation": null
+				}
+			],
+			"tnet_pre_filters_spec": [64, 128, 256],
+			"tnet_post_filters_spec": [128, 64, 32],
+			"enhanced_dim": [32, 64, 128],
+			"after_features_dim": [256, 256, 128],
+			"after_features_type": "Conv1D",
+			"include_prepooling_features": true,
+			"transform_input_features": true,
+			"skip_link_features": true,
+			"_feature_structuring": {
+				"max_radii": [3.0, 3.0, 3.0],
+				"angular_resolutions": [1, 12],
+				"concatenation_strategy": "OPAQUE",
+				"trainable_QX": true,
+				"trainable_QW": true,
+				"trainable_omegaD": true,
+				"trainable_omegaF": true,
+				"enhance": true,
+				"transformed_structure": true,
+				"fsl_input_features_dim_out": "dim_in",
+				"fsl_processed_features_dim_out": "dim_in",
+				"fsl_enhanced_processed_features_dim_out": "dim_in",
+				"fsl_prepool_features_dim_out": "dim_in",
+				"fsl_global_features_dim_out": "dim_in",
+				"fsl_rbf_features_dim_out": "dim_in",
+				"fsl_rbf_enhanced_features_dim_out": "dim_in"
+			},
+			"feature_processing": {
+				"num_kernels": 64,
+				"means": [
+		            0.45634, 0.20311, 0.19555, 0.26967, 0.46793,
+		            0.63531, 0.20436, 0.20361, 0.30975, 0.46522
+            	],
+				"stdevs": [
+					0.04102, 0.17858, 0.22465, 0.16562, 0.20443,
+                	0.05466, 0.17917, 0.15622, 0.15874, 0.17797
+				],
+				"a": 0.01,
+				"b": 1,
+				"kernel_function_type": "Gaussian",
+				"trainable_M": true,
+				"trainable_Omega": true,
+				"enhance": true
+			},
+			"model_handling": {
+				"summary_report_path": "*/model_summary.log",
+				"training_history_dir": "*/training_eval/history",
+				"features_structuring_representation_dir": "*/training_eval/feat_struct_layer/",
+				"rbf_feature_extraction_representation_dir": "*/training_eval/rbf_layer/",
+				"class_weight": [0.3, 0.3, 1.5, 0.3, 0.3, 0.1, 0.3, 0.3, 0.6, 1, 0.6],
+				"training_epochs": 200,
+				"batch_size": 8,
+				"checkpoint_path": "*/checkpoint.model",
+				"checkpoint_monitor": "loss",
+				"learning_rate_on_plateau": {
+					"monitor": "loss",
+					"mode": "min",
+					"factor": 0.1,
+					"patience": 5000,
+					"cooldown": 5,
+					"min_delta": 0.01,
+					"min_lr": 1e-6
+				},
+				"early_stopping": {
+					"monitor": "loss",
+					"mode": "min",
+					"min_delta": 0.001,
+					"patience": 50
+				}
+			},
+			"compilation_args": {
+				"optimizer": {
+					"algorithm": "SGD",
+					"_learning_rate": 1e-3,
+					"learning_rate": {
+						"schedule": "exponential_decay",
+						"schedule_args": {
+							"initial_learning_rate": 1e-2,
+							"decay_steps": 2500,
+							"decay_rate": 0.96,
+							"staircase": false
+						}
+					}
+				},
+				"loss": {
+					"function": "class_weighted_categorical_crossentropy"
+				},
+				"metrics": [
+					"categorical_accuracy"
+				]
+			},
+			"architecture_graph_path": "*/model_graph.png",
+			"architecture_graph_args": {
+				"show_shapes": true,
+				"show_dtype": true,
+				"show_layer_names": true,
+				"rankdir": "TB",
+				"expand_nested": true,
+				"dpi": 300,
+				"show_layer_activations": true
+		    }
+		},
+		"autoval_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
+		"training_evaluation_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
+	  	"training_class_evaluation_metrics": ["P", "R", "F1", "IoU"],
+		"training_evaluation_report_path": "*/training_eval/evaluation.log",
+		"training_class_evaluation_report_path": "*/training_eval/class_evaluation.log",
+		"training_confusion_matrix_report_path": "*/training_eval/confusion.log",
+		"training_confusion_matrix_plot_path": "*/training_eval/confusion.svg",
+		"training_class_distribution_report_path": "*/training_eval/class_distribution.log",
+		"training_class_distribution_plot_path": "*/training_eval/class_distribution.svg",
+		"training_classified_point_cloud_path": "*/training_eval/classified_point_cloud.laz",
+		"_training_activations_path": "*/training_eval/activations.laz"
+	},
+	{
+	  "writer": "PredictivePipelineWriter",
+	  "out_pipeline": "*pipe/FeatsRBFNet_T1.pipe",
+	  "include_writer": false,
+	  "include_imputer": false,
+	  "include_feature_transformer": true,
+	  "include_miner": false,
+	  "include_class_transformer": false
+	}
+  ]
+}
+
+

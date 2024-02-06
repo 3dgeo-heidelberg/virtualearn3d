@@ -1,0 +1,34 @@
+{
+  "in_pcloud": [
+    "/hei/Hessigheim_Benchmark/Epoch_March2018/LiDAR/Mar18_val.laz"
+  ],
+  "out_pcloud": [
+    "/tmp/vl3d/out/Rect3D_alt_5m_T1/validation_rfsep0_4/*"
+  ],
+  "sequential_pipeline": [
+    {
+      "predict": "PredictivePipeline",
+      "model_path": "/tmp/vl3d/out/Rect3D_alt_5m_T1/pipe/Rect3D_5m_T1.pipe"
+    },
+    {
+        "writer": "ClassifiedPcloudWriter",
+        "out_pcloud": "*predicted.laz"
+    },
+    {
+      "writer": "PredictionsWriter",
+      "out_preds": "*predictions.lbl"
+    },
+    {
+      "eval": "ClassificationEvaluator",
+      "class_names": ["Ground", "Vegetation", "Building", "Urban furniture", "Vehicle"],
+      "metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
+      "class_metrics": ["P", "R", "F1", "IoU"],
+      "report_path": "*report/global_eval.log",
+      "class_report_path": "*report/class_eval.log",
+      "confusion_matrix_report_path" : "*report/confusion_matrix.log",
+      "confusion_matrix_plot_path" : "*plot/confusion_matrix.svg",
+      "class_distribution_report_path": "*report/class_distribution.log",
+      "class_distribution_plot_path": "*plot/class_distribution.svg"
+    }
+  ]
+}

@@ -122,6 +122,8 @@ class Imputer:
             pcloud.get_features_matrix(fnames)
         ])
         y = pcloud.get_classes_vector()
+        pcloud_header = pcloud.las.header
+        pcloud.proxy_dump()  # Save memory from point cloud data if necessary
         # Impute
         if y is None:
             P = self.impute(P)
@@ -132,6 +134,6 @@ class Imputer:
             P[:, :P.shape[1]-len(fnames)],
             P[:, P.shape[1]-len(fnames):],
             y=y,
-            header=pcloud.las.header,
+            header=pcloud_header,
             fnames=fnames
         )

@@ -1,15 +1,24 @@
 # ---   IMPORTS   --- #
 # ------------------- #
-import os
 from src.tests.hsv_from_rgb_test import HSVFromRGBTest
 from src.tests.keras_test import KerasTest
 from src.tests.receptive_field_test import ReceptiveFieldTest
+from src.tests.hierarchical_receptive_field_test import \
+    HierarchicalReceptiveFieldTest
 from src.tests.features_structuring_layer_test import \
     FeaturesStructuringLayerTest
 from src.tests.rbf_feat_extract_layer_test import \
     RBFFeatExtractLayerTest
 from src.tests.rbf_feat_processing_layer_test import \
     RBFFeatProcessingLayerTest
+from src.tests.features_downsampling_layer_test import \
+    FeaturesDownsamplingLayerTest
+from src.tests.features_upsampling_layer_test import \
+    FeaturesUpsamplingLayerTest
+from src.tests.grouping_point_net_layer_test import \
+    GroupingPointNetLayerTest
+from src.tests.model_serialization_test import ModelSerializationTest
+from src.tests.las_inout_test import LASInoutTest
 from src.tests.vl3dpp_binding_test import VL3DPPBindingTest
 from src.tests.vl3dpp_backend_test import VL3DPPBackendTest
 import numpy as np
@@ -43,9 +52,15 @@ class MainTest:
         success = success and HSVFromRGBTest().start()
         success = success and KerasTest().start()
         success = success and ReceptiveFieldTest().start()
+        success = success and HierarchicalReceptiveFieldTest().start()
+        success = success and FeaturesDownsamplingLayerTest().start()
+        success = success and FeaturesUpsamplingLayerTest().start()
+        success = success and GroupingPointNetLayerTest().start()
         success = success and FeaturesStructuringLayerTest().start()
         success = success and RBFFeatExtractLayerTest().start()
         success = success and RBFFeatProcessingLayerTest().start()
+        success = success and ModelSerializationTest().start()
+        success = success and LASInoutTest().start()
         success = success and VL3DPPBindingTest().start()
         success = success and VL3DPPBackendTest().start()
         # ---------------------------------------------------------------------

@@ -2,6 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Documentation Status](https://readthedocs.org/projects/virtualearn3d/badge/?version=latest)](https://virtualearn3d.readthedocs.io/en/latest/?badge=latest)
+[![CI/CD](https://github.com/3dgeo-heidelberg/virtualearn3d/actions/workflows/run_tests.yml/badge.svg)](https://github.com/3dgeo-heidelberg/virtualearn3d/actions/workflows/run_tests.yml)
 
 
 Welcome to the VirtuaLearn3D (VL3D) framework for artificial intelligence
