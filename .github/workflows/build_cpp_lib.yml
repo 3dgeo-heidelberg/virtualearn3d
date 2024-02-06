@@ -1,0 +1,27 @@
+name: Build CPP Libs
+run-name: Building CPP Libs
+
+on: [push, pull_request]
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+
+jobs:
+    build:
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+          with:
+            submodules: true
+
+        # Output build artifacts to /github/workspace on the container.
+        - name: Build action
+          uses: ./.github/actions/build_action
+          id: build
+
+        - name: Upload Build Artifacts
+          uses: actions/upload-artifact@v4
+          with:
+            name: workspace_artifacts
+            path: ${{ github.workspace }}/run
