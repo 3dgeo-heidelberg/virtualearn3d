@@ -2,6 +2,7 @@
 # ------------------- #
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
 from src.model.deeplearn.arch.architecture import Architecture
+from src.model.deeplearn.arch.point_net import PointNet
 from src.model.deeplearn.dlrun.hierarchical_pre_processor import \
     HierarchicalPreProcessor
 from src.model.deeplearn.dlrun.hierarchical_post_processor import \
@@ -49,6 +50,8 @@ class ConvAutoencPwiseClassif(Architecture):
         self.num_classes = kwargs.get('num_classes', None)
         self.feature_extraction = kwargs.get('feature_extraction', None)
         pre_processor = self.pre_runnable.pre_processor
+        self.structure_alignment = kwargs.get('structure_alignment', None)
+        self.features_alignment = kwargs.get('features_alignment', None)
         self.num_downsampling_neighbors = \
             pre_processor.num_downsampling_neighbors
         self.num_pwise_neighbors = \
@@ -78,8 +81,8 @@ class ConvAutoencPwiseClassif(Architecture):
             comp_args, default=False
         )
         # Cache-like attributes
-        self.Xs = None
-        self.F = None
+        self.Xs, self.aligned_Xs = None, None
+        self.F, self.aligned_F = None, None
         self.NDs, self.Ns, self.NUs = [None]*3
         self.skip_links = None
         self.last_downsampling_tensor = None
@@ -171,6 +174,40 @@ class ConvAutoencPwiseClassif(Architecture):
             )
             for d in range(1, self.max_depth)
         ]
+        # Handle structure alignment
+        if self.structure_alignment is not None:
+            self.aligned_Xs = []
+            for i, X in enumerate(self.Xs):
+                self.aligned_Xs.append(PointNet.build_transformation_block(
+                    X,
+                    num_features=X.shape[-1],
+                    name=f'X{i+1}_align',
+                    tnet_pre_filters=self.structure_alignment[
+                        'tnet_pre_filters_spec'
+                    ],
+                    tnet_post_filters=self.structure_alignment[
+                        'tnet_post_filters_spec'
+                    ],
+                    kernel_initializer=self.structure_alignment.get(
+                        'kernel_initializer', 'glorot_normal'
+                    )
+                ))
+        # Handle features alignment
+        if self.features_alignment is not None:
+            self.aligned_F = PointNet.build_transformation_block(
+                self.F,
+                num_features=self.F.shape[-1],
+                name='F_align',
+                tnet_pre_filters=self.features_alignment[
+                    'tnet_pre_filters_spec'
+                ],
+                tnet_post_filters=self.features_alignment[
+                    'tnet_post_filters_spec'
+                ],
+                kernel_initializer=self.features_alignment.get(
+                    'kernel_initializer', 'glorot_normal'
+                )
+            )
         # Return list of inputs
         return [self.Xs[0], self.F, self.Xs[1:], self.NDs, self.Ns, self.NUs]
 
@@ -244,7 +281,8 @@ class ConvAutoencPwiseClassif(Architecture):
         self.skip_links = []
         i = 0
         ops_per_depth = self.feature_extraction['operations_per_depth']
-        x = self.F
+        x = self.F if self.aligned_F is None else self.aligned_F
+        Xs = self.Xs if self.aligned_Xs is None else self.aligned_Xs
         for _ in range(ops_per_depth[0]):
             x = GroupingPointNetLayer(
                 self.feature_extraction['feature_space_dims'][i],
@@ -275,7 +313,12 @@ class ConvAutoencPwiseClassif(Architecture):
                     'gamma_bias_constraint'
                 ][i],
                 name=f'GPNet_d1_{i+1}'
-            )([self.Xs[0], x, self.Ns[0]])
+            )([Xs[0], x, self.Ns[0]])
+            if self.feature_extraction['bn']:
+                x = tf.keras.layers.BatchNormalization(
+                    momentum=self.feature_extraction['bn_momentum'],
+                    name=f'GPNet_d1_{i+1}_BN'
+                )(x)
             i += 1
         self.skip_links.append(x)
         for d in range(self.max_depth-1):
@@ -283,7 +326,7 @@ class ConvAutoencPwiseClassif(Architecture):
                 filter=self.downsampling_filter,
                 name=f'DOWN_d{d+2}'
             )([
-                self.Xs[d], self.Xs[d+1], x, self.NDs[d]
+                Xs[d], Xs[d+1], x, self.NDs[d]
             ])
             for _ in range(ops_per_depth[d+1]):
                 x = GroupingPointNetLayer(
@@ -315,7 +358,12 @@ class ConvAutoencPwiseClassif(Architecture):
                         'gamma_bias_constraint'
                     ][i],
                     name=f'GPNet_d{d+2}_{i+1}'
-                )([self.Xs[d+1], x, self.Ns[d+1]])
+                )([Xs[d+1], x, self.Ns[d+1]])
+                if self.feature_extraction['bn']:
+                    x = tf.keras.layers.BatchNormalization(
+                        momentum=self.feature_extraction['bn_momentum'],
+                        name=f'GPNet_d{d+2}_{i+1}_BN'
+                    )(x)
                 i += 1
             self.skip_links.append(x)
         self.last_downsampling_tensor = x
@@ -337,6 +385,7 @@ class ConvAutoencPwiseClassif(Architecture):
         :rtype: :class:`tf.Tensor`
         """
         x = self.last_downsampling_tensor
+        Xs = self.Xs if self.aligned_Xs is None else self.aligned_Xs
         for d in range(self.max_depth-1):
             reverse_d = self.max_depth-2-d
             skip_link = self.skip_links[reverse_d]
@@ -344,7 +393,7 @@ class ConvAutoencPwiseClassif(Architecture):
             x = FeaturesUpsamplingLayer(
                 filter=self.upsampling_filter,
                 name=f'UP_d{reverse_d+2}'
-            )([self.Xs[reverse_d], self.Xs[reverse_d-1], x, self.NUs[reverse_d]])
+            )([Xs[reverse_d], Xs[reverse_d-1], x, self.NUs[reverse_d]])
             x = tf.keras.layers.Concatenate(
                 name=f'CONCAT_d{reverse_d+1}'
             )([x, skip_link])
@@ -382,6 +431,8 @@ class ConvAutoencPwiseClassif(Architecture):
         state['fnames'] = self.fnames
         state['num_classes'] = self.num_classes
         state['feature_extraction'] = self.feature_extraction
+        state['structure_alignment'] = self.structure_alignment
+        state['features_alignment'] = self.features_alignment
         state['downsampling_filter'] = self.downsampling_filter
         state['upsampling_filter'] = self.upsampling_filter
         state['upsampling_bn'] = self.upsampling_bn
@@ -406,6 +457,8 @@ class ConvAutoencPwiseClassif(Architecture):
         self.fnames = state['fnames']
         self.num_classes = state['num_classes']
         self.feature_extraction = state['feature_extraction']
+        self.structure_alignment = state['structure_alignment']
+        self.features_alignment = state['features_alignment']
         self.downsampling_filter = state['downsampling_filter']
         self.upsampling_filter = state['upsampling_filter']
         self.upsampling_bn = state['upsampling_bn']
