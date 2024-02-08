@@ -1,0 +1,47 @@
+{
+  "in_pcloud": [
+	"/hei/Hessigheim_Benchmark/Epoch_March2018/LiDAR/Mar18_train.laz",
+	"/hei/Hessigheim_Benchmark/Epoch_March2018/LiDAR/Mar18_val.laz"
+  ],
+  "out_pcloud": [
+	"/hei/Hessigheim_Benchmark/Epoch_March2018/vl3d/mined/Mar18_train_rbfnet_*",
+	"/hei/Hessigheim_Benchmark/Epoch_March2018/vl3d/mined/Mar18_val_rbfnet_*"
+  ],
+  "sequential_pipeline": [
+	{
+	  "miner": "HSVFromRGB",
+ 	  "hue_unit": "radians",
+	  "frenames": ["HSV_Hrad", "HSV_S", "HSV_V"]
+	},
+	{
+	  "miner": "HeightFeatures",
+	  "support_chunk_size": 50,
+	  "support_subchunk_size": 10,
+	  "pwise_chunk_size": 10000,
+	  "nthreads": 5,
+	  "neighborhood": {	
+    	"type": "Rectangular2D",
+		"radius": 50.0,
+		"separation_factor": 0.35
+	  },
+	  "outlier_filter": null,
+	  "fnames": ["floor_distance"]
+	},
+	{
+	  "miner": "SmoothFeatures",
+	  "chunk_size": 1000000,
+	  "subchunk_size": 1000,
+	  "neighborhood": {
+		"type": "sphere",
+		"radius": 1.0
+	  },
+	  "input_fnames": ["Reflectance", "HSV_Hrad", "HSV_S", "HSV_V", "floor_distance_r50.0_sep0.35"],
+	  "fnames": ["mean"],
+	  "nthreads": 10
+	},
+	{
+	  "writer": "Writer",
+ 	  "out_pcloud": "*feats.laz"
+	}
+  ]
+}

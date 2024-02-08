@@ -30,5 +30,6 @@ class VL3DPPBackendTest(VL3DTest):
         X = np.random.normal(0, 1, (25, 3))
         F = np.random.normal(0, 1, (25, 16))
         Fhat = vl3dpp.mine_smooth_feats(X, F)
-        print(Fhat)
+        if Fhat is None:
+            return False
         return True  # Test : success

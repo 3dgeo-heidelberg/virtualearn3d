@@ -3,7 +3,7 @@
 from src.inout.io_utils import IOUtils
 from src.pcloud.point_cloud import PointCloud
 import src.main.main_logger as LOGGING
-from scipy.spatial.kdtree import KDTree as KDT
+from scipy.spatial import KDTree as KDT
 import rasterio
 import numpy as np
 import os

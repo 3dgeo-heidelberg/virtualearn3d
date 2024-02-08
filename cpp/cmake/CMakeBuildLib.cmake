@@ -9,7 +9,7 @@ set(
     Python3::Python
     armadillo
     carma::carma
-    pcl
+    ${PCL_LIBRARIES}
 )
 
 # LINK TARGET LIBRARIES

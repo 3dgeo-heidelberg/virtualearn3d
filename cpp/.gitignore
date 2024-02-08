@@ -5,3 +5,6 @@ build/
 build-debug/
 lib/*
 pybind11/*
+CMakeFiles
+CMakeCache.txt
+_deps

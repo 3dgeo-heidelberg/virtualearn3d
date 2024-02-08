@@ -1,9 +1,11 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.main.vl3d_exception import VL3DException
+from src.pcloud.mem_to_file_proxy import MemToFileProxy
 import src.main.main_logger as LOGGING
 import numpy as np
 import laspy
+import time
 
 
 # ---  EXCEPTIONS  --- #
@@ -20,6 +22,22 @@ class PointCloudException(VL3DException):
     def __init__(self, message):
         # Call parent VL3DException
         super().__init__(message)
+
+
+# ---  CONSTANTS  --- #
+# ------------------- #
+"""
+The names of the features that are not considered extra dimensions.
+These features must not be removed when calling the remove_features method
+as this is incompatible with the LASPY backend used to handle point clouds.
+"""
+NON_EXTRA_DIMS_FEATURES = [
+    'intensity', 'return_number', 'number_of_returns',
+    'scan_direction_flag', 'edge_of_flight_line', 'classification',
+    'synthetic', 'key_point', 'withheld',
+    'scan_angle_rank', 'user_data', 'point_source_id',
+    'gps_time', 'red', 'green', 'blue'
+]
 
 
 # ---   CLASS   --- #
@@ -47,6 +65,7 @@ class PointCloud:
         """
         # Assign attributes
         self.las = las
+        self.proxy = MemToFileProxy()
 
     # ---  ACCESS-ONLY METHODS  --- #
     # ----------------------------- #
@@ -57,6 +76,7 @@ class PointCloud:
         :return: Number of points in the point cloud.
         :rtype: int
         """
+        self.proxy_load()
         return len(self.las.X)
 
     def get_header(self):
@@ -65,6 +85,7 @@ class PointCloud:
 
         :return: Header representing the input point cloud.
         """
+        self.proxy_load()
         return self.las.header
 
     def get_coordinates_matrix(self):
@@ -75,6 +96,7 @@ class PointCloud:
         :return: The matrix of coordinates representing the point cloud.
         :rtype: :class:`np.ndarray`
         """
+        self.proxy_load()
         scales, offsets = self.las.header.scales, self.las.header.offsets
         return np.array([
             self.las.X * scales[0] + offsets[0],
@@ -91,7 +113,19 @@ class PointCloud:
         :return: The matrix of features representing the point cloud.
         :rtype: :class:`np.ndarray`
         """
-        return np.array([self.las[fname] for fname in fnames]).T
+        self.proxy_load()
+        try:
+            return np.array([
+                self.las[fname] if fname != 'ones' \
+                else np.ones(self.get_num_points())
+                for fname in fnames
+            ]).T
+        except Exception as ex:
+            raise PointCloudException(
+                'PointCloud get_features_matrix method received unexpected '
+                'feature names. Supported feature names for the particular '
+                f'point cloud are:\n{self.get_features_names()}'
+            ) from ex
 
     def get_features_names(self):
         """
@@ -101,6 +135,7 @@ class PointCloud:
         :return: A list with the name for each feature.
         :rtype: list
         """
+        self.proxy_load()
         return [
             x
             for x in self.las.point_format.dimension_names
@@ -116,6 +151,7 @@ class PointCloud:
         :return: True if all the features specified in fnames are available,
             False otherwise.
         """
+        self.proxy_load()
         pcloud_fnames = self.get_features_names()
         return all(fname in pcloud_fnames for fname in fnames)
 
@@ -127,6 +163,7 @@ class PointCloud:
         :return: The vector of classes (:math:`\pmb{y}`).
         :rtype: :class:`np.ndarray`
         """
+        self.proxy_load()
         return np.array(self.las.classification)
 
     def has_classes(self):
@@ -136,6 +173,7 @@ class PointCloud:
         :return: True if classes are available, false otherwise.
         :rtype: bool
         """
+        self.proxy_load()
         return self.las.classification is not None and \
             len(self.las.classification) > 0
 
@@ -147,6 +185,7 @@ class PointCloud:
         :return: The vector of predicted classes (:math:`\hat{\pmb{y}}`)
         :rtype: :class:`np.ndarray`
         """
+        self.proxy_load()
         return np.array(self.las['prediction'])
 
     def has_predictions(self):
@@ -156,8 +195,60 @@ class PointCloud:
         :return: True if predictions are available, false otherwise.
         :rtype: bool
         """
-        return self.las['prediction'] is not None and \
+        self.proxy_load()
+        return 'prediction' in self.get_features_names() and \
+            self.las['prediction'] is not None and \
             len(self.las.prediction) > 0
+
+    def equals(self, pcloud, compare_header=True):
+        """
+        Check whether this (self) and given (pcloud) point clouds are equal
+        or not. In this method, equality holds if and only if all the values
+        of one point cloud match those of the other.
+
+        :param pcloud: The point cloud to be compared against.
+        :type pcloud: :class:`.PointCloud`
+        :param compare_header: True to consider the LAS header when comparing
+            the point clouds, False otherwise.
+        :type compare_header: bool
+        :return: True if point clouds are equal, False otherwise.
+        :rtype: bool
+        """
+        self.proxy_load()
+        # Equality checks
+        if self.get_num_points() != pcloud.get_num_points():
+            return False
+        if compare_header and self.get_header() != pcloud.get_header():
+            return False
+        if np.count_nonzero(
+            self.get_coordinates_matrix() != pcloud.get_coordinates_matrix()
+        ):
+            return False
+        fnames = self.get_features_names()
+        if fnames != pcloud.get_features_names():
+            return False
+        if np.count_nonzero(
+            self.get_features_matrix(fnames) !=
+            pcloud.get_features_matrix(fnames)
+        ):
+            return False
+        if self.has_classes() != pcloud.has_classes():
+            return False
+        if self.has_classes():
+            if np.count_nonzero(
+                self.get_classes_vector() != pcloud.get_classes_vector()
+            ):
+                return False
+        if self.has_predictions() != pcloud.has_predictions():
+            return False
+        if self.has_predictions():
+            if np.count_nonzero(
+                self.get_predictions_vector() !=
+                pcloud.get_predictions_vector()
+            ):
+                return False
+        # All checks were passed so both point clouds should be equal
+        return True
 
     # ---  UPDATE METHODS  --- #
     # ------------------------ #
@@ -173,8 +264,9 @@ class PointCloud:
             each new feature. If it is a single type, then all feature are
             assumed to have the same type.
         :return: The updated point cloud.
-        :rtype: :class:`PointCloud`
+        :rtype: :class:`.PointCloud`
         """
+        self.proxy_load()
         # Extract useful information
         nfeats = feats.shape[1]
         # Check each feature has its own name
@@ -200,16 +292,26 @@ class PointCloud:
             extra_bytes.append(
                 laspy.ExtraBytesParams(name=fname, type=ftypes[i])
             )
-        # Create the new point cloud
-        las = laspy.LasData(self.las.header)
-        las.points = self.las.points.copy()
-        las.add_extra_dims(extra_bytes)
+        # Update the point cloud
+        self.las.add_extra_dims(extra_bytes)
         for i in range(nfeats):
-            las[fnames[i]] = feats[:, i]
-        # Replace the old point cloud with the new one
-        self.las = las
+            self.las[fnames[i]] = feats[:, i]
         # Return
         return self
+
+    def remove_features(self, fnames):
+        """
+        Remove features from the point cloud.
+
+        :param fnames: The name of the features to be removed.
+        :type fnames: list or tuple (of str)
+        :return: The updated point cloud.
+        :rtype: :class:`.PointCloud`
+        """
+        fnames = [  # Filter out names of non-extra dims features
+            fname for fname in fnames if fname not in NON_EXTRA_DIMS_FEATURES
+        ]
+        self.las.remove_extra_dims(fnames)  # Remove the features
 
     def preserve_mask(self, mask):
         """
@@ -221,6 +323,7 @@ class PointCloud:
         :return: The point cloud after applying the mask.
         :rtype: :class:`.PointCloud`
         """
+        self.proxy_load()
         self.las.points = self.las.points[mask]
         self.las.header.point_records_count = len(self.las.points)
         return self
@@ -247,5 +350,55 @@ class PointCloud:
         :return: The updated point cloud.
         :rtype: :class:`.PointCloud`
         """
+        self.proxy_load()
         self.las.classification = y
         return self
+
+    def clear_data(self, proxy_release=False):
+        """
+        Remove all the data from the point cloud. Note that this means removing
+        the data from memory. In case the data is stored in a proxy file
+        it can be restored (from file to memory) when needed. To also remove
+        the proxy file, ``proxy_release=True`` must be passed explicitly.
+        """
+        self.las = None
+        if proxy_release:
+            self.proxy.release()
+
+    # ---   PROXY METHODS   --- #
+    # ------------------------- #
+    def proxy_dump(self):
+        """
+        Dump the point cloud to a binary proxy file if and only if it is
+        recommended and not already dumped.
+
+        See :class:`.MemToFileProxy`, :meth:`MemToFileProxy.dump`, and
+        :meth:`MemToFileProxy.is_dump_recommended`.
+        """
+        if not self.proxy.is_dumped() and self.proxy.is_dump_recommended(self):
+            start = time.perf_counter()
+            self.proxy.dump(self)
+            end = time.perf_counter()
+            LOGGING.LOGGER.debug(
+                f'PointCloud data dumped through proxy in {end-start:.3f} '
+                'seconds.'
+            )
+
+    def proxy_load(self):
+        """
+        Load the point cloud from a binary proxy file if necessary. Any
+        method from the :class:`.PointCloud` class that needs to operate with
+        the point cloud's date should call ``proxy_load`` to be sure that
+        the data is available in main memory.
+
+        See :class:`.MemToFileProxy`, :meth:`MemToFileProxy.dump`, and
+        :meth:`MemToFileProxy.load`.
+        """
+        if self.proxy.is_dumped():
+            start = time.perf_counter()
+            self.proxy.load(self)
+            end = time.perf_counter()
+            LOGGING.LOGGER.debug(
+                f'PointCloud data loaded from proxy in {end-start:.3f} '
+                'seconds.'
+            )

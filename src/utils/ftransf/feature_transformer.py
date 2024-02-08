@@ -123,14 +123,7 @@ class FeatureTransformer:
         :rtype: :class:`.PointCloud`
         """
         # Check feature names
-        if fnames is None:
-            if self.fnames is None:
-                raise FeatureTransformerException(
-                    'The features of a point cloud cannot be transformed if '
-                    'they are not specified.'
-                )
-            else:
-                fnames = self.fnames
+        fnames = self.safely_handle_fnames(fnames=fnames)
         # Transform features
         F = self.transform(
             pcloud.get_features_matrix(fnames),
@@ -195,3 +188,24 @@ class FeatureTransformer:
             )
         # Build names of transformed features from feature names
         return np.array(fnames)[self.selected_features].tolist()
+
+    def safely_handle_fnames(self, fnames=None):
+        """
+        Handle given fnames in a safe-way, i.e., raising an exception if no
+        valid fnames cannot be figured out from given input and the current
+        state of the internal variables.
+
+        :param fnames: Given input feature names.
+        :type fnames: list of str
+        :return: The handled feature names.
+        :rtype: list of str
+        """
+        if fnames is None:
+            if self.fnames is None:
+                raise FeatureTransformerException(
+                    'The features of a point cloud cannot be transformed if '
+                    'they are not specified.'
+                )
+            else:
+                fnames = self.fnames
+        return fnames

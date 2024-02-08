@@ -179,6 +179,8 @@ class Model:
         """
         if X is None:
             X = pcloud.get_features_matrix(self.fnames)  # Often named F instead
+        if pcloud is not None:
+            pcloud.proxy_dump()  # Save memory from pcloud data if necessary
         if self.imputer is not None:
             X = self.imputer.impute(X)
         return self._predict(X)
@@ -288,6 +290,7 @@ class Model:
         """
         X = self.get_input_from_pcloud(pcloud)
         y = pcloud.get_classes_vector()
+        pcloud.proxy_dump()  # Save memory from point cloud data if necessary
         if self.imputer is not None:
             X, y = self.imputer.impute(X, y)
         self.training(X, y)
@@ -312,6 +315,7 @@ class Model:
         # Training
         X = self.get_input_from_pcloud(pcloud)
         y = pcloud.get_classes_vector()
+        pcloud.proxy_dump()  # Save memory from point cloud data if necessary
         if self.imputer is not None:
             X, y = self.imputer.impute(X, y)
         Xtrain, Xtest, ytrain, ytest = train_test_split(
@@ -355,6 +359,7 @@ class Model:
         # Prepare stratified kfold
         X = self.get_input_from_pcloud(pcloud)
         y = pcloud.get_classes_vector()
+        pcloud.proxy_dump()  # Save memory from point cloud data if necessary
         if self.imputer is not None:
             X, y = self.imputer.impute(X, y)
         skf = StratifiedKFold(

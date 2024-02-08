@@ -2,12 +2,10 @@
 # ⨪------------------ #
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
 from src.model.deeplearn.layer.layer import Layer
-# TODO Rethink : Implement ---
-"""from src.report.feature_processing_layer_report import \
-    FeatureProcecssingLayerReport
+from src.report.feature_processing_layer_report import \
+    FeatureProcessingLayerReport
 from src.plot.feature_processing_layer_plot import \
-    FeatureProcessingLayerPlot"""
-# --- TODO Rethink : Implement
+    FeatureProcessingLayerPlot
 import src.main.main_logger as LOGGING
 import tensorflow as tf
 import numpy as np
@@ -87,7 +85,37 @@ class RBFFeatProcessingLayer(Layer):
     :math:`\forall 1 < k \leq K,\, \omega_{kj} = a + \sigma_j(b+x)`. Typically,
     :math:`a=10^{-2}` and :math:`b=1`.
 
-    TODO Rethink : Doc ivars and vartypes
+    :ivar means: The mean value for each feature to be processed.
+    :vartype means: list or tuple or :class:`np.ndarray`
+    :ivar stdevs: The standard deviation for each feature to be processed.
+    :vartype stdevs: list or tuple or :class:`np.ndarray`
+    :ivar num_feats: The number of features.
+    :vartype num_feats: int
+    :ivar num_kernels: The number of kernels per feature.
+    :vartype num_kernels: int
+    :ivar a: The offset or intercept for the kernel's sizes.
+    :vartype a: float
+    :ivar b: The parameter governing the uniform distribution.
+    :vartype b: float
+    :ivar trainable_M: Whether the matrix of centers is trainable (True) or
+        not (False).
+    :vartype trainable_M: bool
+    :ivar trainable_Omega: Whether the matrix of kernel's sizes is trainable
+        (True) or not (False).
+    :vartype trainable_Omega: bool
+    :ivar kernel_function_type: The type of kernel function. Supported
+        functions are "Gaussian" and "Markov".
+    :vartype kernel_function_type: str
+    :ivar M: The matrix of kernel's centers.
+    :vartype M: :class:`tf.Tensor`
+    :ivar built_M: Whether the matrix of kernel's centers has been built
+        (True) or not (False).
+    :vartype built_M: bool
+    :ivar Omega: The matrix of kernel's sizes.
+    :vartype Omega: :class:`tf.Tensor`
+    :ivar built_Omega: Whether the matrix of kernel's sizes has been built
+        (True) or not (False).
+    :vartpye built_Omega: bool
     """
     # ---   INIT   --- #
     # ---------------- #
@@ -111,8 +139,8 @@ class RBFFeatProcessingLayer(Layer):
         # Call parent's init
         super().__init__(**kwargs)
         # Assign attributes
-        self.means = np.array(means) # Each mu_j, j=1,...,n_f
-        self.stdevs = np.array(stdevs) # Each sigma_j, j=1,...,n_f
+        self.means = np.array(means)  # Each mu_j, j=1,...,n_f
+        self.stdevs = np.array(stdevs)  # Each sigma_j, j=1,...,n_f
         self.num_feats = len(self.means)  # n_f
         self.num_kernels = num_kernels  # K
         self.a = a  # a
@@ -194,7 +222,7 @@ class RBFFeatProcessingLayer(Layer):
 
     def call(self, inputs, training=False, mask=False):
         r"""
-        The computation of the :math:`\pmb{Y} \in \mathbb{m \times Kn_f}`
+        The computation of the :math:`\pmb{Y} \in \mathbb{R}^{m \times Kn_f}`
         output matrix.
 
         :return: The processed output features.
@@ -304,4 +332,47 @@ class RBFFeatProcessingLayer(Layer):
         # Return deserialized layer
         return rfpl
 
-    # TODO Rethink : Plots and reports (see RBFFeatExtractLayer)
+    # ---  PLOTS and REPORTS  --- #
+    # --------------------------- #
+    def export_representation(self, dir_path, out_prefix=None):
+        """
+        Export a set of files representing the state of the kernel.
+
+        :param dir_path: The directory where the representation files will be
+            exported.
+        :type dir_path: str
+        :param out_prefix: The output prefix to name the output files.
+        :type out_prefix: str
+        :return: Nothing at all, but the representation is exported as a set
+            of files inside the given directory.
+        """
+        # Check dir_path has been given
+        if dir_path is None:
+            LOGGING.LOGGER.debug(
+                'RBFFeatProcessingLayer.export_representation received no '
+                'dir_path.'
+            )
+            return
+        # Export the values (report) and the plots
+        LOGGING.LOGGER.debug(
+            'Exporting representation of RBF feature processing layer to '
+            f'"{dir_path}" ...'
+        )
+        start = time.perf_counter()
+        # Export report
+        FeatureProcessingLayerReport(
+            np.array(self.M), np.array(self.Omega)
+        ).to_file(dir_path, out_prefix=out_prefix)
+        # Export plots
+        FeatureProcessingLayerPlot(
+            M=np.array(self.M),
+            Omega=np.array(self.Omega),
+            path=os.path.join(dir_path, 'figure.svg'),
+            kernel_type=self.kernel_function_type
+        ).plot(out_prefix=out_prefix)
+        # Log time
+        end = time.perf_counter()
+        LOGGING.LOGGER.debug(
+            'Representation of RBF feature processing layer exported to '
+            f'"{dir_path}" in {end-start:.3f} seconds.'
+        )

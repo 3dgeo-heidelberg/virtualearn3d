@@ -1,0 +1,6 @@
+# action.yml
+name: 'Build'
+description: 'Builds the cpp libraries'
+runs:
+  using: 'docker'
+  image: ../../../Dockerfile

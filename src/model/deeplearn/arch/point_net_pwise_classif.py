@@ -4,6 +4,7 @@ from src.model.deeplearn.arch.point_net import PointNet
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
 from src.model.deeplearn.layer.features_structuring_layer import \
     FeaturesStructuringLayer
+from src.utils.dl_utils import DLUtils
 import src.main.main_logger as LOGGING
 import tensorflow as tf
 import numpy as np
@@ -38,15 +39,14 @@ class PointNetPwiseClassif(PointNet):
                 'the number of classes defining the problem. None was given.'
             )
         self.num_pwise_feats = kwargs.get('num_pwise_feats', 128)
-        self.binary_crossentropy = False
+        self.final_shared_mlps = kwargs.get(
+            'final_shared_mlps',
+            [512, 256, 128]
+        )
         comp_args = kwargs.get('compilation_args', None)
-        if comp_args is not None:
-            loss_args = comp_args.get('loss', None)
-            if loss_args is not None:
-                fun_name = loss_args.get('function', '').lower()
-                self.binary_crossentropy = \
-                    fun_name == 'binary_crossentropy' or \
-                    fun_name == 'class_weighted_binary_crossentropy'
+        self.binary_crossentropy = DLUtils.is_using_binary_crossentropy(
+            comp_args, default=False
+        )
         # Internal cache
         self.fsl_layer = None
 
@@ -65,24 +65,67 @@ class PointNetPwiseClassif(PointNet):
         :rtype: :class:`tf.Tensor`.
         """
         # Call parent's build hidden
-        x = super().build_hidden(x, **kwargs)
+        X, F = super().build_hidden(x, **kwargs), None
+        if isinstance(X, list):
+            X, F = X[0], X[1]
         # Extend parent's hidden layer with point-wise blocks
-        x = tf.keras.layers.MaxPool1D(
+        X = tf.keras.layers.MaxPool1D(
             pool_size=self.num_points,
-            name='max_pool1D'
-        )(x)
-        x = tf.tile(
-            x,
+            name='max_pool1D_X'
+        )(X)
+        X = tf.tile(
+            X,
             [1, self.num_points, 1],
-            name='global_feats'
+            name='global_feats_X'
         )
+        if F is not None:
+            F = tf.keras.layers.MaxPool1D(
+                pool_size=self.num_points,
+                name='max_pool1D_F'
+            )(F)
+            F = tf.tile(
+                F,
+                [1, self.num_points, 1],
+                name='global_feats_F'
+            )
         # Concatenate features for point-wise classification
-        x = tf.keras.layers.Concatenate(name='full_feats')(
-            self.pretransf_feats +
-            [self.transf_feats] +
-            self.postransf_feats[:-1] +
-            [x]
-        )
+        x = []
+        if self.skip_link_features_X:
+            x = x + [self.Xtransf]
+        if self.include_pretransf_feats_X:
+            x = x + self.pretransf_feats_X
+        if self.include_transf_feats_X:
+            x = x + [self.transf_feats_X]
+        if self.include_postransf_feats_X:
+            x = x + [self.postransf_feats_X[:-1]]
+        if self.include_global_feats_X:
+            x = x + [X]
+        if F is not None:
+            if self.skip_link_features_F:
+                x = x + [self.Ftransf]
+            if self.include_pretransf_feats_F:
+                x = x + self.pretransf_feats_F
+            if self.include_transf_feats_F:
+                x = x + [self.transf_feats_F]
+            if self.include_postransf_feats_F:
+                x = x + [self.postransf_feats_F[:-1]]
+            if self.include_global_feats_F:
+                x = x + [F]
+        if len(x) < 1:
+            raise DeepLearningException(
+                'PointNetPwiseClassif cannot be built without features for '
+                'point-wise classification.'
+            )
+        x = tf.keras.layers.Concatenate(name='full_feats')(x)
+        # Final shared MLPs
+        if self.final_shared_mlps is not None:
+            for i, shared_mlp in enumerate(self.final_shared_mlps):
+                x = PointNet.build_conv_block(
+                    x,
+                    filters=shared_mlp,
+                    kernel_initializer=self.kernel_initializer,
+                    name=f'final_sharedMLP{i+1}_{shared_mlp}'
+                )
         # Convolve point-wise features
         if self.num_pwise_feats > 0:
             x = PointNet.build_conv_block(
@@ -162,7 +205,7 @@ class PointNetPwiseClassif(PointNet):
             trainable_omegaF=fsl['trainable_feature_weights'],
             name='FSL'
         )
-        x = self.fsl_layer([self.inlayer, x])
+        x = self.fsl_layer([self.X, x])
         # Batch normalization
         if fsl['batch_normalization']:
             x = tf.keras.layers.BatchNormalization(
@@ -197,6 +240,7 @@ class PointNetPwiseClassif(PointNet):
         state = super().__getstate__()
         # Add PointNetPwiseClassif's attributes to state dictionary
         state['num_classes'] = self.num_classes
+        state['final_shared_mlps'] = self.final_shared_mlps
         state['num_pwise_feats'] = self.num_pwise_feats
         state['binary_crossentropy'] = self.binary_crossentropy
         # Return
@@ -214,6 +258,7 @@ class PointNetPwiseClassif(PointNet):
         """
         # Assign PointNetPwiseClassif's attributes from state dictionary
         self.num_classes = state['num_classes']
+        self.final_shared_mlps = state['final_shared_mlps']
         self.num_pwise_feats = state['num_pwise_feats']
         self.binary_crossentropy = state['binary_crossentropy']
         self.fsl_layer = None
@@ -232,7 +277,10 @@ class PointNetPwiseClassif(PointNet):
         :return: Nothing.
         """
         # Prefit logic for features structuring layer representation
-        if self.fsl_layer is not None:
+        if(
+            self.fsl_layer is not None and
+            cache_map.get('fsl_dir_path', None) is not None
+        ):
             self.fsl_layer.export_representation(
                 os.path.join(cache_map['fsl_dir_path'], 'init'),
                 out_prefix=cache_map['out_prefix'],
@@ -317,7 +365,10 @@ class PointNetPwiseClassif(PointNet):
             msg += 'RECOMPILING IS NECESSARY FOR THESE CHANGES TO MAKE EFFECT!'
             LOGGING.LOGGER.debug(msg)
         # Postfit logic for features structuring layer representation
-        if self.fsl_layer is not None:
+        if(
+            self.fsl_layer is not None and
+            cache_map.get('fsl_dir_path', None) is not None
+        ):
             self.fsl_layer.export_representation(
                 os.path.join(cache_map['fsl_dir_path'], 'trained'),
                 out_prefix=cache_map['out_prefix'],

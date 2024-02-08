@@ -41,15 +41,16 @@ class PpsSequential(PipelinePredictiveStrategy):
         :meth:`pipeline_predictive_strategy.PipelinePredictiveStrategy.predict`
         .
         """
+        num_points = pcloud.get_num_points()
         LOGGING.LOGGER.info(
-            f'Sequential predictive pipeline on {pcloud.get_num_points()} '
+            f'Sequential predictive pipeline on {num_points} '
             'points ...'
         )
         start = time.perf_counter()
         preds = self._predict(pipeline, pcloud)
         end = time.perf_counter()
         LOGGING.LOGGER.info(
-            f'Sequential predictive pipeline on {pcloud.get_num_points()} '
+            f'Sequential predictive pipeline on {num_points} '
             f'points computed in {end-start:.3f} seconds.'
         )
         return preds
@@ -114,12 +115,16 @@ class PpsSequential(PipelinePredictiveStrategy):
                 'The sequential pipeline predictive strategy failed to '
                 'compute predictions.'
             )
+        # Update given state point cloud, if any (and not updated in place)
+        if (
+            self.external_state is not None and
+            self.external_state.pcloud != pcloud
+        ):
+            self.external_state.pcloud.clear_data(proxy_release=True)
+            self.external_state.pcloud = pcloud
         # Add predictions to point cloud
         pcloud.add_features(
             ['prediction'], preds.reshape((-1, 1)), ftypes=preds.dtype
         )
-        # Update given state point cloud, if any
-        if self.external_state is not None:
-            self.external_state.pcloud = pcloud
         # Return
         return preds

@@ -103,7 +103,7 @@ def execute_before_any_test():
 
 class TestTransformers:
     """
-    Unit test class for the PCATransformer.
+    Unit test class for the :class:`.PCATransformer`.
     """
 
     def test_standardizer(self):

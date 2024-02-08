@@ -480,6 +480,11 @@ likelihood in a different color channel.
     Boolean flag to control whether to reverse the rows of the grid (True) or
     not (False). The default is the reversed order, i.e., True.
 
+-- ``nthreads``
+    The number of threads for the parallel computation of the grids.
+    By default, just one thread is used. The value -1 implies using as many
+    threads as available cores.
+
 
 **Output**
 

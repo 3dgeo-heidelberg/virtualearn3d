@@ -1,0 +1,50 @@
+{
+  "in_pcloud": [
+	"/hei/Hessigheim_Benchmark/Epoch_March2018/vl3d/mined/Mar18_val_rbfnet_feats.laz"
+  ],
+  "out_pcloud": [
+    "/hei/Hessigheim_Benchmark/Epoch_March2018/vl3d/out/FeatsRBFNet_cwA_r3_sp10K/validation/*"
+  ],
+  "sequential_pipeline": [
+    {
+      "predict": "PredictivePipeline",
+	  "model_path": "/hei/Hessigheim_Benchmark/Epoch_March2018/vl3d/out/FeatsRBFNet_cwA_r3_sp10K/pipe/FeatsRBFNet_T1.pipe" 
+    },
+	{
+	  "writer": "ClassifiedPcloudWriter",
+      "out_pcloud": "*predicted.laz"
+	},
+	{
+	  "writer": "PredictionsWriter",
+	  "out_preds": "*predictions.lbl"
+	},
+	{
+	  "eval": "ClassificationEvaluator",
+	  "class_names": ["LowVeg", "ImpSurf", "Vehicle", "UrbanFurni", "Roof", "Facade", "Shrub", "Tree", "Soil/Gravel", "VertSurf", "Chimney"],
+	  "metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
+      "class_metrics": ["P", "R", "F1", "IoU"],
+	  "report_path": "*report/global_eval.log",
+	  "class_report_path": "*report/class_eval.log",
+	  "confusion_matrix_report_path" : "*report/confusion_matrix.log",
+	  "confusion_matrix_plot_path" : "*plot/confusion_matrix.svg",
+	  "class_distribution_report_path": "*report/class_distribution.log",
+	  "class_distribution_plot_path": "*plot/class_distribution.svg"
+	},
+	{
+		"eval": "ClassificationUncertaintyEvaluator",
+		"class_names": ["LowVeg", "ImpSurf", "Vehicle", "UrbanFurni", "Roof", "Facade", "Shrub", "Tree", "Soil/Gravel", "VertSurf", "Chimney"],
+		"include_probabilities": true,
+		"include_weighted_entropy": true,
+		"include_clusters": false,
+		"weight_by_predictions": false,
+		"num_clusters": 10,
+		"clustering_max_iters": 128,
+		"clustering_batch_size": 1000000,
+		"clustering_entropy_weights": false,
+		"clustering_reduce_function": "mean",
+		"gaussian_kernel_points": 256,
+		"report_path": "*uncertainty/uncertainty.laz",
+		"plot_path": "*uncertainty/"
+	}
+  ]
+}
