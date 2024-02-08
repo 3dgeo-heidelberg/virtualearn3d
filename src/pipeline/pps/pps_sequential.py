@@ -115,8 +115,11 @@ class PpsSequential(PipelinePredictiveStrategy):
                 'The sequential pipeline predictive strategy failed to '
                 'compute predictions.'
             )
-        # Update given state point cloud, if any
-        if self.external_state is not None:
+        # Update given state point cloud, if any (and not updated in place)
+        if (
+            self.external_state is not None and
+            self.external_state.pcloud != pcloud
+        ):
             self.external_state.pcloud.clear_data(proxy_release=True)
             self.external_state.pcloud = pcloud
         # Add predictions to point cloud
