@@ -114,10 +114,8 @@ class KernelPointBallInitializer(Initializer):
             :math:`\pmb{Q} \in \mathbb{R}^{m_q \times 3}`.
         :rtype: :class:`tf.Tensor`
         """
-        # Prepare initialization
-        # Initialize kernel
-        init_radius = 1.0
         # Random initialization
+        init_radius = 1.0  # Radius for random initialization
         Q = np.random.rand(self.num_points-1, 3) * 2*init_radius - init_radius
         x = Q.flatten()  # all points as a single vector
         # Minimize through conjugate gradient
