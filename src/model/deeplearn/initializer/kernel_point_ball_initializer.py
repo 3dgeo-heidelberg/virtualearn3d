@@ -1,7 +1,6 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.model.deeplearn.initializer.initializer import Initializer
-from src.model.deeplearn.deep_learning_exception import DeepLearningException
 import tensorflow as tf
 import scipy.optimize as opt
 import numpy as np
@@ -99,6 +98,7 @@ class KernelPointBallInitializer(Initializer):
         self.target_radius = target_radius
         self.num_points = num_points
         self.deformable = deformable
+        self.name = kwargs.get('name', 'Q')
 
     # ---   INITIALIZER METHODS   --- #
     # ------------------------------- #
