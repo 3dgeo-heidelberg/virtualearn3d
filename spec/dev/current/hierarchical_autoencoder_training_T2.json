@@ -17,7 +17,7 @@
             "class_names": ["LowVeg", "ImpSurf", "Vehicle", "UrbanFurni", "Roof", "Facade", "Shrub", "Tree", "Soil/Gravel", "VertSurf", "Chimney"],
             "pre_processing": {
                 "pre_processor": "hierarchical_fps",
-				"support_strategy_num_points": 10000,
+				"support_strategy_num_points": 15000,
                 "to_unit_sphere": false,
             	"support_strategy": "fps",
             	"support_chunk_size": 2000,

@@ -372,10 +372,38 @@ class ConvAutoencPwiseClassif(Architecture):
         """
         Build the downsampling hierarchy based on the KPConv operator.
         """
-        raise DeepLearningException(
-            'ConvAutoencPwiseClassif does not support KPConv-based '
-            'downsampling hierarchies YET.'
-        )
+        self.skip_links = []
+        i = 0
+        ops_per_depth = self.feature_extraction['operations_per_depth']
+        x = self.F if self.aligned_F is None else self.aligned_F
+        Xs = self.Xs if self.aligned_Xs is None else self.aligned_Xs
+        for _ in range(ops_per_depth[0]):
+            x = KPConvLayer(  # TODO Rethink : Implement KPConvLayer
+            )([Xs[0], x, self.Ns[0]])
+            if self.feature_extraction['bn']:
+                x = tf.keras.layers.BatchNormalization(
+                    momentum=self.feature_extraction['bn_momentum'],
+                    name=f'KPConv_d1_{i+1}_BN'
+                )(x)
+            i += 1
+        self.skip_links.append(x)
+        for d in range(self.max_depth-1):
+            x = StridedKPConvLayer(  # TODO Rethink : Implement StridedKPConvLayer
+            )([Xs[d], Xs[d+1], x, self.NDs[d]])
+            if self.feature_extraction['bn']:
+                x = tf.keras.layers.BatchNormalization(
+                    momentum=self.feature_extraction['bn_momentum'],
+                    name=f'StridedKPConv_d{d+2}_{i+1}_BN'
+                )(x)
+            x = KPConvLayer(  # TODO Rethink : Implement KPConvLayer
+            )([Xs[d+1], x, self.Ns[d+1]])
+            if self.feature_extraction['bn']:
+                x = tf.keras.layers.BatchNormalization(
+                    momentum=self.feature_extraction['bn_momentum'],
+                    name=f'KPConv_d{d+2}_{i+1}_BN'
+                )(x)
+            self.skip_links.append(x)
+        self.last_downsampling_tensor = x
 
     def build_upsampling_hierarchy(self):
         """
