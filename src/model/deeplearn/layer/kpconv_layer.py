@@ -83,7 +83,7 @@ class KPConvLayer(Layer):
         # Build the kernel's weights (if not yet)
         if not self.built_W:
             self.W = self.add_weight(
-                shape=(Din, self.Dout),
+                shape=(self.num_kernel_points, Din, self.Dout),
                 initializer=self.W_initializer,
                 regularizer=self.W_regularizer,
                 constraint=self.W_constraint,

@@ -74,33 +74,38 @@ class KPConvLayerTest(VL3DTest):
 
     # ---  UTIL METHODS  --- #
     # ---------------------- #
-    def validate_no_activation(self, inputs, nneighs, Dout, gpnl, gpnl_out):
+    def validate_no_activation(self, inputs, nneighs, Dout, kpcl, kpcl_out):
         """
-        Check whether the no-activated :class:`.GroupingPointNetLayer` yielded
+        Check whether the :class:`.KPConvLayer` yielded
         the expected output (True) or not (False).
 
         :param inputs: The inputs to the layer.
         :param nneighs: The number of neighbors per group.
         :param Dout: The output dimensionality.
-        :param gpnl: The layer.
-        :type gpnl: :class:`.GroupingPointNetLayer`
-        :param gpnl_out: The output of the layer.
+        :param kpcl: The layer.
+        :type kpcl: :class:`.KPConvLayer`
+        :param kpcl_out: The output of the layer.
         :return: True if the output is okay, False otherwise.
         """
-        return True  # TODO Remove
         X_batch, F_batch, N_batch = inputs
         num_elems_in_batch = X_batch.shape[0]
-        gpnl_out = np.array(gpnl_out)
-        H, gamma, gamma_bias = list(map(np.array, [
-            gpnl.H, gpnl.gamma, gpnl.gamma_bias
-        ]))
-        for k in range(num_elems_in_batch):
-            X, F, N = X_batch[k], F_batch[k], N_batch[k]
-            P = np.hstack([X, F])
-            P_groups = np.array([P[Ni] for Ni in N])
-            PHT = np.tensordot(P_groups, H, axes=[[2], [1]])
-            PHT_max = np.max(PHT, axis=1)
-            gamma_max = PHT_max @ gamma + gamma_bias
-            if not np.allclose(gpnl_out[k], gamma_max, atol=self.eps, rtol=0):
+        kpcl_out = np.array(kpcl_out)
+        Q, W = list(map(np.array, [kpcl.Q, kpcl.W]))
+        sigma = kpcl.sigma
+        mq = Q.shape[0]  # Number of points defining the kernel
+        for batch in range(num_elems_in_batch):
+            X, F, N = X_batch[batch], F_batch[batch], N_batch[batch]
+            Fout = np.zeros((F.shape[0], Dout), dtype='float32')
+            for i, xi in enumerate(X):  # For each point in the receptive field
+                for j in N[i]:  # For each point in its neighborhood
+                    inner_sum = np.zeros(W[0].shape)
+                    for k in range(mq):
+                        dist_weight = max(
+                            0,
+                            1 - np.linalg.norm(X[j]-X[i]-Q[k])/sigma
+                        )
+                        inner_sum += dist_weight * W[k]
+                    Fout[i] += inner_sum.T @ F[j].reshape((-1, 1)).flatten()
+            if not np.allclose(kpcl_out[batch], Fout, atol=self.eps, rtol=0):
                 return False
         return True
