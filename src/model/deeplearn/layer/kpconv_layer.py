@@ -119,7 +119,7 @@ class KPConvLayer(Layer):
             [1, 1, 1, self.num_kernel_points, 1]
         ) - self.Q
         Wc = 1-tf.sqrt(tf.reduce_sum(tf.square(Wc), axis=4))/self.sigma
-        Wc = tf.maximum(0, Wc)
+        Wc = tf.maximum(0., Wc)
         # Compute weighted features
         WF = tf.transpose(
             tf.matmul(tf.transpose(Wc, [0, 1, 3, 2]), NF),

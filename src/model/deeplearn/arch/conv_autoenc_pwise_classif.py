@@ -13,6 +13,8 @@ from src.model.deeplearn.layer.features_upsampling_layer import \
     FeaturesUpsamplingLayer
 from src.model.deeplearn.layer.grouping_point_net_layer import \
     GroupingPointNetLayer
+from src.model.deeplearn.layer.kpconv_layer import KPConvLayer
+from src.model.deeplearn.layer.strided_kpconv_layer import StridedKPConvLayer
 from src.utils.dl_utils import DLUtils
 import tensorflow as tf
 
@@ -378,30 +380,72 @@ class ConvAutoencPwiseClassif(Architecture):
         x = self.F if self.aligned_F is None else self.aligned_F
         Xs = self.Xs if self.aligned_Xs is None else self.aligned_Xs
         for _ in range(ops_per_depth[0]):
-            x = KPConvLayer(  # TODO Rethink : Implement KPConvLayer
+            x = KPConvLayer(
+                sigma=self.feature_extraction['sigma'][i],
+                kernel_radius=self.feature_extraction['kernel_radius'][i],
+                num_kernel_points=self.feature_extraction['num_kernel_points'][i],
+                deformable=self.feature_extraction['deformable'][i],
+                Dout=self.feature_extraction['feature_space_dims'][i],
+                W_initializer=self.feature_extraction['W_initializer'][i],
+                W_regularizer=self.feature_extraction['W_regularizer'][i],
+                W_constraint=self.feature_extraction['W_constraint'][i],
+                name=f'KPConv_d1_{i+1}'
             )([Xs[0], x, self.Ns[0]])
             if self.feature_extraction['bn']:
                 x = tf.keras.layers.BatchNormalization(
                     momentum=self.feature_extraction['bn_momentum'],
                     name=f'KPConv_d1_{i+1}_BN'
                 )(x)
+            if self.feature_extraction['activate']:
+                x = tf.keras.layers.ReLU(
+                    name=f'KPConv_d1_{i+1}_ReLU'
+                )(x)
             i += 1
         self.skip_links.append(x)
         for d in range(self.max_depth-1):
-            x = StridedKPConvLayer(  # TODO Rethink : Implement StridedKPConvLayer
+            # TODO Rethink : Choose between SKPConv or FeatureDownsampling
+            x = StridedKPConvLayer(
+                sigma=self.feature_extraction['sigma'][i],
+                kernel_radius=self.feature_extraction['kernel_radius'][i],
+                num_kernel_points=self.feature_extraction['num_kernel_points'][i],
+                deformable=self.feature_extraction['deformable'][i],
+                Dout=self.feature_extraction['feature_space_dims'][i],
+                W_initializer=self.feature_extraction['W_initializer'][i],
+                W_regularizer=self.feature_extraction['W_regularizer'][i],
+                W_constraint=self.feature_extraction['W_constraint'][i],
+                name=f'SKPConv_d{d+2}_{i+1}'
             )([Xs[d], Xs[d+1], x, self.NDs[d]])
             if self.feature_extraction['bn']:
                 x = tf.keras.layers.BatchNormalization(
                     momentum=self.feature_extraction['bn_momentum'],
-                    name=f'StridedKPConv_d{d+2}_{i+1}_BN'
+                    name=f'SKPConv_d{d+2}_{i+1}_BN'
                 )(x)
-            x = KPConvLayer(  # TODO Rethink : Implement KPConvLayer
-            )([Xs[d+1], x, self.Ns[d+1]])
-            if self.feature_extraction['bn']:
-                x = tf.keras.layers.BatchNormalization(
-                    momentum=self.feature_extraction['bn_momentum'],
-                    name=f'KPConv_d{d+2}_{i+1}_BN'
+            if self.feature_extraction['activate']:
+                x = tf.keras.layers.ReLU(
+                    name=f'SKPConv_d{d+2}_{i+1}_ReLU'
                 )(x)
+            for _ in range(ops_per_depth[d+1]):
+                x = KPConvLayer(  # TODO Rethink : Implement KPConvLayer
+                    sigma=self.feature_extraction['sigma'][i],
+                    kernel_radius=self.feature_extraction['kernel_radius'][i],
+                    num_kernel_points=self.feature_extraction['num_kernel_points'][i],
+                    deformable=self.feature_extraction['deformable'][i],
+                    Dout=self.feature_extraction['feature_space_dims'][i],
+                    W_initializer=self.feature_extraction['W_initializer'][i],
+                    W_regularizer=self.feature_extraction['W_regularizer'][i],
+                    W_constraint=self.feature_extraction['W_constraint'][i],
+                    name=f'KPConv_d{d+2}_{i+1}'
+                )([Xs[d+1], x, self.Ns[d+1]])
+                if self.feature_extraction['bn']:
+                    x = tf.keras.layers.BatchNormalization(
+                        momentum=self.feature_extraction['bn_momentum'],
+                        name=f'KPConv_d{d+2}_{i+1}_BN'
+                    )(x)
+                if self.feature_extraction['activate']:
+                    x = tf.keras.layers.ReLU(
+                        name=f'KPConv_d{d+2}_{i+1}_ReLU'
+                    )(x)
+                i += 1
             self.skip_links.append(x)
         self.last_downsampling_tensor = x
 
