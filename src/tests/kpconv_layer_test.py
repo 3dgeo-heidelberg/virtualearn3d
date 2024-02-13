@@ -28,7 +28,7 @@ class KPConvLayerTest(VL3DTest):
         """
         Run KPConv layer test.
 
-        :return: True if :class:`.KPConvLayer` works as epxected for the test
+        :return: True if :class:`.KPConvLayer` works as expected for the test
             cases, False otherwise.
         :rtype bool:
         """

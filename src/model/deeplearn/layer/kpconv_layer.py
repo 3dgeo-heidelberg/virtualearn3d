@@ -99,9 +99,19 @@ class KPConvLayer(Layer):
         X = inputs[0]  # K x R x n_x=3
         F = inputs[1]  # K x R x n_1
         N = inputs[2]  # K x R x kappa
-        # Gather neighborhoods (K x R x kappa x n_x=3)
+        # Gather neighborhoods (K x R x kappa x n_x=3 or n_d)
+        NX, NF = self.gather_neighborhoods(N, X, F)
+        # Return output features
+        return self.compute_output_features(X, NX, NF)
+
+    def gather_neighborhoods(self, N, X, F):
+        # TODO Rethink : Doc
         NX = tf.gather(X, N, batch_dims=1, axis=1)
         NF = tf.gather(F, N, batch_dims=1, axis=1)
+        return NX, NF
+
+    def compute_output_features(self, X, NX, NF):
+        # TODO Rethink : Doc
         # Compute correlated weights (K x R x kappa x m_q)
         Wc = NX-tf.expand_dims(X, axis=2)
         Wc = tf.tile(

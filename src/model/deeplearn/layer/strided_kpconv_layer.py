@@ -38,5 +38,7 @@ class StridedKPConvLayer(KPConvLayer):
         Xb = inputs[1]
         Fa = inputs[2]
         ND = inputs[3]
-        # TODO Rethink : Implement
-
+        # Gather neighborhoods (K x Rb x kappa x n_x=3 or n_d)
+        NX, NF = self.gather_neighborhoods(ND, Xa, Fa)
+        # Return output features
+        return self.compute_output_features(Xb, NX, NF)
