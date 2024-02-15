@@ -221,7 +221,7 @@ class ConvAutoencPwiseClassif(Architecture):
         :param x: The input layer for the first hidden layer.
         :type x: :class:`tf.Tensor`
         :return: The last hidden layer.
-        :rtype: :class.`.tf.Tensor`
+        :rtype: :class.`tf.Tensor`
         """
         # Downsampling hierarchy
         self.build_downsampling_hierarchy()
@@ -403,29 +403,18 @@ class ConvAutoencPwiseClassif(Architecture):
             i += 1
         self.skip_links.append(x)
         for d in range(self.max_depth-1):
-            # TODO Rethink : Choose between SKPConv or FeatureDownsampling
-            x = StridedKPConvLayer(
-                sigma=self.feature_extraction['sigma'][i],
-                kernel_radius=self.feature_extraction['kernel_radius'][i],
-                num_kernel_points=self.feature_extraction['num_kernel_points'][i],
-                deformable=self.feature_extraction['deformable'][i],
-                Dout=self.feature_extraction['feature_space_dims'][i],
-                W_initializer=self.feature_extraction['W_initializer'][i],
-                W_regularizer=self.feature_extraction['W_regularizer'][i],
-                W_constraint=self.feature_extraction['W_constraint'][i],
-                name=f'SKPConv_d{d+2}_{i+1}'
-            )([Xs[d], Xs[d+1], x, self.NDs[d]])
+            x = self.build_kpconv_downsampling_layer(Xs, x, d, i)
             if self.feature_extraction['bn']:
                 x = tf.keras.layers.BatchNormalization(
                     momentum=self.feature_extraction['bn_momentum'],
-                    name=f'SKPConv_d{d+2}_{i+1}_BN'
+                    name=f'DOWN_d{d+2}_{i+1}_BN'
                 )(x)
             if self.feature_extraction['activate']:
                 x = tf.keras.layers.ReLU(
-                    name=f'SKPConv_d{d+2}_{i+1}_ReLU'
+                    name=f'DOWN_d{d+2}_{i+1}_ReLU'
                 )(x)
             for _ in range(ops_per_depth[d+1]):
-                x = KPConvLayer(  # TODO Rethink : Implement KPConvLayer
+                x = KPConvLayer(
                     sigma=self.feature_extraction['sigma'][i],
                     kernel_radius=self.feature_extraction['kernel_radius'][i],
                     num_kernel_points=self.feature_extraction['num_kernel_points'][i],
@@ -448,6 +437,43 @@ class ConvAutoencPwiseClassif(Architecture):
                 i += 1
             self.skip_links.append(x)
         self.last_downsampling_tensor = x
+
+    def build_kpconv_downsampling_layer(self, Xs, x, d, i):
+        """
+        Build a downsampling layer in the context of the KPConv model (i.e.,
+        support also :class:`.StridedKPConvLayer` apart from
+        :class:`.FeaturesDownsamplingLayer`.
+
+        :param Xs: The list of receptive field-wise structure spaces.
+        :type Xs: list
+        :param x: The input features for the downsampling layer.
+        :type x: :class:`tf.Tensor`
+        :param d: The model depth.
+        :type d: int
+        :param i: The index of the operation (because there might be different
+            number of operations per depth level).
+        :type i: int
+        :return: The downsampling layer.
+        :rtype: :class:`tf.Tensor`
+        """
+        downsampling_filter = self.downsampling_filter.lower()
+        if downsampling_filter == 'strided_kpconv':
+            return StridedKPConvLayer(
+                sigma=self.feature_extraction['sigma'][i],
+                kernel_radius=self.feature_extraction['kernel_radius'][i],
+                num_kernel_points=self.feature_extraction['num_kernel_points'][i],
+                deformable=self.feature_extraction['deformable'][i],
+                Dout=self.feature_extraction['feature_space_dims'][i],
+                W_initializer=self.feature_extraction['W_initializer'][i],
+                W_regularizer=self.feature_extraction['W_regularizer'][i],
+                W_constraint=self.feature_extraction['W_constraint'][i],
+                name=f'DOWN_SKPConv_d{d+2}_{i+1}'
+            )([Xs[d], Xs[d+1], x, self.NDs[d]])
+        else:
+            return FeaturesDownsamplingLayer(
+                filter=self.downsampling_filter,
+                name=f'DOWN_d{d+2}'
+            )([Xs[d], Xs[d+1], x, self.NDs[d]])
 
     def build_upsampling_hierarchy(self):
         """

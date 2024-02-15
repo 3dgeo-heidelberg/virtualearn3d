@@ -71,7 +71,7 @@
 				"kernel_initializer": "glorot_normal"
 			},
 			"features_alignment": null,
-			"downsampling_filter": "strided_kpconv",
+			"downsampling_filter": "gaussian",
 			"upsampling_filter": "gaussian",
 			"upsampling_bn": true,
 			"upsampling_momentum": 0.0,
