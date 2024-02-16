@@ -142,9 +142,6 @@ class KPConvLayer(Layer):
             'num_kernel_points': self.num_kernel_points,
             'deformable': self.deformable,
             'Dout': self.Dout,
-            'Q_initializer': tf.keras.initializers.serialize(
-                self.Q_initializer
-            ),
             'W_initializer': tf.keras.initializers.serialize(
                 self.W_initializer
             ),

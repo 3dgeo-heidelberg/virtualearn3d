@@ -16,6 +16,8 @@ from src.model.deeplearn.layer.features_upsampling_layer import \
     FeaturesUpsamplingLayer
 from src.model.deeplearn.layer.grouping_point_net_layer import \
     GroupingPointNetLayer
+from src.model.deeplearn.layer.kpconv_layer import KPConvLayer
+from src.model.deeplearn.layer.strided_kpconv_layer import StridedKPConvLayer
 from src.inout.io_utils import IOUtils
 import src.main.main_logger as LOGGING
 import tensorflow as tf
@@ -324,7 +326,9 @@ class Architecture:
                     'RBFFeatProcessingLayer': RBFFeatProcessingLayer,
                     'FeaturesDownsamplingLayer': FeaturesDownsamplingLayer,
                     'FeaturesUpsamplingLayer': FeaturesUpsamplingLayer,
-                    'GroupingPointNetLayer': GroupingPointNetLayer
+                    'GroupingPointNetLayer': GroupingPointNetLayer,
+                    'KPConvLayer': KPConvLayer,
+                    'StridedKPConvLayer': StridedKPConvLayer
 
                 },
                 compile=False
