@@ -4,7 +4,12 @@ from src.model.deeplearn.deep_learning_exception import DeepLearningException
 from src.model.deeplearn.layer.layer import Layer
 from src.model.deeplearn.initializer.kernel_point_ball_initializer import \
     KernelPointBallInitializer
+from src.report.kpconv_layer_report import KPConvLayerReport
+from src.plot.kpconv_layer_plot import KPConvLayerPlot
+import src.main.main_logger as LOGGING
 import tensorflow as tf
+import numpy as np
+import time
 
 
 # ---   CLASS   --- #
@@ -162,3 +167,53 @@ class KPConvLayer(Layer):
         kpcl = cls(**config)
         # Return deserialized layer
         return kpcl
+
+    # ---   PLOTS and REPORTS   --- #
+    # ----------------------------- #
+    def export_representation(self, dir_path, out_prefix=None, Wpast=None):
+        """
+        Export a set of files representing the state of the kernel for both
+        the structure (Q) and the weights (W).
+
+        :param dir_path: The directory where the representation files will be
+            exported.
+        :type dir_path: str
+        :param out_prefix: The output prefix to name the output files.
+        :type out_prefix: str
+        :param Wpast: The weights of the kernel in the past.
+        :type Wpast: :class:`np.ndarray` or :class:`tf.Tensor` or None
+        :return: Nothing at all, but the representation is exported as a set
+            of files inside the given directory.
+        """
+        # Check dir_path has been given
+        if dir_path is None:
+            LOGGING.LOGGER.debug(
+                'KPConvLayer.export_representation received no '
+                'dir_path.'
+            )
+            return
+        # Export the values (report) and the plots
+        LOGGING.LOGGER.debug(
+            'Exporting representation of KPConv layer to '
+            f'"{dir_path}" ...'
+        )
+        start = time.perf_counter()
+        # Export report
+        KPConvLayerReport(
+            np.array(self.Q), np.array(self.W)
+        ).to_file(dir_path, out_prefix=out_prefix)
+        # Export plots
+        KPConvLayerPlot(
+            Q=np.array(self.Q),
+            W=np.array(self.W),
+            Wpast=np.array(Wpast) if Wpast is not None else None,
+            sigma=self.sigma,
+            name=self.name,
+            path=dir_path
+        ).plot(out_prefix=out_prefix)
+        # Log time
+        end = time.perf_counter()
+        LOGGING.LOGGER.debug(
+            'Representation of KPConv layer exported to '
+            f'"{dir_path}" in {end-start:.3f} seconds.'
+        )
