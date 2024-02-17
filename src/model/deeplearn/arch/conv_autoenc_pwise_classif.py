@@ -594,37 +594,37 @@ class ConvAutoencPwiseClassif(Architecture):
         # Prefit logic for KPConv layer representation
         if(
             self.kpconv_layers is not None and
-            cache_map.get('kpconv_layers_dir_path', None) is not None
+            cache_map.get('kpconv_representation_dir', None) is not None
         ):
             cache_map['kpconv_Wpast'] = []
             for i, kpconv_layer in enumerate(self.kpconv_layers):
                 kpconv_layer.export_representation(
                     os.path.join(
-                        cache_map['kpconv_layers_dir_path'],
+                        cache_map['kpconv_representation_dir'],
                         f'INIT_{kpconv_layer.name}'
                     ),
                     out_prefix=cache_map['out_prefix'],
                     Wpast=None
                 )
-                cache_map['Wpast'].append(np.array(kpconv_layer.W))
+                cache_map['kpconv_Wpast'].append(np.array(kpconv_layer.W))
         # Prefit logic for Strided KPConv layer representation
         if(
-            self.kpconv_layers is not None and
-            cache_map.get('skpconv_layers_dir_path', None) is not None
+            self.skpconv_layers is not None and
+            cache_map.get('skpconv_representation_dir', None) is not None
         ):
             cache_map['skpconv_Wpast'] = []
             for i, skpconv_layer in enumerate(self.skpconv_layers):
                 skpconv_layer.export_representation(
                     os.path.join(
-                        cache_map['skpconv_layers_dir_path'],
+                        cache_map['skpconv_representation_dir'],
                         f'INIT_{skpconv_layer.name}'
                     ),
                     out_prefix=cache_map['out_prefix'],
                     Wpast=None
                 )
-                cache_map['Wpast'].append(np.array(skpconv_layer.W))
+                cache_map['skpconv_Wpast'].append(np.array(skpconv_layer.W))
 
-    def postfit_logic_callback(self, cache_map):
+    def posfit_logic_callback(self, cache_map):
         """
         The callback implementing any necessary logic immediately after
         fitting a ConvAutoencPwiseClassif model.
@@ -633,6 +633,32 @@ class ConvAutoencPwiseClassif(Architecture):
             are guaranteed to live at least during prefit, fit, and postfit.
         :return: Nothing.
         """
-        # TODO Rethink : Implement
-        return None
+        # Postfit logic for KPConv layer representation
+        if(
+            self.kpconv_layers is not None and
+            cache_map.get('kpconv_representation_dir')
+        ):
+            for i, kpconv_layer in enumerate(self.kpconv_layers):
+                kpconv_layer.export_representation(
+                    os.path.join(
+                        cache_map['kpconv_representation_dir'],
+                        f'TRAINED_{kpconv_layer.name}'
+                    ),
+                    out_prefix=cache_map['out_prefix'],
+                    Wpast=cache_map['kpconv_Wpast'][i]
+                )
+        # Postfit logic Strided KPConv layer representation
+        if(
+            self.skpconv_layers is not None and
+            cache_map.get('skpconv_representation_dir', None) is not None
+        ):
+            for i, skpconv_layer in enumerate(self.skpconv_layers):
+                skpconv_layer.export_representation(
+                    os.path.join(
+                        cache_map['skpconv_representation_dir'],
+                        f'TRAINED_{skpconv_layer.name}'
+                    ),
+                    out_prefix=cache_map['out_prefix'],
+                    Wpast=cache_map['skpconv_Wpast'][i]
+                )
 

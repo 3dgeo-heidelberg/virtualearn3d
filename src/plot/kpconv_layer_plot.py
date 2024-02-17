@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import time
+import os
 
 
 # ---   CLASS   --- #
@@ -82,7 +83,7 @@ class KPConvLayerPlot(MplPlot):
         if self.W is not None:
             self.plot_kernel_weights(
                 self.W,
-                'W',
+                'Winit' if self.Wpast is None else 'Wend',
                 f'"{self.name}" weights',
                 **kwargs
             )
@@ -109,9 +110,30 @@ class KPConvLayerPlot(MplPlot):
         """
         # Prepare figure
         fig = plt.figure(figsize=(16, 10))
-        fig.suptitle(f'"{self.name}" structure')
+        kernel_time = 'init' if self.Wpast is None else 'end'
+        fig.suptitle(
+            f'"{self.name}" structure of {self.Q.shape[0]} points'
+            f'({kernel_time})'
+        )
         # Prepare 3D axes
         ax = fig.add_subplot(1, 1, 1, projection='3d')
+        # Plot influence regions
+        u, v = np.mgrid[0:2*np.pi:30j, 0:np.pi:15j]
+        x = np.cos(u)*np.sin(v)*self.sigma
+        y = np.sin(u)*np.sin(v)*self.sigma
+        z = np.cos(v)*self.sigma
+        for q in self.Q:
+            ax.plot_wireframe(
+                x+q[0], y+q[1], z+q[2],
+                color='black',
+                alpha=0.5,
+                linewidths=1.0,
+                zorder=3
+            )
+            ax.plot_surface(
+                x+q[0], y+q[1], z+q[2],
+                color='coral', shade=False, alpha=0.2
+            )
         # Plot points
         ax.scatter(
             self.Q[:, 0],
@@ -121,25 +143,18 @@ class KPConvLayerPlot(MplPlot):
             depthshade=False,
             s=64,
             edgecolor='black',
-            lw=1.5
+            lw=1.5,
+            zorder=5
         )
-        u, v = np.mgrid[0:2*np.pi:20j, 0:np.pi:10j]
-        x = np.cos(u)*np.sin(v)*self.sigma
-        y = np.sin(u)*np.sin(v)*self.sigma
-        z = np.cos(v)*self.sigma
-        # Plot influence regions
-        for q in self.Q:
-            ax.plot_wireframe(
-                x+q[0], y+q[1], z+q[2],
-                color='black'
-            )
-            ax.plot_surface(
-                x+q[0], y+q[1], z+q[2],
-                color='red', shade=False, alpha=0.3
-            )
+        ax.set_xlabel('$x$', fontsize=16)
+        ax.set_ylabel('$y$', fontsize=16)
+        ax.set_zlabel('$z$', fontsize=16)
         # Make plot effective
         path = self.path
-        self.path = path + 'Q.svg'
+        self.path = os.path.join(
+            path,
+            'Qinit.svg' if self.Wpast is None else 'Qend.svg'
+        )
         self.save_show_and_clear(out_prefix=kwargs.get('out_prefix', None))
         self.path = path
 
@@ -153,6 +168,29 @@ class KPConvLayerPlot(MplPlot):
         :param kwargs: The key-word arguments.
         :return: Nothing, but the plot is written to a file.
         """
+        # Plot weights as matrices
+        self._plot_kernel_weights(
+            W,
+            plot_name+'_mat',
+            plot_title,
+            KPConvLayerPlot.plot_kernel_weights_as_matrix,
+            **kwargs
+        )
+        # Plot weights as histograms
+        self._plot_kernel_weights(
+            W,
+            plot_name+'_hist',
+            plot_title,
+            KPConvLayerPlot.plot_kernel_weights_as_historgram,
+            **kwargs
+        )
+
+    def _plot_kernel_weights(
+        self, W, plot_name, plot_title, plot_function, **kwargs
+    ):
+        """
+        Assist the :meth:`KPConvLayerPlot.plot_kernel_weights` function
+        """
         # Prepare figure
         fig = plt.figure(figsize=(16, 10))
         fig.suptitle(plot_title)
@@ -161,10 +199,29 @@ class KPConvLayerPlot(MplPlot):
         # Plot weights matrices
         for k, Wk in enumerate(W):
             ax = fig.add_subplot(nrows, ncols, k+1)
-            ax.matshow(Wk, origin='lower')
-            ax.xaxis.tick_bottom()
+            plot_function(fig, ax, Wk)
+        # Post-process figure
+        fig.tight_layout()
         # Make plot effective
         path = self.path
-        self.path = path + f'{plot_name}.svg'
+        self.path = os.path.join(path, f'{plot_name}.svg')
         self.save_show_and_clear(out_prefix=kwargs.get('out_prefix', None))
         self.path = path
+
+    @staticmethod
+    def plot_kernel_weights_as_matrix(fig, ax, Wk):
+        """
+        Assist the :meth:`KPConvLayerPlot.plot_kernel_weights` function by
+        providing the logic to plot a matrix of weights as a matrix.
+        """
+        mat = ax.matshow(Wk, origin='lower', cmap='seismic')
+        ax.xaxis.tick_bottom()
+        fig.colorbar(mat, ax=ax)
+
+    @staticmethod
+    def plot_kernel_weights_as_historgram(fig, ax, Wk):
+        """
+        Assist the :meth:`KPConvLayerPlot.plot_kernel_weights` function by
+        providing the logic to plot a matrix of weights as a histogram.
+        """
+        ax.hist(Wk.flatten())

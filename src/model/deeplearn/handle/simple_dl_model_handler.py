@@ -99,6 +99,12 @@ class SimpleDLModelHandler(DLModelHandler):
         self.rbf_feat_processing_repr_dir = kwargs.get(
             'rbf_feature_processing_representation_dir', None
         )
+        self.kpconv_representation_dir = kwargs.get(
+            'kpconv_representation_dir', None
+        )
+        self.skpconv_representation_dir = kwargs.get(
+            'skpconv_representation_dir', None
+        )
         self.out_prefix = kwargs.get('out_prefix', None)
         self.training_epochs = kwargs.get('training_epochs', 100)
         self.batch_size = kwargs.get('batch_size', 16)
@@ -225,6 +231,8 @@ class SimpleDLModelHandler(DLModelHandler):
             'fsl_dir_path': self.feat_struct_repr_dir,
             'rbf_dir_path': self.rbf_feat_extract_repr_dir,
             'rbf_feat_processing_dir_path': self.rbf_feat_processing_repr_dir,
+            'kpconv_representation_dir': self.kpconv_representation_dir,
+            'skpconv_representation_dir': self.skpconv_representation_dir,
             'out_prefix': self.out_prefix,
             'X': X,
             'y_rf': y_rf,
