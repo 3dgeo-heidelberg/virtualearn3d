@@ -3,7 +3,7 @@
     "/hei/Hessigheim_Benchmark/Epoch_March2018/LiDAR/Mar18_train.laz"
   ],
   "out_pcloud": [
-    "out/hae/T1/*"
+    "out/kpc_plots/T1/*"
   ],
   "sequential_pipeline": [
     {
@@ -16,14 +16,14 @@
             "class_names": ["LowVeg", "ImpSurf", "Vehicle", "UrbanFurni", "Roof", "Facade", "Shrub", "Tree", "Soil/Gravel", "VertSurf", "Chimney"],
             "pre_processing": {
                 "pre_processor": "hierarchical_fps",
-				"support_strategy_num_points": 40000,
+				"support_strategy_num_points": 450,
                 "to_unit_sphere": false,
             	"support_strategy": "fps",
             	"support_chunk_size": 2000,
             	"support_strategy_fast": true,
                 "center_on_pcloud": true,
 				"neighborhood": {
-                    "type": "rectangular3D",
+                    "type": "sphere",
                     "radius": 3.0,
                     "separation_factor": 0.8
                 },
@@ -51,23 +51,19 @@
                 "support_points_report_path": "*/training_eval/support_points.laz"
             },
 			"feature_extraction": {
-				"type": "PointNet",
+				"type": "KPConv",
 				"operations_per_depth": [2, 1, 1, 1, 1],
 				"feature_space_dims": [64, 64, 128, 256, 512, 1024],
 				"bn": true,
 				"bn_momentum": 0.0,
-				"H_activation": ["relu", "relu", "relu", "relu", "relu", "relu"],
-				"H_initializer": ["glorot_uniform", "glorot_uniform", "glorot_uniform", "glorot_uniform", "glorot_uniform", "glorot_uniform"],
-				"H_regularizer": [null, null, null, null, null, null],
-				"H_constraint": [null, null, null, null, null, null],
-				"gamma_activation": ["relu", "relu", "relu", "relu", "relu", "relu"],
-				"gamma_kernel_initializer": ["glorot_uniform", "glorot_uniform", "glorot_uniform", "glorot_uniform", "glorot_uniform", "glorot_uniform"],
-				"gamma_kernel_regularizer": [null, null, null, null, null, null],
-				"gamma_kernel_constraint": [null, null, null, null, null, null],
-				"gamma_bias_enabled": [true, true, true, true, true, true],
-				"gamma_bias_initializer": ["zeros", "zeros", "zeros", "zeros", "zeros", "zeros"],
-				"gamma_bias_regularizer": [null, null, null, null, null, null],
-				"gamma_bias_constraint": [null, null, null, null, null, null]
+				"activate": true,
+				"sigma": [3.0, 3.0, 3.0, 3.0, 3.0, 3.0],
+				"kernel_radius": [3.0, 3.0, 3.0, 3.0, 3.0, 3.0],
+				"num_kernel_points": [15, 15, 15, 15, 15, 15],
+				"deformable": [false, false, false, false, false, false],
+				"W_initializer": ["glorot_uniform", "glorot_uniform", "glorot_uniform", "glorot_uniform", "glorot_uniform", "glorot_uniform"],
+				"W_regularizer": [null, null, null, null, null, null],
+				"W_constraint": [null, null, null, null, null, null]
 			},
 			"_structure_alignment": {
 				"tnet_pre_filters_spec": [64, 128, 256],
@@ -75,7 +71,7 @@
 				"kernel_initializer": "glorot_normal"
 			},
 			"features_alignment": null,
-			"downsampling_filter": "gaussian",
+			"downsampling_filter": "strided_kpconv",
 			"upsampling_filter": "gaussian",
 			"upsampling_bn": true,
 			"upsampling_momentum": 0.0,
@@ -84,9 +80,11 @@
             "model_handling": {
                 "summary_report_path": "*/model_summary.log",
                 "training_history_dir": "*/training_eval/history",
-                "features_structuring_representation_dir": "*/training_eval/feat_struct_layer/",
+                "_features_structuring_representation_dir": "*/training_eval/feat_struct_layer/",
+				"kpconv_representation_dir": "*/training_eval/kpconv_layers/",
+				"skpconv_representation_dir": "*/training_eval/skpconv_layers/",
                 "class_weight": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                "training_epochs": 400,
+                "training_epochs": 30,
                 "batch_size": 16,
                 "checkpoint_path": "*/checkpoint.model",
                 "checkpoint_monitor": "loss",
@@ -107,7 +105,7 @@
                         "schedule": "exponential_decay",
                         "schedule_args": {
                             "initial_learning_rate": 1e-2,
-                            "decay_steps": 5000,
+                            "decay_steps": 200,
                             "decay_rate": 0.96,
                             "staircase": false
                         }
@@ -146,7 +144,7 @@
     },
     {
       "writer": "PredictivePipelineWriter",
-      "out_pipeline": "*pipe/HAE_T1.pipe",
+      "out_pipeline": "*pipe/KPC_T1.pipe",
       "include_writer": false,
       "include_imputer": true,
       "include_feature_transformer": true,
