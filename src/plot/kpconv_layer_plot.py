@@ -112,28 +112,28 @@ class KPConvLayerPlot(MplPlot):
         fig = plt.figure(figsize=(16, 10))
         kernel_time = 'init' if self.Wpast is None else 'end'
         fig.suptitle(
-            f'"{self.name}" structure of {self.Q.shape[0]} points'
+            f'"{self.name}" structure of {self.Q.shape[0]} points '
             f'({kernel_time})'
         )
         # Prepare 3D axes
-        ax = fig.add_subplot(1, 1, 1, projection='3d')
+        ax = fig.add_subplot(1, 1, 1, projection='3d', computed_zorder=False)
         # Plot influence regions
-        u, v = np.mgrid[0:2*np.pi:30j, 0:np.pi:15j]
+        u, v = np.mgrid[0:2*np.pi:50j, 0:np.pi:50j]
         x = np.cos(u)*np.sin(v)*self.sigma
         y = np.sin(u)*np.sin(v)*self.sigma
         z = np.cos(v)*self.sigma
         for q in self.Q:
             ax.plot_wireframe(
                 x+q[0], y+q[1], z+q[2],
-                color='black',
-                alpha=0.5,
+                color='tomato',
+                alpha=0.1,
                 linewidths=1.0,
                 zorder=3
             )
-            ax.plot_surface(
-                x+q[0], y+q[1], z+q[2],
-                color='coral', shade=False, alpha=0.2
-            )
+            #ax.plot_surface(  # Uncomment to also plot the surface
+            #    x+q[0], y+q[1], z+q[2],
+            #    color='coral', shade=False, alpha=0.2
+            #)
         # Plot points
         ax.scatter(
             self.Q[:, 0],
@@ -144,11 +144,21 @@ class KPConvLayerPlot(MplPlot):
             s=64,
             edgecolor='black',
             lw=1.5,
-            zorder=5
+            zorder=4,
+            label='$\mathbf{{Q}}$'
         )
+        # Plot center
+        ax.scatter(
+            0, 0, 0,
+            c='yellow', edgecolors='black', s=256, linewidths=3,
+            label='$\mathbf{{0}}$'
+        )
+        # Format axes
         ax.set_xlabel('$x$', fontsize=16)
         ax.set_ylabel('$y$', fontsize=16)
         ax.set_zlabel('$z$', fontsize=16)
+        ax.set_axisbelow(True)
+        ax.legend(loc='upper right', fontsize=16)
         # Make plot effective
         path = self.path
         self.path = os.path.join(

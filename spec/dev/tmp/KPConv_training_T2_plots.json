@@ -1,13 +1,14 @@
 {
   "in_pcloud": [
-    "/hei/Hessigheim_Benchmark/Epoch_March2018/LiDAR/Mar18_train.laz"
+    "/hei/Hessigheim_Benchmark/Epoch_March2018/LiDAR/Mar18_val.laz"
   ],
   "out_pcloud": [
-    "out/kpc_plots/T1/*"
+    "out/kpc_plots/T2/*"
   ],
   "sequential_pipeline": [
     {
         "train": "ConvolutionalAutoencoderPwiseClassifier",
+		"pretrained_model": "/home/uadmin/git/virtualearn3d/out/kpc_plots/T1/pipe/KPC_T1.model",
         "training_type": "base",
 		"fnames": ["AUTO"],
         "random_seed": null,
@@ -35,18 +36,18 @@
 				"num_upsampling_neighbors": [1, 16, 8, 8, 4],
 				"_num_upsampling_neighbors": [1, 1, 1, 1, 1],
                 "nthreads": 12,
-                "_training_receptive_fields_distribution_report_path": "*/training_eval/training_receptive_fields_distribution.log",
-				"training_receptive_fields_distribution_report_path": null,
-                "_training_receptive_fields_distribution_plot_path": "*/training_eval/training_receptive_fields_distribution.svg",
-				"training_receptive_fields_distribution_plot_path": null,
-                "_training_receptive_fields_dir": "*/training_eval/training_receptive_fields/",
-				"training_receptive_fields_dir": null,
-                "_receptive_fields_distribution_report_path": "*/training_eval/receptive_fields_distribution.log",
-				"receptive_fields_distribution_report_path": null,
-                "_receptive_fields_distribution_plot_path": "*/training_eval/receptive_fields_distribution.svg",
-				"receptive_fields_distribution_plot_path": null,
-                "_receptive_fields_dir": "*/training_eval/receptive_fields/",
-				"receptive_fields_dir": null,
+                "training_receptive_fields_distribution_report_path": "*/training_eval/training_receptive_fields_distribution.log",
+				"_training_receptive_fields_distribution_report_path": null,
+                "training_receptive_fields_distribution_plot_path": "*/training_eval/training_receptive_fields_distribution.svg",
+				"_training_receptive_fields_distribution_plot_path": null,
+                "training_receptive_fields_dir": "*/training_eval/training_receptive_fields/",
+				"_training_receptive_fields_dir": null,
+                "receptive_fields_distribution_report_path": "*/training_eval/receptive_fields_distribution.log",
+				"_receptive_fields_distribution_report_path": null,
+                "receptive_fields_distribution_plot_path": "*/training_eval/receptive_fields_distribution.svg",
+				"_receptive_fields_distribution_plot_path": null,
+                "receptive_fields_dir": "*/training_eval/receptive_fields/",
+				"_receptive_fields_dir": null,
                 "training_support_points_report_path": "*/training_eval/training_support_points.laz",
                 "support_points_report_path": "*/training_eval/support_points.laz"
             },
@@ -104,7 +105,7 @@
                     "learning_rate": {
                         "schedule": "exponential_decay",
                         "schedule_args": {
-                            "initial_learning_rate": 1e-2,
+                            "initial_learning_rate": 1e-3,
                             "decay_steps": 200,
                             "decay_rate": 0.96,
                             "staircase": false
@@ -139,12 +140,12 @@
         "training_class_distribution_report_path": "*/training_eval/class_distribution.log",
         "training_class_distribution_plot_path": "*/training_eval/class_distribution.svg",
         "training_classified_point_cloud_path": "*/training_eval/classified_point_cloud.laz",
-        "_training_activations_path": "*/training_eval/activations.laz",
-		"training_activations_path": null
+        "training_activations_path": "*/training_eval/activations.laz",
+		"_training_activations_path": null
     },
     {
       "writer": "PredictivePipelineWriter",
-      "out_pipeline": "*pipe/KPC_T1.pipe",
+      "out_pipeline": "*pipe/KPC_T2.pipe",
       "include_writer": false,
       "include_imputer": true,
       "include_feature_transformer": true,

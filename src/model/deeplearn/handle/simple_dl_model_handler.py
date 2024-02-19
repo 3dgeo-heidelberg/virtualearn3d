@@ -384,6 +384,24 @@ class SimpleDLModelHandler(DLModelHandler):
             self.summary_report_path = model_handling['summary_report_path']
             self.training_history_dir = model_handling['training_history_dir']
             self.checkpoint_path = model_handling['checkpoint_path']
+            self.feat_struct_repr_dir = model_handling.get(
+                'features_structuring_representation_dir',
+                self.feat_struct_repr_dir
+            )
+            self.rbf_feat_extract_repr_dir = model_handling.get(
+                'rbf_feat_extract_repr_dir',
+                self.rbf_feat_extract_repr_dir
+            )
+            self.rbf_feat_processing_repr_dir = model_handling.get(
+                'rbf_feat_processing_repr_dir',
+                self.rbf_feat_processing_repr_dir
+            )
+            self.kpconv_representation_dir = model_handling.get(
+                'kpconv_representation_dir', self.kpconv_representation_dir
+            )
+            self.skpconv_representation_dir = model_handling.get(
+                'skpconv_representation_dir', self.skpconv_representation_dir
+            )
         # Update architecture paths
         if self.arch is not None:
             self.arch.architecture_graph_path = \
@@ -749,6 +767,8 @@ class SimpleDLModelHandler(DLModelHandler):
         state['rbf_feat_extract_repr_dir'] = self.rbf_feat_extract_repr_dir
         state['rbf_feat_processing_repr_dir'] = \
             self.rbf_feat_processing_repr_dir
+        state['kpconv_representation_dir'] = self.kpconv_representation_dir
+        state['skpconv_representation_dir'] = self.skpconv_representation_dir
         state['out_prefix'] = self.out_prefix
         state['training_epochs'] = self.training_epochs
         state['batch_size'] = self.batch_size
@@ -784,6 +804,12 @@ class SimpleDLModelHandler(DLModelHandler):
         )
         self.rbf_feat_processing_repr_dir = state.get(
             'rbf_feat_processing_repr_dir', None
+        )
+        self.kpconv_representation_dir = state.get(
+            'kpconv_representation_dir', None
+        )
+        self.skpconv_representation_dir = state.get(
+            'skpconv_representation_dir', None
         )
         self.out_prefix = state['out_prefix']
         self.training_epochs = state['training_epochs']

@@ -577,8 +577,18 @@ class ConvAutoencPwiseClassif(Architecture):
         self.max_depth = state['max_depth']
         # Call parent's set state
         super().__setstate__(state)
-        # TODO Rethink : Implement "Track KPConv and SKPConv layers"
-        # TODO Rethink : See RBFNet.__setstate__ for an example
+        # Track KPConv layers
+        self.kpconv_layers = [
+            layer
+            for layer in self.nn.layers
+            if type(layer) == KPConvLayer
+        ]
+        # Track SKPConv layers
+        self.skpconv_layers = [
+            layer
+            for layer in self.nn.layers
+            if type(layer) == StridedKPConvLayer
+        ]
 
     # ---  FIT LOGIC CALLBACKS  --- #
     # ----------------------------- #

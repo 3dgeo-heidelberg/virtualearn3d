@@ -521,6 +521,9 @@ class ModelOp:
         if model_handling.get('skpconv_representation_dir', None) is not None:
             model_handling['skpconv_representation_dir'] = \
                 old_paths['skpconv_representation_dir']
+        # Restore checkpoint path
+        if model_handling.get('checkpoint_path', None) is not None:
+            model_handling['checkpoint_path'] = old_paths['checkpoint_path']
         # Restore training receptive fields distribution report path
         if preproc.get(
             'training_receptive_fields_distribution_report_path', None
