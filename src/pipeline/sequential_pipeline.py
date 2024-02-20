@@ -325,7 +325,12 @@ class SequentialPipeline(Pipeline):
             )
         )
         # Build the predictive pipeline
-        pp = PredictivePipeline(sp, PpsSequential())
+        pp = PredictivePipeline(
+            sp,
+            PpsSequential(
+                ignore_predictions=kwargs.get('ignore_predictions', False)
+            )
+        )
         # Clear paths of predictive pipeline
         pp.in_pcloud = None
         pp.out_pcloud = None
