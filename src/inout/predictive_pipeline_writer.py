@@ -43,6 +43,7 @@ class PredictivePipelineWriter(Writer):
             'include_class_transformer', None
         )
         kwargs['include_miner'] = spec.get('include_miner', None)
+        kwargs['ignore_predictions'] = spec.get('ignore_predictions', None)
         # Delete keys with None value
         DictUtils.delete_by_val(kwargs, None)
         # Return
@@ -64,6 +65,7 @@ class PredictivePipelineWriter(Writer):
         self.include_ftransf = kwargs.get('include_feature_transformer', True)
         self.include_ctransf = kwargs.get('include_class_transformer', True)
         self.include_miner = kwargs.get('include_miner', True)
+        self.ignore_predictions = kwargs.get('ignore_predictions', False)
 
     # ---   WRITE   --- #
     # ----------------- #
@@ -88,7 +90,8 @@ class PredictivePipelineWriter(Writer):
                 include_imputer=self.include_imputer,
                 include_feature_transformer=self.include_ftransf,
                 include_class_transformer=self.include_ctransf,
-                include_miner=self.include_miner
+                include_miner=self.include_miner,
+                ignore_predictions=self.ignore_predictions
             ),
             path
         )

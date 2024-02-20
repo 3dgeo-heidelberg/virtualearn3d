@@ -212,13 +212,20 @@ class PipelineExecutor:
         elif isinstance(comp, PredictivePipeline):
             # Handle predict
             comp.pps.external_state = state
-            state.update(
-                comp,
-                new_preds=comp.predict(
-                    state.pcloud, out_prefix=self.out_prefix
-                ),
-                new_model=comp.get_first_model()
+            new_preds = comp.predict(
+                state.pcloud, out_prefix=self.out_prefix
             )
+            if new_preds is not None:
+                state.update(
+                    comp,
+                    new_preds=new_preds,
+                    new_model=comp.get_first_model()
+                )
+            elif not comp.pps.ignore_predictions:
+                raise PipelineExecutorException(
+                    'PipelineExecutor called predictive pipeline without '
+                    'ignore predictions flag but no predictions were computed.'
+                )
         elif isinstance(comp, Evaluator):
             # Handle evaluation
             if hasattr(comp, 'eval_args_from_state'):
