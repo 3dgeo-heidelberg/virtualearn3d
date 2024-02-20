@@ -160,18 +160,24 @@ class ConvAutoencPwiseClassifModel(ClassificationModel):
         """
         See :meth:`model.Model.get_input_from_pcloud`.
         """
-        # No features
+        X = pcloud.get_coordinates_matrix()
+        # Return without features
         if self.fnames is None:
-            X = pcloud.get_coordinates_matrix()
             return [
                 X,
                 np.ones((X.shape[0], 1))  # ConvAutoenc always needs features
             ]
-        # Features
-        return [
-            pcloud.get_coordinates_matrix(),
-            pcloud.get_features_matrix(self.fnames)
-        ]
+        # Handle ones as features
+        if 'ones' in self.fnames:
+            self.fnames.remove('ones')
+            F = np.hstack([
+                np.ones((X.shape[0], 1)),
+                pcloud.get_features_matrix(self.fnames)
+            ]) if len(self.fnames) > 0 else np.ones((X.shape[0], 1))
+        else:  # Handle features without ones
+            F = pcloud.get_features_matrix(self.fnames)
+        # Return with features
+        return [X, F]
 
     # ---   TRAINING METHODS   --- #
     # ---------------------------- #
