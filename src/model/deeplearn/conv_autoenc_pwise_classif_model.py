@@ -150,11 +150,15 @@ class ConvAutoencPwiseClassifModel(ClassificationModel):
             (fnames= available.
         :type F: :class:`np.ndarray`
         """
-        if X is None:
-            X = pcloud.get_coordinates_matrix()
-        if F is None and self.fnames is not None:
-            F = pcloud.get_features_matrix(self.fnames)
-        return self._predict(X, F=F)
+        P = self.get_input_from_pcloud(pcloud)
+        if X is not None:
+            P[0] = pcloud.get_coordinates_matrix()
+        if F is not None:
+            if len(P) > 1:
+                P[1] = F
+            else:
+                P.append(F)
+        return self._predict(P[0], F=P[1])
 
     def get_input_from_pcloud(self, pcloud):
         """
@@ -174,6 +178,7 @@ class ConvAutoencPwiseClassifModel(ClassificationModel):
                 np.ones((X.shape[0], 1)),
                 pcloud.get_features_matrix(self.fnames)
             ]) if len(self.fnames) > 0 else np.ones((X.shape[0], 1))
+            self.fnames.append('ones')
         else:  # Handle features without ones
             F = pcloud.get_features_matrix(self.fnames)
         # Return with features
