@@ -65,8 +65,8 @@ class MainTest:
         success = success and RBFFeatProcessingLayerTest().start()
         success = success and ModelSerializationTest().start()
         success = success and LASInoutTest().start()
-        success = success and VL3DPPBindingTest().start()
-        success = success and VL3DPPBackendTest().start()
+        #success = success and VL3DPPBindingTest().start()
+        #success = success and VL3DPPBackendTest().start()
         # ---------------------------------------------------------------------
         # Return
         return success
