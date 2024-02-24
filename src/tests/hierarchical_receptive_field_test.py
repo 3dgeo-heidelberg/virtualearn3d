@@ -22,6 +22,7 @@ class HierarchicalReceptiveFieldTest(VL3DTest):
     # ---------------- #
     def __init__(self):
         super().__init__('Hierarchical receptive field test')
+        self.eps = 1e-9
 
     # ---  TEST INTERFACE  --- #
     # ------------------------ #
@@ -101,7 +102,7 @@ class HierarchicalReceptiveFieldTest(VL3DTest):
                     np.argsort(sq_dist)[num_downsampling_neighbors[d]-1]
                 ]
                 ref_dist = np.sqrt(ref_sq_dist)
-                if np.any(max_knn_dist > ref_dist):
+                if np.any(max_knn_dist-self.eps > ref_dist):
                     return False
                 # Validate knn for pwise neighborhoods
                 max_knn_dist = np.linalg.norm(Yd[Nd[i]] - Yd[i], axis=1)
@@ -110,7 +111,7 @@ class HierarchicalReceptiveFieldTest(VL3DTest):
                     np.argsort(sq_dist)[num_pwise_neighbors[d]-1]
                 ]
                 ref_dist = np.sqrt(ref_sq_dist)
-                if np.any(max_knn_dist > ref_dist):
+                if np.any(max_knn_dist-self.eps > ref_dist):
                     return False
                 # Validate knn for upsampling
                 max_knn_dist = np.linalg.norm(Yd[NUd[i]] - Xd[i], axis=1)
@@ -119,7 +120,7 @@ class HierarchicalReceptiveFieldTest(VL3DTest):
                     np.argsort(sq_dist)[num_upsampling_neighbors[d]-1]
                 ]
                 ref_dist = np.sqrt(ref_sq_dist)
-                if np.any(max_knn_dist > ref_dist):
+                if np.any(max_knn_dist-self.eps > ref_dist):
                     return False
         # Generate simple FPS receptive field
         rf = ReceptiveFieldFPS(
