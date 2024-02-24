@@ -143,9 +143,12 @@ class ModelSerializationTest(VL3DTest):
         with tempfile.TemporaryDirectory() as tmpdir:
             # Serialize model
             tmpfile = os.path.join(tmpdir, 'rf')
+            print('WRITING MODEL ...')  # TODO Remove
             ModelIO.write(rf_original, tmpfile)
+            print('MODEL WRITTEN!')  # TODO Remove
             # Deserialize model
             rf_deserial = ModelIO.read(tmpfile)
+            print('MODEL READ!')  # TODO Remove
             # Validate deserialized model
             return self.validate_deserialized_model(
                 rf_original,
@@ -721,11 +724,13 @@ class ModelSerializationTest(VL3DTest):
         if not ModelSerializationTest.recursive_object_validation(
             original, deserial
         ):
+            print('FAILED RECURSIVE VALIDATION')  # TODO Remove
             return False
         # Validate the output of given models
         if not ModelSerializationTest.model_output_validation(
             original_y, deserial_y
         ):
+            print('FAILED OUTPUT VALIDATION')  # TODO Remove
             return False
         # All validations were successfully passed
         return True
