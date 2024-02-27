@@ -13,6 +13,7 @@ from src.model.deeplearn.conv_autoenc_pwise_classif_model import \
 from src.model.deeplearn.handle.dl_model_handler import DLModelHandler
 import src.main.main_logger as LOGGING
 from src.utils.dict_utils import DictUtils
+from src.main.main_config import VL3DCFG
 from sklearn.cluster import MiniBatchKMeans
 import numpy as np
 import time
@@ -125,6 +126,11 @@ class ClassificationUncertaintyEvaluator(Evaluator):
         # Call parent's init
         kwargs['problem_name'] = 'CLASSIFICATION_UNCERTAINTY'
         super().__init__(**kwargs)
+        # Set defaults from VL3DCFG
+        kwargs = DictUtils.add_defaults(
+            kwargs,
+            VL3DCFG['EVAL']['ClassificationUncertaintyEvaluator']
+        )
         # Assign ClassificationUncertaintyEvaluator attributes
         self.class_names = kwargs.get('class_names', None)
         self.include_probabilities = kwargs.get('include_probabilities', True)

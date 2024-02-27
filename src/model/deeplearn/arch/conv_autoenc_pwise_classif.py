@@ -16,6 +16,8 @@ from src.model.deeplearn.layer.grouping_point_net_layer import \
 from src.model.deeplearn.layer.kpconv_layer import KPConvLayer
 from src.model.deeplearn.layer.strided_kpconv_layer import StridedKPConvLayer
 from src.utils.dl_utils import DLUtils
+from src.utils.dict_utils import DictUtils
+from src.main.main_config import VL3DCFG
 import tensorflow as tf
 import numpy as np
 import os
@@ -43,6 +45,11 @@ class ConvAutoencPwiseClassif(Architecture):
         if kwargs.get('arch_name', None) is None:
             kwargs['arch_name'] = 'ConvAutoenc_PointWise_Classification'
         super().__init__(**kwargs)
+        # Set defaults from VL3DCFG
+        kwargs = DictUtils.add_defaults(
+            kwargs,
+            VL3DCFG['MODEL']['ConvAutoencPwiseClassif']
+        )
         # Assign attributes
         self.fnames = kwargs.get('fnames', None)
         if self.fnames is None:
@@ -66,17 +73,17 @@ class ConvAutoencPwiseClassif(Architecture):
             'downsampling_filter', 'mean'
         )
         self.upsampling_filter = kwargs.get(
-            'upsampling_strategy', 'mean'
+            'upsampling_filter', 'mean'
         )
         self.upsampling_bn = kwargs.get('upsampling_bn', True)
         self.upsampling_bn_momentum = kwargs.get(
             'upsampling_bn_momentum', 0.0
         )
         self.conv1d_kernel_initializer = kwargs.get(
-            'kernel_initializer', 'glorot_normal'
+            'conv1d_kernel_initializer', 'glorot_normal'
         )
         self.output_kernel_initializer = kwargs.get(
-            'kernel_initializer', 'glorot_normal'
+            'output_kernel_initializer', 'glorot_normal'
         )
         self.max_depth = len(self.num_downsampling_neighbors)
         self.binary_crossentropy = False

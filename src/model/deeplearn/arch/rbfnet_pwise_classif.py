@@ -5,6 +5,8 @@ from src.model.deeplearn.deep_learning_exception import DeepLearningException
 from src.model.deeplearn.arch.point_net import PointNet
 from src.model.deeplearn.layer.rbf_feat_processing_layer import \
     RBFFeatProcessingLayer
+from src.utils.dict_utils import DictUtils
+from src.main.main_config import VL3DCFG
 import tensorflow as tf
 import numpy as np
 import os
@@ -30,6 +32,11 @@ class RBFNetPwiseClassif(RBFNet):
         if kwargs.get('arch_name', None) is None:
             kwargs['arch_name'] = 'RBFNet_PointWise_Classification'
         super().__init__(**kwargs)
+        # Set defaults from VL3DCFG
+        kwargs = DictUtils.add_defaults(
+            kwargs,
+            VL3DCFG['MODEL']['RBFNetPwiseClassif']
+        )
         # Assign attributes
         self.num_classes = kwargs.get('num_classes', None)
         self.after_features_type = kwargs.get('after_features_type', 'MLP')

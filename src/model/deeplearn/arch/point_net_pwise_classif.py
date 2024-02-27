@@ -5,6 +5,8 @@ from src.model.deeplearn.deep_learning_exception import DeepLearningException
 from src.model.deeplearn.layer.features_structuring_layer import \
     FeaturesStructuringLayer
 from src.utils.dl_utils import DLUtils
+from src.utils.dict_utils import DictUtils
+from src.main.main_config import VL3DCFG
 import src.main.main_logger as LOGGING
 import tensorflow as tf
 import numpy as np
@@ -31,6 +33,11 @@ class PointNetPwiseClassif(PointNet):
         # Call parent's init
         kwargs['arch_name'] = 'PointNet_PointWise_Classification'
         super().__init__(**kwargs)
+        # Set defaults from VL3DCFG
+        kwargs = DictUtils.add_defaults(
+            kwargs,
+            VL3DCFG['MODEL']['PointNetPwiseClassif']
+        )
         # Assign the attributes of the PointNetPwiseClassif architecture
         self.num_classes = kwargs.get('num_classes', None)
         if self.num_classes is None:

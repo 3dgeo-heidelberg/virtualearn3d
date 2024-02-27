@@ -1,4 +1,13 @@
 ---
+# Default configuration of geometric features miner
+GeomFeatsMiner:
+  radius: 0.3
+  fnames:
+    - "linearity"
+    - "planarity"
+    - "sphericity"
+  nthreads: -1
+
 # Default configuration of height features miner
 HeightFeatsMiner:
   support_chunk_size: 0
@@ -9,8 +18,6 @@ HeightFeatsMiner:
     radius: 50.0
     separation_factor: 0.7
   fnames:
-    - floor_distancec
+    - "floor_distance"
   nthreads: -1
-
-# TODO Rethink : Add missing defaults for other miners
 ...

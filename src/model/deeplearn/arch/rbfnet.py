@@ -12,6 +12,8 @@ from src.model.deeplearn.layer.rbf_feat_extract_layer import \
     RBFFeatExtractLayer
 from src.model.deeplearn.layer.features_structuring_layer import \
     FeaturesStructuringLayer
+from src.utils.dict_utils import DictUtils
+from src.main.main_config import VL3DCFG
 import tensorflow as tf
 
 
@@ -35,6 +37,11 @@ class RBFNet(Architecture, ABC):
         if kwargs.get('arch_name', None) is None:
             kwargs['arch_name'] = 'RBFNet'
         super().__init__(**kwargs)
+        # Set defaults from VL3DCFG
+        kwargs = DictUtils.add_defaults(
+            kwargs,
+            VL3DCFG['MODEL']['RBFNet']
+        )
         # Assign attributes
         self.fnames = kwargs.get('fnames', None)
         # Update the preprocessing logic

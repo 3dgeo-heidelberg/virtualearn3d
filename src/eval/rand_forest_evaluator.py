@@ -2,6 +2,8 @@
 # ------------------- #
 from src.eval.evaluator import Evaluator, EvaluatorException
 from src.eval.rand_forest_evaluation import RandForestEvaluation
+from src.utils.dict_utils import DictUtils
+from src.main.main_config import VL3DCFG
 from sklearn.inspection import permutation_importance
 import random
 
@@ -33,6 +35,11 @@ class RandForestEvaluator(Evaluator):
         """
         # Call parent's init
         super().__init__(**kwargs)
+        # Set defaults from VL3DCFG
+        kwargs = DictUtils.add_defaults(
+            kwargs,
+            VL3DCFG['EVAL']['RandForestEvaluator']
+        )
         # Initialize attributes of RandForestEvaluator
         self.num_decision_trees = kwargs.get('num_decision_trees', 0)
         self.compute_permutation_importance = kwargs.get(
