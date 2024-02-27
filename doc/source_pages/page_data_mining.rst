@@ -436,23 +436,23 @@ neighbor.
 .. code-block:: json
 
     {
-		"miner": "TakeClosestMiner",
-		"fnames": [
-			"HSV_Hrad", "HSV_S", "HSV_V",
-			"floor_distance_r50.0_sep0.35",
-			"eigenvalue_sum_r0.3", "omnivariance_r0.3", "eigenentropy_r0.3",
-			"anisotropy_r0.3", "planarity_r0.3", "linearity_r0.3",
-			"PCA1_r0.3", "PCA2_r0.3",
-			"surface_variation_r0.3", "sphericity_r0.3", "verticality_r0.3",
-	  	],
-		"pcloud_pool": [
-			"/home/point_clouds/point_cloud_A.laz",
-			"/home/point_clouds/point_cloud_B.laz",
-			"/home/point_clouds/point_cloud_C.laz"
-		],
-		"distance_upper_bound": 0.1,
-		"nthreads": 12
-	}
+        "miner": "TakeClosestMiner",
+        "fnames": [
+            "HSV_Hrad", "HSV_S", "HSV_V",
+            "floor_distance_r50.0_sep0.35",
+            "eigenvalue_sum_r0.3", "omnivariance_r0.3", "eigenentropy_r0.3",
+            "anisotropy_r0.3", "planarity_r0.3", "linearity_r0.3",
+            "PCA1_r0.3", "PCA2_r0.3",
+            "surface_variation_r0.3", "sphericity_r0.3", "verticality_r0.3",
+        ],
+        "pcloud_pool": [
+            "/home/point_clouds/point_cloud_A.laz",
+            "/home/point_clouds/point_cloud_B.laz",
+            "/home/point_clouds/point_cloud_C.laz"
+        ],
+        "distance_upper_bound": 0.1,
+        "nthreads": 12
+    }
 
 The JSON above defines a :class:`.TakeClosestMiner` that finds the features of
 the closest point in a pool of three point clouds. Neighbors further than
