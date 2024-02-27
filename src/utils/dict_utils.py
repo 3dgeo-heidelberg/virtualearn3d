@@ -20,3 +20,19 @@ class DictUtils:
             requested entries.
         """
         return {k: v for k, v in dict.items() if v != val}
+
+    @staticmethod
+    def add_defaults(dict, defaults):
+        """
+        For any value that is not explicitly available in the input dictionary
+        `dict`, set it from the `defaults` dictionary (if available).
+
+        NOTE updates are done in place.
+
+        :param dict: The input dictionary whose defaults must be set.
+        :param defaults: The dictionary with the default values.
+        :return: The updated input dictionary `dict`.
+        """
+        for k, v in defaults.items():
+            dict.setdefault(k, v)
+        return dict

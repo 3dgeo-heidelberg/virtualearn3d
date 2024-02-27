@@ -18,7 +18,7 @@ VL3DCFG = {
 }
 
 
-def main_config_init():
+def main_config_init(rootdir=''):
     """
     Initialize the main config (global variable VL3DCFG).
     The main config defines the default values for many components in the
@@ -27,19 +27,20 @@ def main_config_init():
     mechanics of the framework (e.g., what ratio of system memory must be
     occupied for the automatic mem-to-file proxy to be triggered).
 
+    :param rootdir: Path to the directory where the vl3d.py script is located.
+    :type rootdir: str
     :return: Nothing.
     """
-    dirpath = os.path.dirname(sys.argv[0])
     # Load IO config
-    main_config_subdict_init(dirpath, 'config/io.yml', 'IO')
+    main_config_subdict_init(rootdir, 'config/io.yml', 'IO')
     # Load evaluator/evaluation config
-    main_config_subdict_init(dirpath, 'config/eval.yml', 'EVAL')
+    main_config_subdict_init(rootdir, 'config/eval.yml', 'EVAL')
     # Load data mining config
-    main_config_subdict_init(dirpath, 'config/mining.yml', 'MINING')
+    main_config_subdict_init(rootdir, 'config/mining.yml', 'MINING')
     # Load model config
-    main_config_subdict_init(dirpath, 'config/model.yml', 'MODEL')
+    main_config_subdict_init(rootdir, 'config/model.yml', 'MODEL')
     # Load test config
-    main_config_subdict_init(dirpath, 'config/test.yml', 'TEST')
+    main_config_subdict_init(rootdir, 'config/test.yml', 'TEST')
     # Report successful initialization
     LOGGING.LOGGER.debug('VL3DCFG was successfully loaded!')
 

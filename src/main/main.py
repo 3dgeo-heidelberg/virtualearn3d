@@ -17,14 +17,17 @@ import time
 
 # ---   MAIN   --- #
 # ---------------- #
-def main():
+def main(rootdir=''):
     """
     The main entry point that governs the main branch that must be called.
+
+    :param rootdir: Path to the directory where the vl3d.py script is located.
+    :type rootdir: path
     """
     # Configure logging
-    LOGGING.main_logger_init()
+    LOGGING.main_logger_init(rootdir=rootdir)
     # Load global config
-    main_config.main_config_init()
+    main_config.main_config_init(rootdir=rootdir)
     # Parse input arguments
     main_type, main_subtype = ArgsParser.parse_main_type(sys.argv)
     # Redirect through corresponding main branch
@@ -41,7 +44,7 @@ def main():
 
 # ---  MAIN VL3D  --- #
 # ------------------- #
-def main_vl3d(subtype):
+def main_vl3d(subtype, rootdir=''):
     """
     Execute the logic of the virtualearn3d application covering the entire
     training loop and the application of a trained model.

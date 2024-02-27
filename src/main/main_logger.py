@@ -14,15 +14,16 @@ import os
 LOGGER: Union[logging.Logger, None] = None
 
 
-def main_logger_init():
+def main_logger_init(rootdir=''):
     """
     Initialize the main logger (global variable LOGGER).
 
+    :param rootdir: Path to the directory where the vl3d.py script is located.
+    :type rootdir: str
     :return: Nothing.
     """
     global LOGGER
-    dirpath = os.path.dirname(sys.argv[0])
-    with open(os.path.join(dirpath, "config/logging.yml"), "r") as file:
+    with open(os.path.join(rootdir, "config/logging.yml"), "r") as file:
         yml = yaml.safe_load(file)
         logging.config.dictConfig(yml)
         LOGGER = logging.getLogger("logger_vl3d")
