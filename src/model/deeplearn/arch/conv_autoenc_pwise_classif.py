@@ -509,7 +509,7 @@ class ConvAutoencPwiseClassif(Architecture):
             x = FeaturesUpsamplingLayer(
                 filter=self.upsampling_filter,
                 name=f'UP_d{reverse_d+2}'
-            )([Xs[reverse_d], Xs[reverse_d-1], x, self.NUs[reverse_d]])
+            )([Xs[reverse_d+1], Xs[reverse_d], x, self.NUs[reverse_d]])
             x = tf.keras.layers.Concatenate(
                 name=f'CONCAT_d{reverse_d+1}'
             )([x, skip_link])

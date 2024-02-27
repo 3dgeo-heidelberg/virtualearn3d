@@ -336,7 +336,7 @@ class SimpleDLModelHandler(DLModelHandler):
             )
         # Compile
         self.compiled.compile(
-            #run_eagerly=True,  # Uncomment for better debugging (but slower)
+            run_eagerly=True,  # Uncomment for better debugging (but slower)
             **comp_args
         )
         return self

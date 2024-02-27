@@ -33,6 +33,10 @@ class DictUtils:
         :param defaults: The dictionary with the default values.
         :return: The updated input dictionary `dict`.
         """
+        # Return dict directly when no defaults are given
+        if defaults is None:
+            return dict
+        # Set any missing default
         for k, v in defaults.items():
             dict.setdefault(k, v)
         return dict

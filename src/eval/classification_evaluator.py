@@ -67,6 +67,7 @@ class ClassificationEvaluator(Evaluator):
         # Initialize
         kwargs = {
             'class_names': spec.get('class_names', None),
+            'ignore_classes': spec.get('ignore_classes', None),
             'metrics': spec.get('metrics', None),
             'class_metrics': spec.get('class_metrics', None),
             'report_path': spec.get('report_path', None),
@@ -104,6 +105,7 @@ class ClassificationEvaluator(Evaluator):
         self.metrics = kwargs.get('metrics', None)
         self.class_metrics = kwargs.get('class_metrics', None)
         self.class_names = kwargs.get('class_names', None)
+        self.ignore_classes = kwargs.get('ignore_classes', None)  # TODO Rethink : Doc
         self.metricf = None
         if self.metrics is not None:
             self.metricf = ClassificationEvaluator.metrics_from_names(
@@ -153,12 +155,27 @@ class ClassificationEvaluator(Evaluator):
         # Determine classes (names and numbers)
         if self.class_names is None:  # Automatically determine class_names
             class_nums = np.unique(np.concatenate([yhat, y]))
-            self.class_names = [f'C{i}' for i in class_nums]
+            class_names = [f'C{i}' for i in class_nums]
         else:  # Determine class_nums from given class_names
             class_nums = np.array(
                 [i for i in range(len(self.class_names))],
                 dtype=int
             )
+            class_names = self.class_names
+        if self.ignore_classes is not None:
+            ignore_classes_indices = \
+                ClassificationEvaluator.get_indices_from_names(
+                    class_names, self.ignore_classes
+                )
+            # TODO Rethink : Remove code below iff not necessary
+            #class_names = [
+            #    name for name in class_names if name not in self.ignore_classes
+            #]
+            ignore_mask = ClassificationEvaluator.find_ignore_mask(
+                y, ignore_classes_indices
+            )
+            y = ClassificationEvaluator.remove_indices(y, ignore_mask)
+            yhat = ClassificationEvaluator.remove_indices(yhat, ignore_mask)
         # Evaluate : class distribution
         yhat_count, yhat_bin = np.histogram(
             yhat,
@@ -177,7 +194,7 @@ class ClassificationEvaluator(Evaluator):
         class_scores = np.array([  # [i][j] is metric i on class j
             [
                 self.class_metricf[i](y, yhat, j)
-                for j in range(len(self.class_names))
+                for j in range(len(class_names))
             ]
             for i in range(len(self.class_metricf))
         ])
@@ -189,7 +206,7 @@ class ClassificationEvaluator(Evaluator):
         )
         # Return
         return ClassificationEvaluation(
-            class_names=self.class_names,
+            class_names=class_names,
             yhat_count=yhat_count,
             y_count=y_count,
             conf_mat=conf_mat,
@@ -384,3 +401,56 @@ class ClassificationEvaluator(Evaluator):
                 )
             )
         return metrics
+
+    @staticmethod
+    def get_indices_from_names(all_names, target_names):
+        """
+        Find the indices of the target names with respect to all names.
+
+        :param all_names: The list of all names.
+        :type all_names: list
+        :param target_names: The list of target names.
+        :type target_names: list
+        :return: The indices of `target_names` in the `all_names` list
+        :rtype: :class:`np.ndarray` of int
+        """
+        indices = []
+        for target_name in target_names:
+            for idx, name in enumerate(all_names):
+                if target_name == name:
+                    indices.append(idx)
+                    break
+        return np.array(indices, dtype=int)
+
+    @staticmethod
+    def find_ignore_mask(y, indices):
+        """
+        Find the boolean ignore mask (True to ignore, False otherwise).
+
+        For any point whose class (given by `y`) matches any target index
+        (given by `indices`) a true must be stored in the corresponding
+        element of the boolean mask.
+
+        :param y: A vector of point-wise classes.
+        :type y: :class:`np.ndarray`
+        :param indices: The class indices to search for.
+        :type indices: :class:`np.ndarray`
+        :return: The boolean mask specifying what points must be ignored.
+        :rtype: :class:`np.ndarray` of bool
+        """
+        mask = np.zeros(y.shape, dtype=bool)
+        for index in indices:
+            mask = mask + (y == index)
+        return mask
+
+    @staticmethod
+    def remove_indices(y, mask):
+        """
+        Preserve only those points for which the boolean mask is False (True
+        means it must be ignored).
+
+        :param y: The points to be filtered by the mask.
+        :param mask: The mask defining the removal filter.
+        :return: The input points without the ignored ones.
+        """
+        return y[~mask]
