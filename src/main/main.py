@@ -1,6 +1,7 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 import src.main.main_logger as LOGGING
+import src.main.main_config as main_config
 from src.main.main_args import ArgsParser
 from src.inout.json_io import JsonIO
 from src.main.main_mine import MainMine
@@ -22,6 +23,8 @@ def main():
     """
     # Configure logging
     LOGGING.main_logger_init()
+    # Load global config
+    main_config.main_config_init()
     # Parse input arguments
     main_type, main_subtype = ArgsParser.parse_main_type(sys.argv)
     # Redirect through corresponding main branch
@@ -82,10 +85,18 @@ def main_test():
         success = MainTest.main()
         end = time.perf_counter()
         LOGGING.LOGGER.info(f'Tests ran in {end-start:.3f} seconds.')
-        LOGGING.LOGGER.info(
-            'All tests passed successfully    :)' if success else
-            'Tests were NOT passed successfully    :('
-        )
+        if success:
+            LOGGING.LOGGER.info(
+                '\033[1m\033[92m'
+                'Tests passed!  :)'
+                '\033[0m'
+            )
+        else:
+            LOGGING.LOGGER.error(
+                '\033[1m\033[91m'
+                'Tests not passed!  :('
+                '\033[0m'
+            )
         return 0 if success else 3
     except Exception as ex:
         LOGGING.LOGGER.error('Failed to run tests!')

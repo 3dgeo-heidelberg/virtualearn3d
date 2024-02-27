@@ -143,12 +143,9 @@ class ModelSerializationTest(VL3DTest):
         with tempfile.TemporaryDirectory() as tmpdir:
             # Serialize model
             tmpfile = os.path.join(tmpdir, 'rf')
-            print('WRITING MODEL ...')  # TODO Remove
             ModelIO.write(rf_original, tmpfile)
-            print('MODEL WRITTEN!')  # TODO Remove
             # Deserialize model
             rf_deserial = ModelIO.read(tmpfile)
-            print('MODEL READ!')  # TODO Remove
             # Validate deserialized model
             return self.validate_deserialized_model(
                 rf_original,

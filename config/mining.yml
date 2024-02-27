@@ -1,0 +1,16 @@
+---
+# Default configuration of height features miner
+HeightFeatsMiner:
+  support_chunk_size: 0
+  support_subchunk_size: 1
+  pwise_chunk_size: 0
+  neighborhood: 
+    type: "cylinder"
+    radius: 50.0
+    separation_factor: 0.7
+  fnames:
+    - floor_distancec
+  nthreads: -1
+
+# TODO Rethink : Add missing defaults for other miners
+...

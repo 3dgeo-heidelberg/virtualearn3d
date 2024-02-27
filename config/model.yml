@@ -1,0 +1,9 @@
+---
+# Default configuration of random forest for point-wise classification
+RandomForestClassificationModel:
+  importance_report_permutation: true
+  decision_plot_trees: 0
+  decision_plot_max_depth: 5
+
+# TODO Rethink : Add missing defaults for other models
+...

@@ -1,0 +1,10 @@
+---
+# Default configuration of raster-grid evaluator
+RasterGridEvaluator:
+  grid_iter_step: 1024
+  reverse_rows: true
+  radius_expr: "l"
+  nthreads: 1
+  
+# TODO Rethink : Add missing defaults for other evaluators
+...
