@@ -139,7 +139,7 @@ class ClassificationUncertaintyEvaluator(Evaluator):
         )
         self.include_clusters = kwargs.get('include_clusters', False)
         self.weight_by_predictions = kwargs.get('weight_by_predictions', False)
-        self.num_clusters = kwargs.get('num_clusters', False)
+        self.num_clusters = kwargs.get('num_clusters', 8)
         self.clustering_max_iters = int(
             kwargs.get('clustering_max_iters', 128)
         )
@@ -283,17 +283,9 @@ class ClassificationUncertaintyEvaluator(Evaluator):
                 ConvAutoencPwiseClassifModel
             )
         ):
-            X = pcloud.get_coordinates_matrix()
-            if hasattr(model, "model") and isinstance(
-                model.model, DLModelHandler
-            ):
-                arch = model.model.arch
-                if (
-                    hasattr(arch, 'fnames') and
-                    arch.fnames is not None and
-                    len(arch.fnames) > 0
-                ):
-                    X = [X, pcloud.get_features_matrix(arch.fnames)]
+            # TODO Rethink : New logic inside this if solve issue with
+            # uncertainties being incorrectly calculated for DL models with F
+            X = model.get_input_from_pcloud(pcloud)
         else:
             X = pcloud.get_features_matrix(fnames=model.fnames)
         # Obtain predictions and probabilities

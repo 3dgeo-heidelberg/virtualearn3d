@@ -84,6 +84,10 @@ quick visualization.
     * ``"F1"`` F1 score (harmonic mean of precision and recall).
     * ``"IoU"`` Intersection over union (also known as Jaccard index).
 
+-- ``ignore_classes``
+    Optional list of classes to be ignored when computing the evaluation
+    metrics. Any point whose label matches a class in this list will be
+    excluded.
 
 -- ``report_path``
     Path to write the evaluation of the classification to a text file.

@@ -47,9 +47,14 @@ class ClassificationEvaluator(Evaluator):
     :ivar class_distribution_report_path: The path to write the class
         distribution report.
     :vartype class_distribution_report_path: str
-    :ivar class_distribution_plot_path: the path to write the plot representing
+    :ivar class_distribution_plot_path: The path to write the plot representing
         the class distribution.
     :vartype class_distribution_plot_path: str
+    :ivar ignore_classes: The list of classes that must be ignored when
+        computing the evaluations. In other words, those points that are
+        labeled (not predicted) as one of the ignored classes will not be
+        considered when calculating the evaluation metrics.
+    :vartype ignore_classes: list of str
     """
 
     # ---  SPECIFICATION ARGUMENTS  --- #
@@ -105,7 +110,7 @@ class ClassificationEvaluator(Evaluator):
         self.metrics = kwargs.get('metrics', None)
         self.class_metrics = kwargs.get('class_metrics', None)
         self.class_names = kwargs.get('class_names', None)
-        self.ignore_classes = kwargs.get('ignore_classes', None)  # TODO Rethink : Doc
+        self.ignore_classes = kwargs.get('ignore_classes', None)
         self.metricf = None
         if self.metrics is not None:
             self.metricf = ClassificationEvaluator.metrics_from_names(

@@ -25,7 +25,7 @@ ClassificationUncertaintyEvaluator:
   include_weighted_entropy: true
   include_clusters: false
   weight_by_predictions: false
-  num_clusters: false
+  num_clusters: 8
   clustering_max_iters: 128
   clustering_batch_size: 4096
   clustering_reduce_function: "max"
