@@ -6,6 +6,7 @@ from src.inout.geotiff_io import GeoTiffIO
 from src.utils.dict_utils import DictUtils
 from src.utils.str_utils import StrUtils
 import src.main.main_logger as LOGGING
+from src.main.main_config import VL3DCFG
 from scipy.spatial import KDTree as KDT
 import joblib
 import numpy as np
@@ -89,6 +90,11 @@ class RasterGridEvaluator(Evaluator):
         # Call parent''s init
         kwargs['problem_name'] = 'RASTER_GRID'
         super().__init__(**kwargs)
+        # Set defaults from VL3DCFG
+        kwargs = DictUtils.add_defaults(
+            kwargs,
+            VL3DCFG['EVAL']['RasterGridEvaluator']
+        )
         # Assign RasterGridEvaluator attributes
         self.plot_path = kwargs.get('plot_path', None)
         self.grids = kwargs.get('grids', None)

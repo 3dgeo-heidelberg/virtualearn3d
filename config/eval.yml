@@ -1,0 +1,33 @@
+---
+# Default configuration of raster-grid evaluator
+RasterGridEvaluator:
+  grid_iter_step: 1024
+  reverse_rows: true
+  radius_expr: "sqrt(2)*l/2"
+  nthreads: 1
+  
+# Default configuration for random forest evaluator
+RandForestEvaluator:
+  num_decision_trees: 0
+  compute_permutation_importance: true
+  max_tree_depth: 5
+
+# Default configuration for k-fold evaluator
+KFoldEvaluator:
+  quantile_cuts:
+    - 0.25
+    - 0.5
+    - 0.75
+
+# Default configuration for classification uncertainty evaluator
+ClassificationUncertaintyEvaluator:
+  include_probabilities: true
+  include_weighted_entropy: true
+  include_clusters: false
+  weight_by_predictions: false
+  num_clusters: 8
+  clustering_max_iters: 128
+  clustering_batch_size: 4096
+  clustering_reduce_function: "max"
+  gaussian_kernel_points: 256
+...

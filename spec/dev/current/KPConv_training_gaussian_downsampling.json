@@ -72,7 +72,7 @@
 			},
 			"features_alignment": null,
 			"downsampling_filter": "gaussian",
-			"upsampling_filter": "gaussian",
+			"upsampling_filter": "mean",
 			"upsampling_bn": true,
 			"upsampling_momentum": 0.0,
 			"conv1d_kernel_initializer": "glorot_normal",

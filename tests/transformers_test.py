@@ -2,7 +2,9 @@ import pytest
 import numpy as np
 from src.utils.ftransf.pca_transformer import PCATransformer
 from src.main.main_logger import main_logger_init
+from src.main.main_config import main_config_init
 from src.utils.ftransf.standardizer import Standardizer
+import os
 
 features = [
     [
@@ -98,7 +100,8 @@ def _load_asset(asset):
 
 @pytest.fixture(scope="session", autouse=True)
 def execute_before_any_test():
-    main_logger_init()
+    main_logger_init(os.path.dirname(os.path.dirname(__file__)))
+    main_config_init(os.path.dirname(os.path.dirname(__file__)))
 
 
 class TestTransformers:

@@ -29,6 +29,14 @@ class MinmaxNormalizer(FeatureTransformer):
     .. math::
         x' = \dfrac{x - \min X}{\max X - \min X}
 
+    :ivar minmax: When given, it is expected to be a list of lists. Each i-th
+        element of the first list is a pair of two elements such that the
+        first one gives the min for the i-th feature and the second one gives
+        the max for the i-th feature.
+    :vartype minmax: list or None
+    :ivar frenames: When given, the normalized features will be stored in
+        the point cloud with these names.
+    :vartype frenames: (list of str) or None
     :ivar target_range: The (a, b) interval such that features will be
         normalized to be inside (a, b). By default, it is (0, 1).
     :vartype target_range: :class:`np.ndarray`
@@ -70,8 +78,8 @@ class MinmaxNormalizer(FeatureTransformer):
         # Call parent init
         super().__init__(**kwargs)
         # Assign attributes
-        self.minmax = kwargs.get('minmax', None)  # TODO Rethink : Doc
-        self.frenames = kwargs.get('frenames', None)  # TODO Rethink : Doc
+        self.minmax = kwargs.get('minmax', None)
+        self.frenames = kwargs.get('frenames', None)
         self.target_range = kwargs.get('target_range', np.array([0, 1]))
         self.clip = kwargs.get('clip', True)
         self.minmaxer = None  # By default, no normalizer model has been fit

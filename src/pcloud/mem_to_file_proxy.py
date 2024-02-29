@@ -1,6 +1,7 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.utils.sys_utils import SysUtils
+from src.main.main_config import VL3DCFG
 import joblib
 import tempfile
 import laspy
@@ -32,9 +33,13 @@ class MemToFileProxy:
     """
     # ---   INIT   --- #
     # ---------------- #
-    def __init__(self, mem_check_threshold=0.34):
+    def __init__(self, mem_check_threshold=None):
         # General attributes
-        self.mem_check_threshold = mem_check_threshold
+        if mem_check_threshold is None:
+            self.mem_check_threshold = \
+                VL3DCFG['IO']['MemToFileProxy']['mem_check_threshold']
+        else:
+            self.mem_check_threshold = mem_check_threshold
         # Cache-like attributes
         self.proxy_file = None
 

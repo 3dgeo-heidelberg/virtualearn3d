@@ -2,6 +2,7 @@
 # ------------------- #
 from src.mining.miner import Miner, MinerException
 from src.utils.dict_utils import DictUtils
+from src.main.main_config import VL3DCFG
 import jakteristics
 
 
@@ -71,6 +72,11 @@ class GeomFeatsMiner(Miner):
         """
         # Call parent init
         super().__init__(**kwargs)
+        # Set defaults from VL3DCFG
+        kwargs = DictUtils.add_defaults(
+            kwargs,
+            VL3DCFG['MINING']['GeomFeatsMiner']
+        )
         # Basic attributes of the GeomFeatsMiner
         self.radius = kwargs.get("radius", 0.3)
         self.fnames = kwargs.get("fnames", [
