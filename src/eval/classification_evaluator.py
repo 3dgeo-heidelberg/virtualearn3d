@@ -167,15 +167,12 @@ class ClassificationEvaluator(Evaluator):
                 dtype=int
             )
             class_names = self.class_names
+        # Ignore points for certain classes (if requested)
         if self.ignore_classes is not None:
             ignore_classes_indices = \
                 ClassificationEvaluator.get_indices_from_names(
                     class_names, self.ignore_classes
                 )
-            # TODO Rethink : Remove code below iff not necessary
-            #class_names = [
-            #    name for name in class_names if name not in self.ignore_classes
-            #]
             ignore_mask = ClassificationEvaluator.find_ignore_mask(
                 y, ignore_classes_indices
             )

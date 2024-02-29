@@ -1,7 +1,6 @@
 ---
 # ---  MACHINE LEARNING  --- #
 # -------------------------- #
-#
 # Default configuration of random forest for point-wise classification
 RandomForestClassificationModel:
   importance_report_permutation: true
@@ -13,6 +12,16 @@ RandomForestClassificationModel:
 
 # ---  DEEP LEARNING  --- #
 # ----------------------- #
+# Default configuration for simple handlers of deep learning models
+SimpleDLModelHandler:
+  # Run eagerly should only be activated for debugging purposes
+  run_eagerly: false
+  training_epochs: 100
+  batch_size: 16
+  checkpoint_monitor: "loss"
+  fit_verbose: "auto"
+  predict_verbose: "auto"
+
 # Default configuration of deep learning architectures
 Architecture:
   architecture_graph_args:

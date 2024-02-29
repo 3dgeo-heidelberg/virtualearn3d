@@ -66,8 +66,8 @@ class ConvAutoencPwiseClassifModel(ClassificationModel):
         if not 'fnames' in kwargs:
             if 'model_args' in kwargs and 'fnames' in kwargs['model_args']:
                 kwargs['fnames'] = kwargs['model_args']['fnames']
-            else:  # TODO Rethink : Better remove?
-                kwargs['fnames'] = ['ones']  # Avoid None fnames exception for ConvAutoenc"""
+            else:
+                kwargs['fnames'] = ['ones']  # Avoid None fnames exception for ConvAutoenc
         super().__init__(**kwargs)
         # Basic attributes of the ConvAutoencPwiseClassifModel
         self.model = None  # By default, internal model is not instantiated

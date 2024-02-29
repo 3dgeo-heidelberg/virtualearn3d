@@ -1,6 +1,7 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.eval.evaluator import Evaluator, EvaluatorException
+from src.eval.classification_evaluator import ClassificationEvaluator
 from src.eval.classification_uncertainty_evaluation import \
     ClassificationUncertaintyEvaluation
 from src.model.classification_model import ClassificationModel
@@ -10,7 +11,6 @@ from src.model.deeplearn.rbf_net_pwise_classif_model import \
     RBFNetPwiseClassifModel
 from src.model.deeplearn.conv_autoenc_pwise_classif_model import \
     ConvAutoencPwiseClassifModel
-from src.model.deeplearn.handle.dl_model_handler import DLModelHandler
 import src.main.main_logger as LOGGING
 from src.utils.dict_utils import DictUtils
 from src.main.main_config import VL3DCFG
@@ -71,6 +71,11 @@ class ClassificationUncertaintyEvaluator(Evaluator):
     :ivar plot_path: The generated plots will be stored at the directory
         pointed by the plot path.
     :vartype plot_path: str
+    :ivar ignore_classes: The list of classes that must be ignored when
+        computing the evaluations. In other words, those points that are
+        labeled (not predicted) as one of the ignored classes will not be
+        considered when calculating the evaluation metrics.
+    :vartype ignore_classes: list of str
     """
 
     # ---  SPECIFICATION ARGUMENTS  --- #
@@ -88,6 +93,7 @@ class ClassificationUncertaintyEvaluator(Evaluator):
         # Initialize
         kwargs = {
             'class_names': spec.get('class_names', None),
+            'ignore_classes': spec.get('ignore_classes', None),
             'include_probabilities': spec.get('include_probabilities', None),
             'include_weighted_entropy': spec.get(
                 'include_weighted_entropy', None
@@ -133,6 +139,7 @@ class ClassificationUncertaintyEvaluator(Evaluator):
         )
         # Assign ClassificationUncertaintyEvaluator attributes
         self.class_names = kwargs.get('class_names', None)
+        self.ignore_classes = kwargs.get('ignore_classes', None)
         self.include_probabilities = kwargs.get('include_probabilities', True)
         self.include_weighted_entropy = kwargs.get(
             'include_weighted_entropy', True
@@ -283,8 +290,6 @@ class ClassificationUncertaintyEvaluator(Evaluator):
                 ConvAutoencPwiseClassifModel
             )
         ):
-            # TODO Rethink : New logic inside this if solve issue with
-            # uncertainties being incorrectly calculated for DL models with F
             X = model.get_input_from_pcloud(pcloud)
         else:
             X = pcloud.get_features_matrix(fnames=model.fnames)
@@ -324,6 +329,20 @@ class ClassificationUncertaintyEvaluator(Evaluator):
                     'cluster-based uncertainty because no features were '
                     'available.'
                 )
+        # Ignore points for certain classes (if requested)
+        if self.ignore_classes is not None and y is not None:
+            ignore_classes_indices = \
+                ClassificationEvaluator.get_indices_from_names(
+                    self.class_names, self.ignore_classes
+                )
+            ignore_mask = ClassificationEvaluator.find_ignore_mask(
+                y, ignore_classes_indices
+            )
+            y = ClassificationEvaluator.remove_indices(y, ignore_mask)
+            yhat = ClassificationEvaluator.remove_indices(yhat, ignore_mask)
+            Zhat = ClassificationEvaluator.remove_indices(Zhat, ignore_mask)
+            F = ClassificationEvaluator.remove_indices(F, ignore_mask)
+            X = ClassificationEvaluator.remove_indices(X, ignore_mask)
         # Obtain evaluation
         pcloud.proxy_dump()  # Save memory from point cloud data if necessary
         ev = self.eval(Zhat, X=X, y=y, yhat=yhat, F=F)

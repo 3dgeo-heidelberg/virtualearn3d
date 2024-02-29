@@ -17,6 +17,7 @@ from src.plot.training_history_plot import TrainingHistoryPlot
 from src.utils.dict_utils import DictUtils
 from src.inout.io_utils import IOUtils
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
+from src.main.main_config import VL3DCFG
 import src.main.main_logger as LOGGING
 import tensorflow as tf
 from tensorflow.python.framework.errors_impl import ResourceExhaustedError as \
@@ -86,6 +87,11 @@ class SimpleDLModelHandler(DLModelHandler):
         """
         # Call parent's init
         super().__init__(arch, **kwargs)
+        # Set defaults from VL3DCFG
+        kwargs = DictUtils.add_defaults(
+            kwargs,
+            VL3DCFG['MODEL']['SimpleDLModelHandler']
+        )
         # Assign member attributes
         self.summary_report_path = kwargs.get('summary_report_path', None)
         self.training_history_dir = kwargs.get('training_history_dir', None)
@@ -336,7 +342,7 @@ class SimpleDLModelHandler(DLModelHandler):
             )
         # Compile
         self.compiled.compile(
-            #run_eagerly=True,  # Uncomment for better debugging (but slower)
+            run_eagerly=VL3DCFG['MODEL']['SimpleDLModelHandler']['run_eagerly'],
             **comp_args
         )
         return self
@@ -440,7 +446,6 @@ class SimpleDLModelHandler(DLModelHandler):
                 **self.early_stopping
             ))
         return callbacks
-
 
     # ---  UTIL METHODS  --- #
     # ---------------------- #

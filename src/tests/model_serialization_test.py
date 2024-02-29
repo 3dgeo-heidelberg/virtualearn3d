@@ -721,13 +721,11 @@ class ModelSerializationTest(VL3DTest):
         if not ModelSerializationTest.recursive_object_validation(
             original, deserial
         ):
-            print('FAILED RECURSIVE VALIDATION')  # TODO Remove
             return False
         # Validate the output of given models
         if not ModelSerializationTest.model_output_validation(
             original_y, deserial_y
         ):
-            print('FAILED OUTPUT VALIDATION')  # TODO Remove
             return False
         # All validations were successfully passed
         return True
