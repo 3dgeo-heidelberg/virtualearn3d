@@ -4,6 +4,7 @@ from src.mining.miner import Miner, MinerException
 from src.model.deeplearn.dlrun.grid_subsampling_pre_processor import \
     GridSubsamplingPreProcessor
 from src.utils.dict_utils import DictUtils
+from src.main.main_config import VL3DCFG
 import src.main.main_logger as LOGGING
 from scipy.spatial import KDTree as KDT
 import scipy
@@ -107,6 +108,11 @@ class HeightFeatsMiner(Miner):
         """
         # Call parent's init
         super().__init__(**kwargs)
+        # Set defaults from VL3DCFG
+        kwargs = DictUtils.add_defaults(
+            kwargs,
+            VL3DCFG['MINING']['HeightFeatsMiner']
+        )
         # Basic attributes of the HeightFeatsMiner
         self.support_chunk_size = kwargs.get('support_chunk_size', 0)
         self.support_subchunk_size = kwargs.get('support_subchunk_size', 1)

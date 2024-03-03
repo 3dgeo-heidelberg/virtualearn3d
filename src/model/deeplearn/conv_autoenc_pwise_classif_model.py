@@ -67,7 +67,7 @@ class ConvAutoencPwiseClassifModel(ClassificationModel):
             if 'model_args' in kwargs and 'fnames' in kwargs['model_args']:
                 kwargs['fnames'] = kwargs['model_args']['fnames']
             else:
-                kwargs['fnames'] = []  # Avoid None fnames exception for ConvAutoenc
+                kwargs['fnames'] = ['ones']  # Avoid None fnames exception for ConvAutoenc
         super().__init__(**kwargs)
         # Basic attributes of the ConvAutoencPwiseClassifModel
         self.model = None  # By default, internal model is not instantiated
@@ -150,28 +150,39 @@ class ConvAutoencPwiseClassifModel(ClassificationModel):
             (fnames= available.
         :type F: :class:`np.ndarray`
         """
-        if X is None:
-            X = pcloud.get_coordinates_matrix()
-        if F is None and self.fnames is not None:
-            F = pcloud.get_features_matrix(self.fnames)
-        return self._predict(X, F=F)
+        P = self.get_input_from_pcloud(pcloud)
+        if X is not None:
+            P[0] = pcloud.get_coordinates_matrix()
+        if F is not None:
+            if len(P) > 1:
+                P[1] = F
+            else:
+                P.append(F)
+        return self._predict(P[0], F=P[1])
 
     def get_input_from_pcloud(self, pcloud):
         """
         See :meth:`model.Model.get_input_from_pcloud`.
         """
-        # No features
+        X = pcloud.get_coordinates_matrix()
+        # Return without features
         if self.fnames is None:
-            X = pcloud.get_coordinates_matrix()
             return [
                 X,
                 np.ones((X.shape[0], 1))  # ConvAutoenc always needs features
             ]
-        # Features
-        return [
-            pcloud.get_coordinates_matrix(),
-            pcloud.get_features_matrix(self.fnames)
-        ]
+        # Handle ones as features
+        if 'ones' in self.fnames:
+            self.fnames.remove('ones')
+            F = np.hstack([
+                np.ones((X.shape[0], 1)),
+                pcloud.get_features_matrix(self.fnames)
+            ]) if len(self.fnames) > 0 else np.ones((X.shape[0], 1))
+            self.fnames.append('ones')
+        else:  # Handle features without ones
+            F = pcloud.get_features_matrix(self.fnames)
+        # Return with features
+        return [X, F]
 
     # ---   TRAINING METHODS   --- #
     # ---------------------------- #

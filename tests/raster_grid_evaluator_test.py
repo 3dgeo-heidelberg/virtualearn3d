@@ -2,7 +2,9 @@ import pytest
 import numpy as np
 from src.eval.raster_grid_evaluator import RasterGridEvaluator
 from src.main.main_logger import main_logger_init
+from src.main.main_config import main_config_init
 from src.pcloud.point_cloud_factory_facade import PointCloudFactoryFacade
+import os
 
 # ---   JSON SPEC   --- #
 # --------------------- #
@@ -44,7 +46,8 @@ def _load_asset(asset):
 # --------------------------- #
 @pytest.fixture(scope="session", autouse=True)
 def execute_before_any_test():
-    main_logger_init()
+    main_logger_init(os.path.dirname(os.path.dirname(__file__)))
+    main_config_init(os.path.dirname(os.path.dirname(__file__)))
 
 
 # ---   TEST CLASS   --- #

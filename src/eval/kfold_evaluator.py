@@ -2,6 +2,8 @@
 # ------------------- #
 from src.eval.evaluator import Evaluator, EvaluatorException
 from src.eval.kfold_evaluation import KFoldEvaluation
+from src.utils.dict_utils import DictUtils
+from src.main.main_config import VL3DCFG
 import numpy as np
 
 
@@ -28,6 +30,11 @@ class KFoldEvaluator(Evaluator):
         """
         # Call parent's init
         super().__init__(**kwargs)
+        # Set defaults from VL3DCFG
+        kwargs = DictUtils.add_defaults(
+            kwargs,
+            VL3DCFG['EVAL']['KFoldEvaluator']
+        )
         # Initialize attributes of KFoldEvaluator
         self.quantile_cuts = kwargs.get(
             'quantile_cuts',

@@ -1,0 +1,90 @@
+---
+# ---  MACHINE LEARNING  --- #
+# -------------------------- #
+# Default configuration of random forest for point-wise classification
+RandomForestClassificationModel:
+  importance_report_permutation: true
+  decision_plot_trees: 0
+  decision_plot_max_depth: 5
+
+
+
+
+# ---  DEEP LEARNING  --- #
+# ----------------------- #
+# Default configuration for simple handlers of deep learning models
+SimpleDLModelHandler:
+  # Run eagerly should only be activated for debugging purposes
+  run_eagerly: false
+  training_epochs: 100
+  batch_size: 16
+  checkpoint_monitor: "loss"
+  fit_verbose: "auto"
+  predict_verbose: "auto"
+
+# Default configuration of deep learning architectures
+Architecture:
+  architecture_graph_args:
+    show_shapes: true
+    show_dtype: true
+    show_layer_names: true
+    rankdir: "TB"
+    expand_nested: true
+    dpi: 300
+    show_layer_activations: true
+
+# Default configuration of PointNet-like architectures
+PointNet:
+  kernel_initializer: "glorot_normal"
+  kernel_initializer_F: "glorot_normal"
+  skip_link_features_X: false
+  include_pretransf_feats_X: false
+  include_transf_feats_X: true
+  include_postransf_feats_X: false
+  include_global_feats_X: true
+  skip_link_features_F: false
+  include_pretransf_feats_F: false
+  include_transf_feats_F: true
+  include_postransf_feats_F: false
+  include_global_feats_F: true
+
+# Default configuration of PointNet architectures for point-wise classification
+PointNetPwiseClassif:
+  num_pwise_feats: 128
+  final_shared_mlps:
+    - 512
+    - 256
+    - 128
+
+# Default configuration of Radial Basis Function architectures
+RBFNet:
+  tnet_kernel_initializer: "glorot_normal"
+  enhanced_dim: 
+    - 16
+    - 128
+    - 1024
+  enhancement_kernel_initializer: "glorot_normal"
+
+# Default configuration of RBF architectures for point-wise classification
+RBFNetPwiseClassif:
+  after_features_type: "MLP"
+  after_deatures_dim:
+    - 512
+    - 128
+  after_features_kernel_initializer: "glorot_normal"
+  include_prepooling_features: true
+  include_global_features: true
+  output_kernel_initializer: "glorot_normal"
+  skip_link_features: true
+  transform_input_features: true
+
+# Default configuration of convolutional autoencoders for point-wise classif.
+ConvAutoencPwiseClassif:
+  downsampling_filter: "mean"
+  upsampling_filter: "mean"
+  upsampling_bn: true
+  upsampling_bn_momentum: 0.0
+  conv1d_kernel_initializer: "glorot_normal"
+  output_kernel_initializer: "glorot_normal"
+
+...

@@ -13,8 +13,14 @@ from src.model.deeplearn.layer.features_upsampling_layer import \
     FeaturesUpsamplingLayer
 from src.model.deeplearn.layer.grouping_point_net_layer import \
     GroupingPointNetLayer
+from src.model.deeplearn.layer.kpconv_layer import KPConvLayer
+from src.model.deeplearn.layer.strided_kpconv_layer import StridedKPConvLayer
 from src.utils.dl_utils import DLUtils
+from src.utils.dict_utils import DictUtils
+from src.main.main_config import VL3DCFG
 import tensorflow as tf
+import numpy as np
+import os
 
 
 # ---   CLASS   --- #
@@ -39,6 +45,11 @@ class ConvAutoencPwiseClassif(Architecture):
         if kwargs.get('arch_name', None) is None:
             kwargs['arch_name'] = 'ConvAutoenc_PointWise_Classification'
         super().__init__(**kwargs)
+        # Set defaults from VL3DCFG
+        kwargs = DictUtils.add_defaults(
+            kwargs,
+            VL3DCFG['MODEL']['ConvAutoencPwiseClassif']
+        )
         # Assign attributes
         self.fnames = kwargs.get('fnames', None)
         if self.fnames is None:
@@ -62,17 +73,17 @@ class ConvAutoencPwiseClassif(Architecture):
             'downsampling_filter', 'mean'
         )
         self.upsampling_filter = kwargs.get(
-            'upsampling_strategy', 'mean'
+            'upsampling_filter', 'mean'
         )
         self.upsampling_bn = kwargs.get('upsampling_bn', True)
         self.upsampling_bn_momentum = kwargs.get(
             'upsampling_bn_momentum', 0.0
         )
         self.conv1d_kernel_initializer = kwargs.get(
-            'kernel_initializer', 'glorot_normal'
+            'conv1d_kernel_initializer', 'glorot_normal'
         )
         self.output_kernel_initializer = kwargs.get(
-            'kernel_initializer', 'glorot_normal'
+            'output_kernel_initializer', 'glorot_normal'
         )
         self.max_depth = len(self.num_downsampling_neighbors)
         self.binary_crossentropy = False
@@ -87,6 +98,8 @@ class ConvAutoencPwiseClassif(Architecture):
         self.skip_links = None
         self.last_downsampling_tensor = None
         self.last_upsampling_tensor = None
+        self.kpconv_layers = None
+        self.skpconv_layers = None
 
     # ---   ARCHITECTURE METHODS   --- #
     # -------------------------------- #
@@ -219,7 +232,7 @@ class ConvAutoencPwiseClassif(Architecture):
         :param x: The input layer for the first hidden layer.
         :type x: :class:`tf.Tensor`
         :return: The last hidden layer.
-        :rtype: :class.`.tf.Tensor`
+        :rtype: :class.`tf.Tensor`
         """
         # Downsampling hierarchy
         self.build_downsampling_hierarchy()
@@ -372,10 +385,113 @@ class ConvAutoencPwiseClassif(Architecture):
         """
         Build the downsampling hierarchy based on the KPConv operator.
         """
-        raise DeepLearningException(
-            'ConvAutoencPwiseClassif does not support KPConv-based '
-            'downsampling hierarchies YET.'
-        )
+        self.skip_links = []
+        i = 0
+        ops_per_depth = self.feature_extraction['operations_per_depth']
+        x = self.F if self.aligned_F is None else self.aligned_F
+        Xs = self.Xs if self.aligned_Xs is None else self.aligned_Xs
+        self.kpconv_layers, self.skpconv_layers = [], []
+        for _ in range(ops_per_depth[0]):
+            kpcl = KPConvLayer(
+                sigma=self.feature_extraction['sigma'][i],
+                kernel_radius=self.feature_extraction['kernel_radius'][i],
+                num_kernel_points=self.feature_extraction['num_kernel_points'][i],
+                deformable=self.feature_extraction['deformable'][i],
+                Dout=self.feature_extraction['feature_space_dims'][i],
+                W_initializer=self.feature_extraction['W_initializer'][i],
+                W_regularizer=self.feature_extraction['W_regularizer'][i],
+                W_constraint=self.feature_extraction['W_constraint'][i],
+                name=f'KPConv_d1_{i+1}'
+            )
+            self.kpconv_layers.append(kpcl)
+            x = kpcl([Xs[0], x, self.Ns[0]])
+            if self.feature_extraction['bn']:
+                x = tf.keras.layers.BatchNormalization(
+                    momentum=self.feature_extraction['bn_momentum'],
+                    name=f'KPConv_d1_{i+1}_BN'
+                )(x)
+            if self.feature_extraction['activate']:
+                x = tf.keras.layers.ReLU(
+                    name=f'KPConv_d1_{i+1}_ReLU'
+                )(x)
+            i += 1
+        self.skip_links.append(x)
+        for d in range(self.max_depth-1):
+            x = self.build_kpconv_downsampling_layer(Xs, x, d, i)
+            if self.feature_extraction['bn']:
+                x = tf.keras.layers.BatchNormalization(
+                    momentum=self.feature_extraction['bn_momentum'],
+                    name=f'DOWN_d{d+2}_{i+1}_BN'
+                )(x)
+            if self.feature_extraction['activate']:
+                x = tf.keras.layers.ReLU(
+                    name=f'DOWN_d{d+2}_{i+1}_ReLU'
+                )(x)
+            for _ in range(ops_per_depth[d+1]):
+                kpcl = KPConvLayer(
+                    sigma=self.feature_extraction['sigma'][i],
+                    kernel_radius=self.feature_extraction['kernel_radius'][i],
+                    num_kernel_points=self.feature_extraction['num_kernel_points'][i],
+                    deformable=self.feature_extraction['deformable'][i],
+                    Dout=self.feature_extraction['feature_space_dims'][i],
+                    W_initializer=self.feature_extraction['W_initializer'][i],
+                    W_regularizer=self.feature_extraction['W_regularizer'][i],
+                    W_constraint=self.feature_extraction['W_constraint'][i],
+                    name=f'KPConv_d{d+2}_{i+1}'
+                )
+                self.kpconv_layers.append(kpcl)
+                x = kpcl([Xs[d+1], x, self.Ns[d+1]])
+                if self.feature_extraction['bn']:
+                    x = tf.keras.layers.BatchNormalization(
+                        momentum=self.feature_extraction['bn_momentum'],
+                        name=f'KPConv_d{d+2}_{i+1}_BN'
+                    )(x)
+                if self.feature_extraction['activate']:
+                    x = tf.keras.layers.ReLU(
+                        name=f'KPConv_d{d+2}_{i+1}_ReLU'
+                    )(x)
+                i += 1
+            self.skip_links.append(x)
+        self.last_downsampling_tensor = x
+
+    def build_kpconv_downsampling_layer(self, Xs, x, d, i):
+        """
+        Build a downsampling layer in the context of the KPConv model (i.e.,
+        support also :class:`.StridedKPConvLayer` apart from
+        :class:`.FeaturesDownsamplingLayer`.
+
+        :param Xs: The list of receptive field-wise structure spaces.
+        :type Xs: list
+        :param x: The input features for the downsampling layer.
+        :type x: :class:`tf.Tensor`
+        :param d: The model depth.
+        :type d: int
+        :param i: The index of the operation (because there might be different
+            number of operations per depth level).
+        :type i: int
+        :return: The downsampling layer.
+        :rtype: :class:`tf.Tensor`
+        """
+        downsampling_filter = self.downsampling_filter.lower()
+        if downsampling_filter == 'strided_kpconv':
+            skpcl = StridedKPConvLayer(
+                sigma=self.feature_extraction['sigma'][i],
+                kernel_radius=self.feature_extraction['kernel_radius'][i],
+                num_kernel_points=self.feature_extraction['num_kernel_points'][i],
+                deformable=self.feature_extraction['deformable'][i],
+                Dout=self.feature_extraction['feature_space_dims'][i],
+                W_initializer=self.feature_extraction['W_initializer'][i],
+                W_regularizer=self.feature_extraction['W_regularizer'][i],
+                W_constraint=self.feature_extraction['W_constraint'][i],
+                name=f'DOWN_SKPConv_d{d+2}_{i+1}'
+            )
+            self.skpconv_layers.append(skpcl)
+            return skpcl([Xs[d], Xs[d+1], x, self.NDs[d]])
+        else:
+            return FeaturesDownsamplingLayer(
+                filter=self.downsampling_filter,
+                name=f'DOWN_d{d+2}'
+            )([Xs[d], Xs[d+1], x, self.NDs[d]])
 
     def build_upsampling_hierarchy(self):
         """
@@ -393,7 +509,7 @@ class ConvAutoencPwiseClassif(Architecture):
             x = FeaturesUpsamplingLayer(
                 filter=self.upsampling_filter,
                 name=f'UP_d{reverse_d+2}'
-            )([Xs[reverse_d], Xs[reverse_d-1], x, self.NUs[reverse_d]])
+            )([Xs[reverse_d+1], Xs[reverse_d], x, self.NUs[reverse_d]])
             x = tf.keras.layers.Concatenate(
                 name=f'CONCAT_d{reverse_d+1}'
             )([x, skip_link])
@@ -468,3 +584,98 @@ class ConvAutoencPwiseClassif(Architecture):
         self.max_depth = state['max_depth']
         # Call parent's set state
         super().__setstate__(state)
+        # Track KPConv layers
+        self.kpconv_layers = [
+            layer
+            for layer in self.nn.layers
+            if type(layer) == KPConvLayer
+        ]
+        # Track SKPConv layers
+        self.skpconv_layers = [
+            layer
+            for layer in self.nn.layers
+            if type(layer) == StridedKPConvLayer
+        ]
+
+    # ---  FIT LOGIC CALLBACKS  --- #
+    # ----------------------------- #
+    def prefit_logic_callback(self, cache_map):
+        """
+        The callback implementing any necessary logic immediately before
+        fitting a ConvAutoencPwiseClassif model.
+
+        :param cache_map: The key-word dictionary containing variables that
+            are guaranteed to live at least during prefit, fit, and postfit.
+        :return: Nothing.
+        """
+        # Prefit logic for KPConv layer representation
+        if(
+            self.kpconv_layers is not None and
+            cache_map.get('kpconv_representation_dir', None) is not None
+        ):
+            cache_map['kpconv_Wpast'] = []
+            for i, kpconv_layer in enumerate(self.kpconv_layers):
+                kpconv_layer.export_representation(
+                    os.path.join(
+                        cache_map['kpconv_representation_dir'],
+                        f'INIT_{kpconv_layer.name}'
+                    ),
+                    out_prefix=cache_map['out_prefix'],
+                    Wpast=None
+                )
+                cache_map['kpconv_Wpast'].append(np.array(kpconv_layer.W))
+        # Prefit logic for Strided KPConv layer representation
+        if(
+            self.skpconv_layers is not None and
+            cache_map.get('skpconv_representation_dir', None) is not None
+        ):
+            cache_map['skpconv_Wpast'] = []
+            for i, skpconv_layer in enumerate(self.skpconv_layers):
+                skpconv_layer.export_representation(
+                    os.path.join(
+                        cache_map['skpconv_representation_dir'],
+                        f'INIT_{skpconv_layer.name}'
+                    ),
+                    out_prefix=cache_map['out_prefix'],
+                    Wpast=None
+                )
+                cache_map['skpconv_Wpast'].append(np.array(skpconv_layer.W))
+
+    def posfit_logic_callback(self, cache_map):
+        """
+        The callback implementing any necessary logic immediately after
+        fitting a ConvAutoencPwiseClassif model.
+
+        :param cache_map: The key-word dictionary containing variables that
+            are guaranteed to live at least during prefit, fit, and postfit.
+        :return: Nothing.
+        """
+        # Postfit logic for KPConv layer representation
+        if(
+            self.kpconv_layers is not None and
+            cache_map.get('kpconv_representation_dir')
+        ):
+            for i, kpconv_layer in enumerate(self.kpconv_layers):
+                kpconv_layer.export_representation(
+                    os.path.join(
+                        cache_map['kpconv_representation_dir'],
+                        f'TRAINED_{kpconv_layer.name}'
+                    ),
+                    out_prefix=cache_map['out_prefix'],
+                    Wpast=cache_map['kpconv_Wpast'][i]
+                )
+        # Postfit logic Strided KPConv layer representation
+        if(
+            self.skpconv_layers is not None and
+            cache_map.get('skpconv_representation_dir', None) is not None
+        ):
+            for i, skpconv_layer in enumerate(self.skpconv_layers):
+                skpconv_layer.export_representation(
+                    os.path.join(
+                        cache_map['skpconv_representation_dir'],
+                        f'TRAINED_{skpconv_layer.name}'
+                    ),
+                    out_prefix=cache_map['out_prefix'],
+                    Wpast=cache_map['skpconv_Wpast'][i]
+                )
+

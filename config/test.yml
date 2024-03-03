@@ -1,0 +1,25 @@
+---
+ErrorTestSuites:
+  Data mining:
+    - HSVFromRGBTest
+  Input/Output:
+    - LASInoutTest
+
+WarningTestSuites:
+  Deep learning:
+    - KerasTest 
+    - ReceptiveFieldTest
+    - HierarchicalReceptiveFieldTest
+    - FeaturesDownsamplingLayerTest
+    - FeaturesUpsamplingLayerTest
+    - GroupingPointNetLayerTest
+    - KPConvLayerTest
+    - StridedKPConvLayerTest
+    - FeaturesStructuringLayerTest
+    - RBFFeatExtractLayerTest
+    - RBFFeatProcessingLayerTest
+    - ModelSerializationTest
+  C++:
+    - VL3DPPBindingTest
+    - VL3DPPBackendTest
+...

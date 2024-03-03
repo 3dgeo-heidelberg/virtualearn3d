@@ -16,8 +16,12 @@ from src.model.deeplearn.layer.features_upsampling_layer import \
     FeaturesUpsamplingLayer
 from src.model.deeplearn.layer.grouping_point_net_layer import \
     GroupingPointNetLayer
+from src.model.deeplearn.layer.kpconv_layer import KPConvLayer
+from src.model.deeplearn.layer.strided_kpconv_layer import StridedKPConvLayer
 from src.inout.io_utils import IOUtils
 import src.main.main_logger as LOGGING
+from src.utils.dict_utils import DictUtils
+from src.main.main_config import VL3DCFG
 import tensorflow as tf
 import os
 
@@ -77,6 +81,11 @@ class Architecture:
         """
         # Call parent's init
         super().__init__()
+        # Set defaults from VL3DCFG
+        kwargs = DictUtils.add_defaults(
+            kwargs,
+            VL3DCFG['MODEL']['Architecture']
+        )
         # Assign architecture attributes
         self.pre_runnable = kwargs.get('pre_runnable', None)
         self.post_runnable = kwargs.get('post_runnable', None)
@@ -324,7 +333,9 @@ class Architecture:
                     'RBFFeatProcessingLayer': RBFFeatProcessingLayer,
                     'FeaturesDownsamplingLayer': FeaturesDownsamplingLayer,
                     'FeaturesUpsamplingLayer': FeaturesUpsamplingLayer,
-                    'GroupingPointNetLayer': GroupingPointNetLayer
+                    'GroupingPointNetLayer': GroupingPointNetLayer,
+                    'KPConvLayer': KPConvLayer,
+                    'StridedKPConvLayer': StridedKPConvLayer
 
                 },
                 compile=False

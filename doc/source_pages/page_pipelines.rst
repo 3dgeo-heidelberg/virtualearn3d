@@ -222,7 +222,10 @@ a Random Forest classifier, as shown in the JSON below:
           "out_pipeline": "*pipe/LeafWood_Training_RF.pipe",
           "include_writer": false,
           "include_imputer": true,
-          "include_miner": true
+          "include_feature_transformer": false,
+          "include_miner": true,
+          "include_class_transformer": false,
+          "ignore_predictions": false
         }
       ]
     }
@@ -395,7 +398,8 @@ The above JSON can be explained through its ordered components such that:
 
 #.  Export a predictive pipeline considering the trained random forest model
     and all the imputation, feature transform, and data mining components (but
-    not the writers).
+    not the writers). See
+    :ref:`arguments for predictive pipeline writers <Predictive pipeline writer args>`.
 
 The image below shows one of the plotted decision trees. It can be useful to
 understand what features are used to decide on the classes. For instance, the
@@ -536,6 +540,44 @@ pipeline from `/my/pipelines/leaf_wood.pipe` and then uses it to compute
 a leaf-wood segmentation on the input point cloud. Afterwards, the
 computed predictions are exported to a single-column text file representing
 the predicted labels `predictions.lbl`.
+
+
+.. _Predictive pipeline writer args:
+
+The arguments that can be specified through a JSON to build a
+:class:`.PredictivePipelineWriter` are detailed below:
+
+**Arguments**
+
+-- ``out_pipeline``
+    The output path where the serialized pipeline will be exported.
+
+-- ``include_writer``
+    Whether to include writers in the predictive pipeline.
+
+-- ``include_imputer``
+    Whether to include imputers in the predictive pipeline.
+
+-- ``include_feature_transformer``
+    Whether to include feature transformers in the predictive pipeline.
+
+-- ``include_miner``
+    Whether to include data miners in the predictive pipeline.
+
+-- ``include_class_transformer``
+    Whether to include class transformers in the predictive pipeline.
+
+-- ``ignore_predictions``
+    When set to ``true``, it means that the predictive pipeline must yield
+    predictions when called or it will be considered a failed call. When
+    set to ``false``, the predictive pipeline does not necessarily yield
+    predictions. Using ``false`` may be useful to generate data mining
+    pipelines with feature transforming operations and package them into
+    a predictive pipeline to be applied later on. For example, a
+    standardization model can be fit once to the original dataset and then
+    be applied with the same mean and standard deviation to different
+    point clouds of the same dataset.
+
 
 
 

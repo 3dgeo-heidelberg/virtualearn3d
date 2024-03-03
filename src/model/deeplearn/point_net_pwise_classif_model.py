@@ -140,6 +140,62 @@ class PointNetPwiseClassifModel(ClassificationModel):
                     'because it is not a DLModelHandler.'
                 )
             dlmodel.model.overwrite_pretrained_model(spec['model_args'])
+            # Update inner dictionaries (wrt model_args)
+            model_args = spec['model_args']
+            # Handle pre_processing inner dictionary update
+            PointNetPwiseClassifModel.update_pretrained_model_inner_dict(
+                model_args, dlmodel.model_args, 'pre_processing'
+            )
+            # Handle model_handling inner dictionary update
+            PointNetPwiseClassifModel.update_pretrained_model_inner_dict(
+                model_args, dlmodel.model_args, 'model_handling'
+            )
+            # Handle compilation_args inner dictionary update
+            PointNetPwiseClassifModel.update_pretrained_model_inner_dict(
+                model_args, dlmodel.model_args, 'compilation_args'
+            )
+            # Handle architecture_graph_args inner dictionary update
+            PointNetPwiseClassifModel.update_pretrained_model_inner_dict(
+                model_args, dlmodel.model_args, 'architecture_graph_args'
+            )
+
+    @staticmethod
+    def update_pretrained_model_inner_dict(
+        new_dict_container, target_dict_container, dict_name
+    ):
+        """
+        Assist the :meth:`PointNetPwiseClassifModel.update_pretrained_model`
+        method to update the inner dictionaries of a dlmodel. Typically,
+        the inner dictionaries that are children of `dlmodel.model_args`.
+
+        :param new_dict_container: The object containing the new version of
+            the dictionary.
+        :param target_dict_container: The object containing the target version
+            of the dictionary, i.e., the one that must be updated.
+        :param dict_name: The name of the dictionary to be updated.
+        :return: Nothing at all, but the target dictionary is updated inplace.
+        """
+        # Check that new inner dict exists
+        new_dict_container_keys = new_dict_container.keys()
+        if dict_name not in new_dict_container_keys:
+            return
+        new_dict = new_dict_container[dict_name]
+        # Check that target dictionary exists
+        target_dict = getattr(
+            target_dict_container,
+            dict_name,
+            target_dict_container.get(dict_name, None)
+        )
+        if target_dict is None:
+            return
+        target_dict_keys = target_dict.keys()
+        # Update target dict with new dict
+        for k, v in new_dict.items():
+            if k not in target_dict_keys:
+                continue  # Don't update targets with no previous entry
+            target_dict[k] = v  # Update with new val
+
+
 
     def update_paths(self):
         """

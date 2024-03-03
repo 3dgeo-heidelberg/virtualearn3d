@@ -5,6 +5,7 @@ from sklearn.ensemble import RandomForestClassifier
 from src.eval.rand_forest_evaluator import RandForestEvaluator
 import src.main.main_logger as LOGGING
 from src.utils.dict_utils import DictUtils
+from src.main.main_config import VL3DCFG
 import time
 
 
@@ -80,6 +81,11 @@ class RandomForestClassificationModel(ClassificationModel):
         """
         # Call parent init
         super().__init__(**kwargs)
+        # Set defaults from VL3DCFG
+        kwargs = DictUtils.add_defaults(
+            kwargs,
+            VL3DCFG['MODEL']['RandomForestClassificationModel']
+        )
         # Basic attributes of the RandomForestClassificationModel
         self.model = None
         self.importance_report_path = kwargs.get(

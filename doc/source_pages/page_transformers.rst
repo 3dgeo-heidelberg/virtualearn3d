@@ -167,6 +167,16 @@ written to the `minmax_normalization.log` text file.
     by either :math:`a` or :math:`b` so the normalizer never yields values
     outside the :math:`[a, b]` interval.
 
+-- ``minmax``
+    An optional list of pairs (e.g., list of lists, where each sublist has
+    exactly two elements). When given, each i-th element is a pair where the
+    first component gives the min for the i-th feature and the second one gives
+    the max.
+
+-- ``frenames``
+    An optional list of names. When given, the normalized features will use
+    these names instead of the original ones given by ``fnames``.
+
 -- ``report_path``
     When given, a text report will be exported to the file pointed by the
     path.

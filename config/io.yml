@@ -1,0 +1,5 @@
+---
+# Default configuration for memory-to-file proxies
+MemToFileProxy:
+  mem_check_threshold: 0.34
+...

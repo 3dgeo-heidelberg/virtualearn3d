@@ -5,7 +5,9 @@ from src.report.minmax_normalization_report import MinmaxNormalizationReport
 from src.utils.dict_utils import DictUtils
 import src.main.main_logger as LOGGING
 from sklearn.preprocessing import MinMaxScaler
+import laspy
 import numpy as np
+import copy
 import time
 
 
@@ -27,6 +29,14 @@ class MinmaxNormalizer(FeatureTransformer):
     .. math::
         x' = \dfrac{x - \min X}{\max X - \min X}
 
+    :ivar minmax: When given, it is expected to be a list of lists. Each i-th
+        element of the first list is a pair of two elements such that the
+        first one gives the min for the i-th feature and the second one gives
+        the max for the i-th feature.
+    :vartype minmax: list or None
+    :ivar frenames: When given, the normalized features will be stored in
+        the point cloud with these names.
+    :vartype frenames: (list of str) or None
     :ivar target_range: The (a, b) interval such that features will be
         normalized to be inside (a, b). By default, it is (0, 1).
     :vartype target_range: :class:`np.ndarray`
@@ -48,6 +58,8 @@ class MinmaxNormalizer(FeatureTransformer):
         # Initialize from parent
         kwargs = FeatureTransformer.extract_ftransf_args(spec)
         # Extract particular arguments of MinmaxNormalizer
+        kwargs['minmax'] = spec.get('minmax', None)
+        kwargs['frenames'] = spec.get('frenames', None)
         kwargs['target_range'] = spec.get('target_range', None)
         kwargs['clip'] = spec.get('clip', None)
         # Delete keys with None value
@@ -66,6 +78,8 @@ class MinmaxNormalizer(FeatureTransformer):
         # Call parent init
         super().__init__(**kwargs)
         # Assign attributes
+        self.minmax = kwargs.get('minmax', None)
+        self.frenames = kwargs.get('frenames', None)
         self.target_range = kwargs.get('target_range', np.array([0, 1]))
         self.clip = kwargs.get('clip', True)
         self.minmaxer = None  # By default, no normalizer model has been fit
@@ -88,10 +102,13 @@ class MinmaxNormalizer(FeatureTransformer):
         plot_and_report = False
         start = time.perf_counter()
         if self.minmaxer is None:
+            minmaxer_F = F
+            if self.minmax is not None:
+                minmaxer_F = np.array(self.minmax).T
             self.minmaxer = MinMaxScaler(
                 feature_range=tuple(self.target_range),
                 clip=self.clip
-            ).fit(F)
+            ).fit(minmaxer_F)
             plot_and_report = True  # Plot and report only when fit
         F = self.minmaxer.transform(F)
         end = time.perf_counter()
@@ -121,4 +138,30 @@ class MinmaxNormalizer(FeatureTransformer):
         See :class:`.FeatureTransformer` and
         :meth:`feature_transformer.FeatureTransformer.get_names_of_transformed_features`
         """
+        if self.frenames is not None:
+            return self.frenames
         return self.fnames
+
+    def build_new_las_header(self, pcloud):
+        """
+        See
+        :meth:`feature_transformer.FeatureTransformer.build_new_las_header`.
+        """
+        # Obtain header
+        header = copy.deepcopy(pcloud.las.header)
+        # Remove old features
+        remove_exceptions = [  # Don't explicitly remove these features
+            'red', 'green', 'blue', 'intensity'
+        ]
+        fnames = [
+            fname for fname in self.fnames if fname not in remove_exceptions
+        ]
+        header.remove_extra_dims(fnames)
+        # Add PCA features
+        extra_bytes = [
+            laspy.ExtraBytesParams(name=frename, type='f')
+            for frename in self.get_names_of_transformed_features()
+        ]
+        header.add_extra_dims(extra_bytes)
+        # Return
+        return header

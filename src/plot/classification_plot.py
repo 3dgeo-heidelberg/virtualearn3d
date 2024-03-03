@@ -92,8 +92,14 @@ class ClassificationPlot(MplPlot):
         fig = plt.figure(figsize=(14, 10))
         ax = fig.add_subplot(1, 1, 1)
         # Plot confusion matrix
+        conf_mat = self.conf_mat
+        if len(self.class_names) > len(conf_mat):
+            conf_mat = np.pad(
+                conf_mat,
+                pad_width=[0, len(self.class_names)-conf_mat.shape[0]]
+            )
         disp = ConfusionMatrixDisplay(
-            confusion_matrix=self.conf_mat,
+            confusion_matrix=conf_mat,
             display_labels=self.class_names,
         )
         disp.plot(

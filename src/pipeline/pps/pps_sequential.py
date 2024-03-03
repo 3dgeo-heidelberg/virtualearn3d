@@ -110,7 +110,7 @@ class PpsSequential(PipelinePredictiveStrategy):
                     f'component: "{comp.__class__.__name__}"'
                 )
         # Validate
-        if preds is None:
+        if preds is None and not self.ignore_predictions:
             raise PipelinePredictiveStrategyException(
                 'The sequential pipeline predictive strategy failed to '
                 'compute predictions.'
@@ -123,8 +123,9 @@ class PpsSequential(PipelinePredictiveStrategy):
             self.external_state.pcloud.clear_data(proxy_release=True)
             self.external_state.pcloud = pcloud
         # Add predictions to point cloud
-        pcloud.add_features(
-            ['prediction'], preds.reshape((-1, 1)), ftypes=preds.dtype
-        )
+        if preds is not None:
+            pcloud.add_features(
+                ['prediction'], preds.reshape((-1, 1)), ftypes=preds.dtype
+            )
         # Return
         return preds

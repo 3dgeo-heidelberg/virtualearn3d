@@ -9,6 +9,7 @@ from src.model.deeplearn.dlrun.point_net_pre_processor import \
 from src.model.deeplearn.dlrun.point_net_post_processor import  \
     PointNetPostProcessor
 from src.utils.dict_utils import DictUtils
+from src.main.main_config import VL3DCFG
 import tensorflow as tf
 import numpy as np
 
@@ -34,6 +35,12 @@ class PointNet(Architecture, ABC):
         if kwargs.get('arch_name', None) is None:
             kwargs['arch_name'] = 'PointNet'
         super().__init__(**kwargs)
+        # Set defaults from VL3DCFG
+        kwargs = DictUtils.add_defaults(
+            kwargs,
+            VL3DCFG['MODEL']['PointNet']
+        )
+        # Set feature names
         self.fnames = kwargs.get('fnames', None)
         # Update the preprocessing logic
         self.pre_runnable = PointNetPreProcessor(**kwargs['pre_processing'])

@@ -138,7 +138,7 @@ class RBFFeatExtractLayer(Layer):
                 'RBFFeatExtractLayer does not support a kernel function of '
                 f'type "{self.kernel_function_type}".'
             )
-        # Initialize to None attributes (derived when building)
+        # Attributes initialized to None (derived when building)
         self.Q = None  # Kernel's structure matrix
         self.built_Q = built_Q  # True if built, false otherwise
         self.omega = None  # Trainable kernel's size (think about curvature)
@@ -211,6 +211,7 @@ class RBFFeatExtractLayer(Layer):
                 name='omega'
             )
             self.built_omega = True
+        # TODO Pending: Add self.built = True
 
     def call(self, inputs, training=False, mask=False):
         r"""

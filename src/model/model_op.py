@@ -317,6 +317,22 @@ class ModelOp:
             model_handling['rbf_feature_processing_representation_dir'] = \
                 ModelOp.merge_path(out_prefix, rbf_feat_processing_repr_dir)
         old_paths['rbf_feat_processing_repr_dir'] = rbf_feat_processing_repr_dir
+        # Handle KPConv representation dir
+        kpconv_representation_dir = model_handling.get(
+            'kpconv_representation_dir', None
+        )
+        if ModelOp.path_needs_update(kpconv_representation_dir):
+            model_handling['kpconv_representation_dir'] = \
+                ModelOp.merge_path(out_prefix, kpconv_representation_dir)
+        old_paths['kpconv_representation_dir'] = kpconv_representation_dir
+        # Handle SKPConv representation dir
+        skpconv_representation_dir = model_handling.get(
+            'skpconv_representation_dir', None
+        )
+        if ModelOp.path_needs_update(skpconv_representation_dir):
+            model_handling['skpconv_representation_dir'] = \
+                ModelOp.merge_path(out_prefix, skpconv_representation_dir)
+        old_paths['skpconv_representation_dir'] = skpconv_representation_dir
         # Handle checkpoint path
         checkpoint_path = model_handling.get('checkpoint_path', None)
         if ModelOp.path_needs_update(checkpoint_path):
@@ -486,6 +502,7 @@ class ModelOp:
         if model_handling.get('training_history_dir', None) is not None:
             model_handling['training_history_dir'] =\
                 old_paths['training_history_dir']
+        # Restore layer representation dirs
         if model_handling.get('features_structuring_representation_dir', None)\
                 is not None:
             model_handling['features_structuring_representation_dir'] = \
@@ -498,6 +515,15 @@ class ModelOp:
                 is not None:
             model_handling['rbf_feature_processing_representation_dir'] = \
                 old_paths['rbf_feat_processing_repr_dir']
+        if model_handling.get('kpconv_representation_dir', None) is not None:
+            model_handling['kpconv_representation_dir'] = \
+                old_paths['kpconv_representation_dir']
+        if model_handling.get('skpconv_representation_dir', None) is not None:
+            model_handling['skpconv_representation_dir'] = \
+                old_paths['skpconv_representation_dir']
+        # Restore checkpoint path
+        if model_handling.get('checkpoint_path', None) is not None:
+            model_handling['checkpoint_path'] = old_paths['checkpoint_path']
         # Restore training receptive fields distribution report path
         if preproc.get(
             'training_receptive_fields_distribution_report_path', None

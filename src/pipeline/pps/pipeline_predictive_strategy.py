@@ -38,6 +38,9 @@ class PipelinePredictiveStrategy:
         strategy that modifies a point cloud will override the point cloud
         in the state too.
     :vartype state: :class:`.PipelineState`
+    :ivar ignore_predictions: When True, the predictive pipeline strategy
+        will not be required to return not None predictions.
+    :vartype ignore_predictions: bool
     """
     # ---   INIT   --- #
     # ---------------- #
@@ -50,6 +53,7 @@ class PipelinePredictiveStrategy:
         """
         self.out_path = kwargs.get('out_path', None)
         self.external_state = kwargs.get('external_state', None)
+        self.ignore_predictions = kwargs.get('ignore_predictions', False)
 
     # ---  PIPELINE PREDICTIVE STRATEGY  --- #
     # -------------------------------------- #

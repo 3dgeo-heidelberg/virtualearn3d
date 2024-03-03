@@ -17,6 +17,7 @@ from src.plot.training_history_plot import TrainingHistoryPlot
 from src.utils.dict_utils import DictUtils
 from src.inout.io_utils import IOUtils
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
+from src.main.main_config import VL3DCFG
 import src.main.main_logger as LOGGING
 import tensorflow as tf
 from tensorflow.python.framework.errors_impl import ResourceExhaustedError as \
@@ -86,6 +87,11 @@ class SimpleDLModelHandler(DLModelHandler):
         """
         # Call parent's init
         super().__init__(arch, **kwargs)
+        # Set defaults from VL3DCFG
+        kwargs = DictUtils.add_defaults(
+            kwargs,
+            VL3DCFG['MODEL']['SimpleDLModelHandler']
+        )
         # Assign member attributes
         self.summary_report_path = kwargs.get('summary_report_path', None)
         self.training_history_dir = kwargs.get('training_history_dir', None)
@@ -98,6 +104,12 @@ class SimpleDLModelHandler(DLModelHandler):
         )
         self.rbf_feat_processing_repr_dir = kwargs.get(
             'rbf_feature_processing_representation_dir', None
+        )
+        self.kpconv_representation_dir = kwargs.get(
+            'kpconv_representation_dir', None
+        )
+        self.skpconv_representation_dir = kwargs.get(
+            'skpconv_representation_dir', None
         )
         self.out_prefix = kwargs.get('out_prefix', None)
         self.training_epochs = kwargs.get('training_epochs', 100)
@@ -225,6 +237,8 @@ class SimpleDLModelHandler(DLModelHandler):
             'fsl_dir_path': self.feat_struct_repr_dir,
             'rbf_dir_path': self.rbf_feat_extract_repr_dir,
             'rbf_feat_processing_dir_path': self.rbf_feat_processing_repr_dir,
+            'kpconv_representation_dir': self.kpconv_representation_dir,
+            'skpconv_representation_dir': self.skpconv_representation_dir,
             'out_prefix': self.out_prefix,
             'X': X,
             'y_rf': y_rf,
@@ -328,7 +342,7 @@ class SimpleDLModelHandler(DLModelHandler):
             )
         # Compile
         self.compiled.compile(
-            #run_eagerly=True,  # Uncomment for better debugging (but slower)
+            run_eagerly=VL3DCFG['MODEL']['SimpleDLModelHandler']['run_eagerly'],
             **comp_args
         )
         return self
@@ -376,6 +390,24 @@ class SimpleDLModelHandler(DLModelHandler):
             self.summary_report_path = model_handling['summary_report_path']
             self.training_history_dir = model_handling['training_history_dir']
             self.checkpoint_path = model_handling['checkpoint_path']
+            self.feat_struct_repr_dir = model_handling.get(
+                'features_structuring_representation_dir',
+                self.feat_struct_repr_dir
+            )
+            self.rbf_feat_extract_repr_dir = model_handling.get(
+                'rbf_feat_extract_repr_dir',
+                self.rbf_feat_extract_repr_dir
+            )
+            self.rbf_feat_processing_repr_dir = model_handling.get(
+                'rbf_feat_processing_repr_dir',
+                self.rbf_feat_processing_repr_dir
+            )
+            self.kpconv_representation_dir = model_handling.get(
+                'kpconv_representation_dir', self.kpconv_representation_dir
+            )
+            self.skpconv_representation_dir = model_handling.get(
+                'skpconv_representation_dir', self.skpconv_representation_dir
+            )
         # Update architecture paths
         if self.arch is not None:
             self.arch.architecture_graph_path = \
@@ -414,7 +446,6 @@ class SimpleDLModelHandler(DLModelHandler):
                 **self.early_stopping
             ))
         return callbacks
-
 
     # ---  UTIL METHODS  --- #
     # ---------------------- #
@@ -741,6 +772,8 @@ class SimpleDLModelHandler(DLModelHandler):
         state['rbf_feat_extract_repr_dir'] = self.rbf_feat_extract_repr_dir
         state['rbf_feat_processing_repr_dir'] = \
             self.rbf_feat_processing_repr_dir
+        state['kpconv_representation_dir'] = self.kpconv_representation_dir
+        state['skpconv_representation_dir'] = self.skpconv_representation_dir
         state['out_prefix'] = self.out_prefix
         state['training_epochs'] = self.training_epochs
         state['batch_size'] = self.batch_size
@@ -776,6 +809,12 @@ class SimpleDLModelHandler(DLModelHandler):
         )
         self.rbf_feat_processing_repr_dir = state.get(
             'rbf_feat_processing_repr_dir', None
+        )
+        self.kpconv_representation_dir = state.get(
+            'kpconv_representation_dir', None
+        )
+        self.skpconv_representation_dir = state.get(
+            'skpconv_representation_dir', None
         )
         self.out_prefix = state['out_prefix']
         self.training_epochs = state['training_epochs']
