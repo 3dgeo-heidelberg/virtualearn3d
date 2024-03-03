@@ -57,7 +57,7 @@ Models
 PointNet-based point-wise classifier
 ---------------------------------------
 
-The :class:`PointNetPwiseClassif` can be used to solve pint-wise classification
+The :class:`PointNetPwiseClassif` can be used to solve point-wise classification
 tasks. This model is based on the PointNet architecture and it can be defined
 as shown in the JSON below:
 
@@ -218,6 +218,7 @@ optimization algorithm to train the neural network is stochastic gradient
 descent (SGD). The loss function is a categorical cross-entropy that accounts
 for class weights. The class weights can be used to handle data imbalance.
 
+.. _PointNet arguments:
 
 **Arguments**
 
@@ -350,6 +351,8 @@ for class weights. The class weights can be used to handle data imbalance.
         `Keras documentation on plot_model <https://keras.io/api/utils/model_plotting_utils/#plotmodel-function>`_
         for further details.
 
+.. _PointNet model handling:
+
     -- ``model_handling``
         Define how to handle the model, i.e., not the architecture itself but
         how it must be used.
@@ -399,8 +402,6 @@ for class weights. The class weights can be used to handle data imbalance.
             callback. See the
             `Keras documentation on EarlyStopping <https://keras.io/api/callbacks/early_stopping/>`_
             for more information.
-
-
 
 
     -- ``compilation_args``
@@ -464,6 +465,879 @@ for class weights. The class weights can be used to handle data imbalance.
     model must be exported. It might demand a lot of memory. However, it can be
     useful to understand, debug, and improve the model.
 
+
+
+
+Hierarchical autoencoder point-wise classifier
+------------------------------------------------
+Hierarchical autoencoders for point-wise classification are available in the
+framework through the :class:`.ConvAutoencPwiseClassif` architecture. They are
+also referred to in the documentation as convolutional autoencoders. The figure
+below summarized the main logic of hierarchical autoencoders for point clouds.
+
+
+.. figure:: ../img/dl_hierarchical_rfs.png
+    :scale: 40
+    :alt: Figure representing the logic of hierarchical autoencoders for point
+        clouds based on hierarchical receptive fields.
+
+    Representation of the main logic governing hierarchical autoencoders for
+    point clouds based on hierarchical receptive fields.
+
+
+Initially, we have a 3D structure space
+:math:`\pmb{X} \in \mathbb{R}^{m \times 3}` with :math:`m` points and the
+corresponding feature space :math:`\pmb{F} \in \mathbb{R}^{m \times n_f}`
+with :math:`n_f` features. For a given depth, for example for depth three
+(as illustrated in the figure above), there is a set of downsampling stages
+followed by a set of upsampling stages.
+
+At a given depth :math:`d`, there is
+a non downsampled structrue space
+:math:`\pmb{X_{d-1}} \in \mathbb{R}^{R_{d-1} \times 3}` and its corresponding
+:math:`\pmb{X_{d}} \in \mathbb{R}^{R_d \times 3}` downsampled version.
+The neighborhood :math:`\mathcal{N}_d^D` can be represented with an indexing
+matrix :math:`\pmb{N}_{d}^{D} \in \mathbb{Z}^{R_d \times \kappa_d^D}` that
+defines for each of the :math:`R_d` points in the downsampled space its
+:math:`\kappa_d^D` closest neighbors in the non downsampled space.
+
+Once in the downsampling space, a transformation :math:`T_d^D` is applied to
+downsampled feature space to obtain a new set of features. This transformation
+can be done using different operators like PointNet or Kernel Point
+Convolution (KPConv). Further details about them will be given below in the
+:ref:`hierarchical autoencoder with PointNet <Hierarchical PNet>` and the
+:ref:`hierarchical autoencoder with KPConv <Hierarchical KPConv>` sections.
+
+After finishing the downsampling and feature extraction operations, it is
+time to restore the original dimensionality through upsampling. First, the
+:math:`\mathcal{N}_d^U` neighborhood is reresented by an indexing matrix
+:math:`\pmb{N}_{d}^U \in \mathbb{Z}^{R_{d-1} \times \kappa_d^U}` that defines
+for each of the :math:`R_{d-1}` points in the upsampled space its
+:math:`\kappa_d^U` closest neighbors in the non upsampled space. Then, the
+:math:`T_d^U` upsampling operation is applied. Typically, it is a SharedMLP
+(i.e., a unitary 1D discrete convolution).
+
+Note that the last upsampling operation is not applied inside the neural
+network. Instead, the estimations of the network are computed on the first
+receptive field with structure space
+:math:`\pmb{X_1} \in \mathbb{R}^{R_1 \times 3}` (the one
+with more points, and thus, closer to the original neighborhood). Finally,
+the last upsampling is computed to transform the predictions of the neural
+network (:math:`\hat{z}`) back to the original input neighborhood (with an arbitrary number
+of points).
+
+
+
+
+.. _Hierarchical PNet:
+
+Hierarchical autoencoder with PointNet
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The :class:`.ConvAutoencPwiseClassif` architecture can be configured with
+PointNet for feature extraction operations. The downsampling strategy can be
+defined through the :class:`.FeaturesDownsamplingLayer`, the upsampling
+strategy through the :class:`.FeaturesUpsamplingLayer`, and the feature
+extraction through the :class:`.GroupingPointNetLayer`. The JSON below
+illustrates how to configure PointNet++-like hierarchical autoencoders
+using the VL3D framework. For further details on the original PointNet++
+architecture, readers are referred to
+`the PointNet++ paper (Qi et al., 2017) <https://proceedings.neurips.cc/paper/7095-pointnet-deep-hierarchical-feature-learning-on-point-sets-in-a-metric-space.pdf>`_
+.
+
+
+.. code-block:: json
+
+    {
+      "in_pcloud": [
+        "/mnt/netapp2/Store_uscciaep/lidar_data/hessigheim/data/Mar18_train.laz"
+      ],
+      "out_pcloud": [
+        "/mnt/netapp2/Store_uscciaep/lidar_data/hessigheim/vl3d/hae_X_FPS50K/T1/*"
+      ],
+      "sequential_pipeline": [
+        {
+            "train": "ConvolutionalAutoencoderPwiseClassifier",
+            "training_type": "base",
+            "fnames": ["AUTO"],
+            "random_seed": null,
+            "model_args": {
+                "num_classes": 11,
+                "class_names": ["LowVeg", "ImpSurf", "Vehicle", "UrbanFurni", "Roof", "Facade", "Shrub", "Tree", "Soil/Gravel", "VertSurf", "Chimney"],
+                "pre_processing": {
+                    "pre_processor": "hierarchical_fps",
+                    "support_strategy_num_points": 50000,
+                    "to_unit_sphere": false,
+                    "support_strategy": "fps",
+                    "support_chunk_size": 2000,
+                    "support_strategy_fast": true,
+                    "center_on_pcloud": true,
+                    "neighborhood": {
+                        "type": "rectangular3D",
+                        "radius": 3.0,
+                        "separation_factor": 0.8
+                    },
+                    "num_points_per_depth": [512, 256, 128, 64, 32],
+                    "fast_flag_per_depth": [false, false, false, false, false],
+                    "num_downsampling_neighbors": [1, 16, 8, 8, 4],
+                    "num_pwise_neighbors": [32, 16, 16, 8, 4],
+                    "num_upsampling_neighbors": [1, 16, 8, 8, 4],
+                    "nthreads": 12,
+                    "training_receptive_fields_distribution_report_path": "*/training_eval/training_receptive_fields_distribution.log",
+                    "training_receptive_fields_distribution_plot_path": "*/training_eval/training_receptive_fields_distribution.svg",
+                    "training_receptive_fields_dir": null,
+                    "receptive_fields_distribution_report_path": "*/training_eval/receptive_fields_distribution.log",
+                    "receptive_fields_distribution_plot_path": "*/training_eval/receptive_fields_distribution.svg",
+                    "receptive_fields_dir": null,
+                    "training_support_points_report_path": "*/training_eval/training_support_points.laz",
+                    "support_points_report_path": "*/training_eval/support_points.laz"
+                },
+                "feature_extraction": {
+                    "type": "PointNet",
+                    "operations_per_depth": [2, 1, 1, 1, 1],
+                    "feature_space_dims": [64, 64, 128, 256, 512, 1024],
+                    "bn": true,
+                    "bn_momentum": 0.0,
+                    "H_activation": ["relu", "relu", "relu", "relu", "relu", "relu"],
+                    "H_initializer": ["glorot_uniform", "glorot_uniform", "glorot_uniform", "glorot_uniform", "glorot_uniform", "glorot_uniform"],
+                    "H_regularizer": [null, null, null, null, null, null],
+                    "H_constraint": [null, null, null, null, null, null],
+                    "gamma_activation": ["relu", "relu", "relu", "relu", "relu", "relu"],
+                    "gamma_kernel_initializer": ["glorot_uniform", "glorot_uniform", "glorot_uniform", "glorot_uniform", "glorot_uniform", "glorot_uniform"],
+                    "gamma_kernel_regularizer": [null, null, null, null, null, null],
+                    "gamma_kernel_constraint": [null, null, null, null, null, null],
+                    "gamma_bias_enabled": [true, true, true, true, true, true],
+                    "gamma_bias_initializer": ["zeros", "zeros", "zeros", "zeros", "zeros", "zeros"],
+                    "gamma_bias_regularizer": [null, null, null, null, null, null],
+                    "gamma_bias_constraint": [null, null, null, null, null, null]
+                },
+                "_structure_alignment": {
+                    "tnet_pre_filters_spec": [64, 128, 256],
+                    "tnet_post_filters_spec": [128, 64, 32],
+                    "kernel_initializer": "glorot_normal"
+                },
+                "features_alignment": null,
+                "downsampling_filter": "gaussian",
+                "upsampling_filter": "mean",
+                "upsampling_bn": true,
+                "upsampling_momentum": 0.0,
+                "conv1d_kernel_initializer": "glorot_normal",
+                "output_kernel_initializer": "glorot_normal",
+                "model_handling": {
+                    "summary_report_path": "*/model_summary.log",
+                    "training_history_dir": "*/training_eval/history",
+                    "features_structuring_representation_dir": "*/training_eval/feat_struct_layer/",
+                    "class_weight": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                    "training_epochs": 200,
+                    "batch_size": 16,
+                    "checkpoint_path": "*/checkpoint.model",
+                    "checkpoint_monitor": "loss",
+                    "learning_rate_on_plateau": {
+                        "monitor": "loss",
+                        "mode": "min",
+                        "factor": 0.1,
+                        "patience": 2000,
+                        "cooldown": 5,
+                        "min_delta": 0.01,
+                        "min_lr": 1e-6
+                    }
+                },
+                "compilation_args": {
+                    "optimizer": {
+                        "algorithm": "SGD",
+                        "learning_rate": {
+                            "schedule": "exponential_decay",
+                            "schedule_args": {
+                                "initial_learning_rate": 1e-2,
+                                "decay_steps": 15000,
+                                "decay_rate": 0.96,
+                                "staircase": false
+                            }
+                        }
+                    },
+                    "loss": {
+                        "function": "class_weighted_categorical_crossentropy"
+                    },
+                    "metrics": [
+                        "categorical_accuracy"
+                    ]
+                },
+                "architecture_graph_path": "*/model_graph.png",
+                "architecture_graph_args": {
+                    "show_shapes": true,
+                    "show_dtype": true,
+                    "show_layer_names": true,
+                    "rankdir": "TB",
+                    "expand_nested": true,
+                    "dpi": 300,
+                    "show_layer_activations": true
+                }
+            },
+            "autoval_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
+            "training_evaluation_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
+            "training_class_evaluation_metrics": ["P", "R", "F1", "IoU"],
+            "training_evaluation_report_path": "*/training_eval/evaluation.log",
+            "training_class_evaluation_report_path": "*/training_eval/class_evaluation.log",
+            "training_confusion_matrix_report_path": "*/training_eval/confusion.log",
+            "training_confusion_matrix_plot_path": "*/training_eval/confusion.svg",
+            "training_class_distribution_report_path": "*/training_eval/class_distribution.log",
+            "training_class_distribution_plot_path": "*/training_eval/class_distribution.svg",
+            "training_classified_point_cloud_path": "*/training_eval/classified_point_cloud.laz",
+            "training_activations_path": null
+        },
+        {
+          "writer": "PredictivePipelineWriter",
+          "out_pipeline": "*pipe/HAE_T1.pipe",
+          "include_writer": false,
+          "include_imputer": false,
+          "include_feature_transformer": false,
+          "include_miner": false,
+          "include_class_transformer": false
+        }
+      ]
+    }
+
+The JSON above defines a :class:`.ConvAutoencPwiseClassif` that uses a
+hierarchical furthest point sampling strategy with a 3D rectangular
+neighborhood and the PointNet operator for feature extraction. It is expected
+to work only on the structure space, i.e., the input feature space will be a
+single column of ones.
+
+**Arguments**
+
+-- ``training_type``
+    Typically it should be ``"base"`` for neural networks. For further details,
+    read the :ref:`training strategies section <Training strategies>`.
+
+-- ``fnames``
+    The name of the features that must be given as input to the neural network.
+    For hierarchical autoencoders this list can contain ``"ones"`` to specify
+    whether to include a column of ones in the input space matrix. This
+    architecture does not support empty feature spaces as input, thus, when
+    no features are given, the input feature space must be represented with a
+    column of ones.
+
+-- ``random_seed``
+    Can be used to specify an integer like seed for any randomness-based
+    computation. Mostly to be used for reproducibility purposes. Note that
+    the initialization of a neural network is often based on random
+    distributions. This parameter does not affect those distributions, so
+    it will not guarantee reproducibility for of deep learning models.
+
+-- ``model_args``
+    The model specification.
+
+    -- ``num_classess``
+        An integer specifying the number of classes involved in the
+        point-wise classification tasks.
+
+    -- ``class_names``
+        The names of the classes involved in the classification task. Each
+        string corresponds to the class associated to its index in the list.
+
+    -- ``pre_processing``
+        How the **select** and **fix** stages of the deep learning strategy
+        must be handled. Note that hierarchical autoencoders demand
+        hierarchical receptive fields. See the
+        :ref:`receptive fields <Receptive fields section>` and
+        :ref:`hierarchical FPS receptive field <Hierarchical FPS receptive field>`
+        sections for further details.
+
+    -- ``feature_extraction``
+        The definition of the feature extraction operator. A detailed
+        description of the case when ``"type": "PointNet"`` is given below.
+        For a description of the case when ``"type": "KPConv"`` see
+        :ref:`the KPConv operator documentation <Hierarchical KPConv>`.
+
+        -- ``operations_per_depth``
+            A list specifying how many operations per depth level. The i-th
+            element of the list gives the number of feature extraction
+            operations at depth i.
+
+        -- ``feature_space_dims``
+            A list specifying the output dimensionality of the feature space
+            after each feature extraction operation. The i-th element of the
+            list gives the dimensionality of the i-th feature extraction
+            operation.
+
+        -- ``bn``
+            Boolean flag to decide whether to enable batch normalization for
+            feature extraction.
+
+        -- ``bn_momentum``
+            Momentum for the moving average of the batch normalization, such
+            that
+            ``new_mean = old_mean * momentum + batch_mean * (1 - momentum)``.
+            See the
+            `Keras documentation on batch normalization <https://keras.io/api/layers/normalization_layers/batch_normalization/>`_
+            for more details.
+
+        -- ``H_activation``
+            The activation function for the SharedMLP of each feature
+            extraction operation.
+            See
+            `the keras documentation on activations <https://keras.io/api/layers/activations/>`_
+            for more details.
+
+        -- ``H_initializer``
+            The initialization method for the SharedMLP of each feature
+            extraction operation.
+            See
+            `the keras documentation on initializers <https://keras.io/2.15/api/layers/initializers/>`_
+            for more details.
+
+        -- ``H_regularizer``
+            The regularization strategy for the SharedMLP of each feature
+            extraction operation.
+            See
+            `the keras documentation on regularizers <https://keras.io/api/layers/regularizers/>`_
+            for more details.
+
+        -- ``H_constraint``
+            The constraints for the SharedMLP of each feature extraction
+            operation.
+            See
+            `the keras documentation on constraints <https://keras.io/api/layers/constraints/>`_
+            for more details.
+
+        -- ``gamma_activation``
+            The constraints for the MLP of each feature extraction
+            operation.
+            See
+            `the keras documentation on activations <https://keras.io/api/layers/activations/>`_
+            for more details.
+
+        -- ``gamma_kernel_initializer``
+            The initialization method for the MLP of each feature extraction
+            operation (ignoring the bias term).
+            See
+            `the keras documentation on initializers <https://keras.io/2.15/api/layers/initializers/>`_
+            for more details.
+
+        -- ``gamma_kernel_regularizer``
+            The regularization strategy for the MLP of each feature
+            extraction operation (ignoring the bias term).
+            See
+            `the keras documentation on regularizers <https://keras.io/api/layers/regularizers/>`_
+            for more details.
+
+        -- ``gamma_kernel_constraint``
+            The constraints for the MLP of each feature extraction operation
+            (ignoring the bias term).
+            See
+            `the keras documentation on constraints <https://keras.io/api/layers/constraints/>`_
+            for more details.
+
+        -- ``gamma_bias_enabled``
+            Whether to enable the bias term for the MLP of each feature
+            extraction operation.
+
+        -- ``gamma_bias_initializer``
+            The initialization method for the bias term of the MLP of each
+            feature extraction operation.
+            See
+            `the keras documentation on initializers <https://keras.io/2.15/api/layers/initializers/>`_
+            for more details.
+
+        -- ``gamma_bias_regularizer``
+            The regularization strategy for the bias term of the MLP of each
+            feature extraction operation.
+            See
+            `the keras documentation on regularizers <https://keras.io/api/layers/regularizers/>`_
+            for more details.
+
+        -- ``gamma_bias_constraint``
+            The constraints for the bias term of the MLP of each feature
+            extraction operation.
+            See
+            `the keras documentation on constraints <https://keras.io/api/layers/constraints/>`_
+            for more details.
+
+    -- ``structure_alignment``
+        When given, this specification will govern the alignment of the
+        structure space.
+
+        -- ``tnet_pre_filters_spec``
+            List defining the number of pre-transformation filters at
+            each depth.
+
+        -- ``tnet_post_filters_spec``
+            List defining the number of post-transformation filters at
+            each depth.
+
+        -- ``kernel_initializer``
+            The kernel initialization method for the structure alignment
+            layers.
+            See
+            `the keras documentation on initializers <https://keras.io/2.15/api/layers/initializers/>`_
+            for more details.
+
+    -- ``features_alignment``
+        When given, this specification will govern the alignment of the
+        feature space. It is like the ``structure_alignment`` dictionary
+        but it is applied to the features instead of the structure space.
+
+    -- ``downsampling_filter``
+        The type of downsampling filter. See
+        :class:`.FeaturesDownsamplingLayer` for more details.
+
+    -- ``upsampling_filter``
+        The type of upsampling filter. See
+        :class:`.FeaturesUpsamplingLayer` for more details.
+
+    -- ``upsampling_bn``
+        Boolean flag to decide whether to enable batch normalization for
+        upsampling transformations.
+
+    -- ``upsampling_momentum``
+        Momentum for the moving average of the upsampling batch normalization,
+        such that
+        ``new_mean = old_mean * momentum + batch_mean * (1-momentum)``.
+        See the
+        `Keras documentation on batch normalization <https://keras.io/api/layers/normalization_layers/batch_normalization/>`_
+        for more details.
+
+    -- ``conv1d_kernel_initializer``
+        The initialization method for the 1D convolutions during upsampling.
+        See
+        `the keras documentation on initializers <https://keras.io/2.15/api/layers/initializers/>`_
+        for more details.
+
+    -- ``output_kernel_initializer``
+        The initialization method for the final 1D convolution that computes
+        the point-wise outputs of the neural network.
+        See
+        `the keras documentation on initializers <https://keras.io/2.15/api/layers/initializers/>`_
+        for more details.
+
+    -- ``model_handling``
+        Define how to handle the model, i.e., not the architecture itself but
+        how it must be used.
+        See the description of
+        :ref:`PointNet model handling <PointNet model handling>`
+        for more details.
+
+    -- ``compilation_args``
+        The arguments governing the model's compilation. They include the
+        optimizer, the loss function and the metrics to be monitored during
+        training. See the :ref:`optimizers section <Optimizers section>` and
+        :ref:`losses section <Losses section>` for further details.
+
+    -- ``training_evaluation_metrics``
+        See :ref:`PointNet-like point-wise classifier arguments <PointNet arguments>`.
+
+    -- ``training_class_evaluation_metrics``
+        See :ref:`PointNet-like point-wise classifier arguments <PointNet arguments>`.
+
+    -- ``training_evaluation_report_path``
+        See :ref:`PointNet-like point-wise classifier arguments <PointNet arguments>`.
+
+    -- ``training_class_evaluation_report_path``
+        See :ref:`PointNet-like point-wise classifier arguments <PointNet arguments>`.
+
+    -- ``training_confusion_matrix_report_path``
+        See :ref:`PointNet-like point-wise classifier arguments <PointNet arguments>`.
+
+    -- ``training_confusion_matrix_report_plot``
+        See :ref:`PointNet-like point-wise classifier arguments <PointNet arguments>`.
+
+    -- ``training_class_distribution_report_path``
+        See :ref:`PointNet-like point-wise classifier arguments <PointNet arguments>`.
+
+    -- ``training_classified_point_cloud_path``
+        See :ref:`PointNet-like point-wise classifier arguments <PointNet arguments>`.
+
+    -- ``training_activations_path``
+        See :ref:`PointNet-like point-wise classifier arguments <PointNet arguments>`.
+
+
+
+
+.. _Hierarchical KPConv:
+
+Hierarchical autoencoder with KPConv
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The :class:`.ConvAutoencPwiseClassif` architecture can be configured with
+Kernel Point Convolution (KPConv) for feature extraction operations. The
+downsampling strategy can be defined through the
+:class:`.FeaturesDownsamplingLayer` or the :class:`.StridedKPConvLayer`,
+the upsampling strateg through the :class:`.FeaturesUpsamplingLayer`, and
+the feature extraction through the :class:`.KPConvLayer`. The JSON below
+illustrates how to configure KPConv-based hierarchical autoencoders using
+the VL3D framework. For further details on the original KPConv architecture,
+readers are referred to
+`the KPConv paper (Thomas et al., 2019) <https://ieeexplore.ieee.org/document/9010002>`_
+.
+
+
+.. code-block:: json
+
+    {
+      "in_pcloud": [
+        "/mnt/netapp2/Store_uscciaep/lidar_data/hessigheim/vl3d/mined/Mar18_train_hsv_std.laz"
+      ],
+      "out_pcloud": [
+        "/mnt/netapp2/Store_uscciaep/lidar_data/hessigheim/vl3d/kpconv_R/T1/*"
+      ],
+      "sequential_pipeline": [
+        {
+            "train": "ConvolutionalAutoencoderPwiseClassifier",
+            "training_type": "base",
+            "fnames": ["Reflectance", "ones"],
+            "random_seed": null,
+            "model_args": {
+                "fnames": ["Reflectance", "ones"],
+                "num_classes": 11,
+                "class_names": ["LowVeg", "ImpSurf", "Vehicle", "UrbanFurni", "Roof", "Facade", "Shrub", "Tree", "Soil/Gravel", "VertSurf", "Chimney"],
+                "pre_processing": {
+                    "pre_processor": "hierarchical_fps",
+                    "support_strategy_num_points": 60000,
+                    "to_unit_sphere": false,
+                    "support_strategy": "fps",
+                    "support_chunk_size": 2000,
+                    "support_strategy_fast": true,
+                    "center_on_pcloud": true,
+                    "neighborhood": {
+                        "type": "sphere",
+                        "radius": 3.0,
+                        "separation_factor": 0.8
+                    },
+                    "num_points_per_depth": [512, 256, 128, 64, 32],
+                    "fast_flag_per_depth": [false, false, false, false, false],
+                    "num_downsampling_neighbors": [1, 16, 8, 8, 4],
+                    "num_pwise_neighbors": [32, 16, 16, 8, 4],
+                    "num_upsampling_neighbors": [1, 16, 8, 8, 4],
+                    "nthreads": 12,
+                    "training_receptive_fields_distribution_report_path": "*/training_eval/training_receptive_fields_distribution.log",
+                    "training_receptive_fields_distribution_plot_path": "*/training_eval/training_receptive_fields_distribution.svg",
+                    "training_receptive_fields_dir": null,
+                    "receptive_fields_distribution_report_path": "*/training_eval/receptive_fields_distribution.log",
+                    "receptive_fields_distribution_plot_path": "*/training_eval/receptive_fields_distribution.svg",
+                    "receptive_fields_dir": null,
+                    "training_support_points_report_path": "*/training_eval/training_support_points.laz",
+                    "support_points_report_path": "*/training_eval/support_points.laz"
+                },
+                "feature_extraction": {
+                    "type": "KPConv",
+                    "operations_per_depth": [2, 1, 1, 1, 1],
+                    "feature_space_dims": [64, 64, 128, 256, 512, 1024],
+                    "bn": true,
+                    "bn_momentum": 0.0,
+                    "activate": true,
+                    "sigma": [3.0, 3.0, 3.0, 3.0, 3.0, 3.0],
+                    "kernel_radius": [3.0, 3.0, 3.0, 3.0, 3.0, 3.0],
+                    "num_kernel_points": [15, 15, 15, 15, 15, 15],
+                    "deformable": [false, false, false, false, false, false],
+                    "W_initializer": ["glorot_uniform", "glorot_uniform", "glorot_uniform", "glorot_uniform", "glorot_uniform", "glorot_uniform"],
+                    "W_regularizer": [null, null, null, null, null, null],
+                    "W_constraint": [null, null, null, null, null, null]
+                },
+                "structure_alignment": null,
+                "features_alignment": null,
+                "downsampling_filter": "strided_kpconv",
+                "upsampling_filter": "mean",
+                "upsampling_bn": true,
+                "upsampling_momentum": 0.0,
+                "conv1d_kernel_initializer": "glorot_normal",
+                "output_kernel_initializer": "glorot_normal",
+                "model_handling": {
+                    "summary_report_path": "*/model_summary.log",
+                    "training_history_dir": "*/training_eval/history",
+                    "kpconv_representation_dir": "*/training_eval/kpconv_layers/",
+                    "skpconv_representation_dir": "*/training_eval/skpconv_layers/",
+                    "class_weight": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                    "training_epochs": 300,
+                    "batch_size": 16,
+                    "checkpoint_path": "*/checkpoint.model",
+                    "checkpoint_monitor": "loss",
+                    "learning_rate_on_plateau": {
+                        "monitor": "loss",
+                        "mode": "min",
+                        "factor": 0.1,
+                        "patience": 2000,
+                        "cooldown": 5,
+                        "min_delta": 0.01,
+                        "min_lr": 1e-6
+                    }
+                },
+                "compilation_args": {
+                    "optimizer": {
+                        "algorithm": "SGD",
+                        "learning_rate": {
+                            "schedule": "exponential_decay",
+                            "schedule_args": {
+                                "initial_learning_rate": 1e-2,
+                                "decay_steps": 15000,
+                                "decay_rate": 0.96,
+                                "staircase": false
+                            }
+                        }
+                    },
+                    "loss": {
+                        "function": "class_weighted_categorical_crossentropy"
+                    },
+                    "metrics": [
+                        "categorical_accuracy"
+                    ]
+                },
+                "architecture_graph_path": "*/model_graph.png",
+                "architecture_graph_args": {
+                    "show_shapes": true,
+                    "show_dtype": true,
+                    "show_layer_names": true,
+                    "rankdir": "TB",
+                    "expand_nested": true,
+                    "dpi": 300,
+                    "show_layer_activations": true
+                }
+            },
+            "autoval_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
+            "training_evaluation_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
+            "training_class_evaluation_metrics": ["P", "R", "F1", "IoU"],
+            "training_evaluation_report_path": "*/training_eval/evaluation.log",
+            "training_class_evaluation_report_path": "*/training_eval/class_evaluation.log",
+            "training_confusion_matrix_report_path": "*/training_eval/confusion.log",
+            "training_confusion_matrix_plot_path": "*/training_eval/confusion.svg",
+            "training_class_distribution_report_path": "*/training_eval/class_distribution.log",
+            "training_class_distribution_plot_path": "*/training_eval/class_distribution.svg",
+            "training_classified_point_cloud_path": "*/training_eval/classified_point_cloud.laz",
+            "training_activations_path": null
+        },
+        {
+          "writer": "PredictivePipelineWriter",
+          "out_pipeline": "*pipe/KPC_T1.pipe",
+          "include_writer": false,
+          "include_imputer": false,
+          "include_feature_transformer": false,
+          "include_miner": false,
+          "include_class_transformer": false
+        }
+      ]
+    }
+
+The JSON above defines a :class:`.ConvAutoencPwiseClassif` that uses a
+hierarchical furthest point sampling strategy with a 3D spherical neighborhood
+and the KPConv operator for feature extraction. It is expected to work on a
+feature space with a column of ones (for feature-unbiased geometric features)
+and another of reflectances.
+
+**Arguments**
+
+-- ``training_type``
+    Typically it should be ``"base"`` for neural networks. For further details,
+    read the :ref:`training strategies section <Training strategies>`.
+
+-- ``fnames``
+    The name of the features that must be given as input to the neural network.
+    For hierarchical autoencoders this list can contain ``"ones"`` to specify
+    whether to include a column of ones in the input space matrix. This
+    architecture does not support empty feature spaces as input, thus, when
+    no features are given, the input feature space must be represented with a
+    column of ones. **NOTE** that, for technical reasons, the feature names
+    should also be given inside the ``model_args`` dictionary.
+
+-- ``random_seed``
+    Can be used to specify an integer like seed for any randomness-based
+    computation. Mostly to be used for reproducibility purposes. Note that
+    the initialization of a neural network is often based on random
+    distributions. This parameter does not affect those distributions, so
+    it will not guarantee reproducibility for of deep learning models.
+
+-- ``model_args``
+    The model specification.
+
+    -- ``fnames``
+        The feature names must be given again inside the ``model_args``
+        dictionary due to technical reasons.
+
+    -- ``num_classess``
+        An integer specifying the number of classes involved in the
+        point-wise classification tasks.
+
+    -- ``class_names``
+        The names of the classes involved in the classification task. Each
+        string corresponds to the class associated to its index in the list.
+
+    -- ``pre_processing``
+        How the **select** and **fix** stages of the deep learning strategy
+        must be handled. Note that hierarchical autoencoders demand
+        hierarchical receptive fields. See the
+        :ref:`receptive fields <Receptive fields section>` and
+        :ref:`hierarchical FPS receptive field <Hierarchical FPS receptive field>`
+        sections for further details.
+
+    -- ``feature_extraction``
+        The definition of the feature extraction operator. A detailed
+        description of the case when ``"type": "KPConv"`` is given below.
+        For a description of the case when ``"type": "PointNet"`` see
+        :ref:`the PointNet operator documentation <Hierarchical PNet>`.
+
+        -- ``operations_per_depth``
+            A list specifying how many operations per depth level. The i-th
+            element of the list gives the number of feature extraction
+            operations at depth i.
+
+        -- ``feature_space_dims``
+            A list specifying the output dimensionality of the feature space
+            after each feature extration operation. The i-th element of the
+            list gives the dimensionality of the i-th feature extraction
+            operation.
+
+        -- ``bn``
+            Boolean flag to decide whether to enable batch normalization for
+            feature extraction.
+
+        -- ``bn_momentum``
+            Momentum for the moving average of the batch normalization, such
+            that
+            ``new_mean = old_mean * momentum + batch_mean * (1 - momentum)``.
+            See the
+            `Keras documentation on batch normalization <https://keras.io/api/layers/normalization_layers/batch_normalization/>`_
+            for more details.
+
+        -- ``activate``
+            ``True`` to activate the output of the KPConv, ``False`` otherwise.
+
+        -- ``sigma``
+            The influence distance of the kernel points for each KPConv.
+
+        -- ``kernel_radius``
+            The radius of the ball where the kernel points belong for each
+            KPConv.
+
+        -- ``num_kernel_points``
+            The number of points (i.e., structure space dimensionality) for
+            each KPConv kernel.
+
+        -- ``deformable``
+            Whether the structure space of the KPConv will be optimized
+            (``True``) or not (``False``), for each KPConv.
+
+        -- ``W_initializer``
+            The initialization method for the weights of each KPConv.
+            See
+            `the keras documentation on initializers <https://keras.io/2.15/api/layers/initializers/>`_
+            for more details.
+
+        -- ``W_regularizer``
+            The regularization strategy for weights of each KPConv.
+            See
+            `the keras documentation on regularizers <https://keras.io/api/layers/regularizers/>`_
+            for more details.
+
+        -- ``W_constraint``
+            The constraints of the weights of each KPConv.
+            See
+            `the keras documentation on constraints <https://keras.io/api/layers/constraints/>`_
+            for more details.
+
+    -- ``structure_alignment``
+        When given, this specification will govern the alignment of the
+        structure space.
+
+        -- ``tnet_pre_filters_spec``
+            List defining the number of pre-transformation filters at
+            each depth.
+
+        -- ``tnet_post_filters_spec``
+            List defining the number of post-transformation filters at
+            each depth.
+
+        -- ``kernel_initializer``
+            The kernel initialization method for the structure alignment
+            layers.
+            See
+            `the keras documentation on initializers <https://keras.io/2.15/api/layers/initializers/>`_
+            for more details.
+
+    -- ``features_alignment``
+        When given, this specification will govern the alignment of the
+        feature space. It is like the ``structure_alignment`` dictionary
+        but it is applied to the features instead of the structure space.
+
+    -- ``downsampling_filter``
+        The type of downsampling filter. See
+        :class:`.StridedKPConvLayer` and
+        :class:`.FeaturesDownsamplingLayer` for more details.
+
+    -- ``upsampling_filter``
+        The type of upsampling filter. See
+        :class:`.FeaturesUpsamplingLayer` for more details.
+
+    -- ``upsampling_bn``
+        Boolean flag to decide whether to enable batch normalization for
+        upsampling transformations.
+
+    -- ``upsampling_momentum``
+        Momentum for the moving average of the upsampling batch normalization,
+        such that
+        ``new_mean = old_mean * momentum + batch_mean * (1-momentum)``.
+        See the
+        `Keras documentation on batch normalization <https://keras.io/api/layers/normalization_layers/batch_normalization/>`_
+        for more details.
+
+    -- ``conv1d_kernel_initializer``
+        The initialization method for the 1D convolutions during upsampling.
+        See
+        `the keras documentation on initializers <https://keras.io/2.15/api/layers/initializers/>`_
+        for more details.
+
+    -- ``output_kernel_initializer``
+        The initialization method for the final 1D convolution that computes
+        the point-wise outputs of the neural network.
+        See
+        `the keras documentation on initializers <https://keras.io/2.15/api/layers/initializers/>`_
+        for more details.
+
+    -- ``model_handling``
+        Define how to handle the model, i.e., not the architecture itself but
+        how it must be used.
+        See the description of
+        :ref:`PointNet model handling <PointNet model handling>`
+        for more details.
+        The main difference for hierarchical autoencoders using KPConv are:
+
+        -- ``kpconv_representation_dir``
+            Path where the plots and CSV data representing the KPConv kernels
+            will be stored.
+
+        -- ``skpconv_representation_dir``
+            Path where the plots and CSV data representing the strided KPConv
+            kernels will be stored.
+
+    -- ``compilation_args``
+        The arguments governing the model's compilation. They include the
+        optimizer, the loss function and the metrics to be monitored during
+        training. See the :ref:`optimizers section <Optimizers section>` and
+        :ref:`losses section <Losses section>` for further details.
+
+    -- ``training_evaluation_metrics``
+        See :ref:`PointNet-like point-wise classifier arguments <PointNet arguments>`.
+
+    -- ``training_class_evaluation_metrics``
+        See :ref:`PointNet-like point-wise classifier arguments <PointNet arguments>`.
+
+    -- ``training_evaluation_report_path``
+        See :ref:`PointNet-like point-wise classifier arguments <PointNet arguments>`.
+
+    -- ``training_class_evaluation_report_path``
+        See :ref:`PointNet-like point-wise classifier arguments <PointNet arguments>`.
+
+    -- ``training_confusion_matrix_report_path``
+        See :ref:`PointNet-like point-wise classifier arguments <PointNet arguments>`.
+
+    -- ``training_confusion_matrix_report_plot``
+        See :ref:`PointNet-like point-wise classifier arguments <PointNet arguments>`.
+
+    -- ``training_class_distribution_report_path``
+        See :ref:`PointNet-like point-wise classifier arguments <PointNet arguments>`.
+
+    -- ``training_classified_point_cloud_path``
+        See :ref:`PointNet-like point-wise classifier arguments <PointNet arguments>`.
+
+    -- ``training_activations_path``
+        See :ref:`PointNet-like point-wise classifier arguments <PointNet arguments>`.
 
 
 
@@ -701,6 +1575,12 @@ cloud.
 
 
 
+.. _Hierarchical FPS receptive field:
+
+Hierarchical furthest point sampling
+-----------------------------------------
+
+
 .. _Optimizers section:
 
 Optimizers
@@ -782,8 +1662,8 @@ model is enough, as shown in the JSON below:
 .. code-block:: json
 
     {
-		"train": "PointNetPwiseClassifier",
-		"pretrained_model": "out/my_model/pipe/MyModel.model"
+        "train": "PointNetPwiseClassifier",
+        "pretrained_model": "out/my_model/pipe/MyModel.model"
     }
 
 The JSON above loads a pretrained :class:`.PointNetPwiseClassif` model for
@@ -1031,7 +1911,7 @@ reference (classification) and predicted (predictions) labels inside the
 receptive field.
 
 .. figure:: ../img/dl_pnclassif_rf.png
-    :scale: 30
+    :scale: 33
     :alt: Figure representing a receptive field of a trained PointNet-based
         classifier on training data.
 
