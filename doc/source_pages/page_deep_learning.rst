@@ -1394,6 +1394,7 @@ directory given at ``receptive_fields_dir``.
 
 
 
+.. _FPS receptive field:
 
 Furthest point sampling
 -------------------------
@@ -1439,7 +1440,7 @@ below:
 
 
 The JSON above defines a FPS receptive field on 3D rectangular neighborhoods
-with edges of length :math:`3,\mathrm{m}`. Each receptive field will contain
+with edges of length :math:`3\,\mathrm{m}`. Each receptive field will contain
 8192 different points and it will be centered on a point from the input point
 cloud.
 
@@ -1498,6 +1499,8 @@ cloud.
     When ``true`` the FPS computation will be accelerated using a uniform point
     sampling strategy. It is recommended only when the number of points is
     too high to be computed deterministically.
+
+.. _FPS neighborhood:
 
 -- ``neighborhood``
     Define the neighborhood to be used.
@@ -1567,6 +1570,11 @@ cloud.
     Path to the directory where the point clouds representing each receptive
     field will be written.
 
+-- ``training_support_points_report_path``
+    Path to the directory where the point cloud representing the training
+    support points (those used as the centers of the input neighborhoods) will
+    be exported.
+
 -- ``support_points_report_path``
     Path to the directory where the point cloud representing the support
     points (those used as the centers of the input neighborhoods) will be
@@ -1579,6 +1587,158 @@ cloud.
 
 Hierarchical furthest point sampling
 -----------------------------------------
+
+Hierarchical furthest point sampling applies FPS many consecutive times up to a
+max depth. More details about FPS can be read in the
+:ref:`furthest point sampling receptive field documentation <FPS receptive field>`.
+The hierarchical FPS is implemented through
+:class:`.HierarchicalFPSPreProcessor` and
+:class:`.ReceptiveFieldHierarchicalFPS`. They can be configured as shown in the
+JSON below:
+
+.. code-block:: json
+
+    "pre_processing": {
+        "pre_processor": "hierarchical_fps",
+        "support_strategy_num_points": 60000,
+        "to_unit_sphere": false,
+        "support_strategy": "fps",
+        "support_chunk_size": 2000,
+        "support_strategy_fast": true,
+        "center_on_pcloud": true,
+        "neighborhood": {
+            "type": "sphere",
+            "radius": 3.0,
+            "separation_factor": 0.8
+        },
+        "num_points_per_depth": [512, 256, 128, 64, 32],
+        "fast_flag_per_depth": [false, false, false, false, false],
+        "num_downsampling_neighbors": [1, 16, 8, 8, 4],
+        "num_pwise_neighbors": [32, 16, 16, 8, 4],
+        "num_upsampling_neighbors": [1, 16, 8, 8, 4],
+        "nthreads": 12,
+        "training_receptive_fields_distribution_report_path": "*/training_eval/training_receptive_fields_distribution.log",
+        "training_receptive_fields_distribution_plot_path": "*/training_eval/training_receptive_fields_distribution.svg",
+        "training_receptive_fields_dir": null,
+        "receptive_fields_distribution_report_path": "*/training_eval/receptive_fields_distribution.log",
+        "receptive_fields_distribution_plot_path": "*/training_eval/receptive_fields_distribution.svg",
+        "receptive_fields_dir": null,
+        "training_support_points_report_path": "*/training_eval/training_support_points.laz",
+        "support_points_report_path": "*/training_eval/support_points.laz"
+    }
+
+The JSON above defines a hierarchical FPS receptive field on 3D spherical
+neighborhoods with radius :math:`3\,\mathrm{m}`. It has depth five with
+512 points in the first neighborhood and 32 in the last and it is centered
+on points from the input point cloud.
+
+
+**Arguments**
+
+-- ``support_strategy_num_points``
+    When using the ``"fps"`` support strategy, this parameter governs the
+    number of furthest points that must be considered.
+
+-- ``to_unit_sphere``
+    Whether to transform the structure space (spatial coordinates) of each
+    receptive field (True) to the unit sphere (i.e., the distance between the center
+    point and its furthest neighbor must be one) or not (False).
+
+-- ``support_strategy``
+    Either ``"grid"`` to find the support points as the closest neighbors to
+    the nodes of a grid, or ``"fps"`` to select the support points through
+    furthest point subsampling. The grid covers the space inside the minimum
+    axis-aligned bounding box representing the point cloud's boundary.
+
+-- ``support_chunk_size``
+    When given and distinct than zero, it will define the chunk size. The
+    chunk size will be used to group certain tasks into chunks with a max
+    size to prevent memory exhaustion.
+
+-- ``support_strategy_fast``
+    When using the ``"fps"`` support strategy, setting this parameter to true
+    will use a significantly faster random sampling-based approximation of the
+    furthest point subsampling strategy. Note that this approximation is only
+    reliable for high enough values of ``"support_strategy_num_points"``
+    (at least thousands).
+
+-- ``center_on_pcloud``
+    When ``true`` the neighborhoods will be centered on a point from the
+    input point cloud. Typically by finding the nearest neighbor of a support
+    point in the input point cloud.
+
+-- ``neighborhood``
+    Define the neighborhood to be used. For further details on neighborhood
+    definitino, see
+    :ref:`the FPS neighborhood specification <FPS neighborhood>`.
+
+-- ``num_points_per_depth``
+    The number of points defining the receptive field at each depth level.
+
+-- ``fast_flag_per_depth``
+    Whether to use a faster random sampling-based approximation for the FPS
+    at each depth level.
+
+-- ``num_downsampling_neighbors``
+    How many closest neighbors consider for the downsampling neighborhoods at
+    each depth level.
+
+-- ``num_pwise_neighbors``
+    How many closest neighbors consider in the downsampled space that will be
+    the input of a feature extraction operator, for each depth level.
+
+-- ``num_usampling_neighbors``
+    How many closest neighbors consider for the upsampling neighborhoods at
+    each depth level.
+
+-- ``nthreads``
+    How many threads must be used to compute the receptive fields. If -1 is
+    given, then as many parallel threads as possible will be used. Note that
+    in most Python backends processes will be used instead of threads due to
+    the GIL issue.
+
+-- ``training_receptive_fields_distribution_report_path``
+    Path where a text report about the distribution of classes among the
+    receptive fields will be exported. It considers the receptive fields used
+    during training.
+
+-- ``training_receptive_fields_distribution_plot_path``
+    Path where a plot about the distribution of classes among the receptive
+    fields will be exported. It considers the receptive fields used during
+    training.
+
+-- ``training_receptive_fields_dir``
+    Path to the directory where the point clouds representing each receptive
+    field will be written. It considers the receptive fields used during
+    training.
+
+-- ``receptive_fields_distribution_report_path``
+    Path where a text report about the distribution of classes among the
+    receptive fields will be exported.
+
+-- ``receptive_fields_distribution_plot_path``
+    Path where a plot about the distribution of classes among the receptive
+    fields will be exported.
+
+-- ``receptive_fields_dir``
+    Path to the directory where the point clouds representing each receptive
+    field will be written.
+
+-- ``training_support_points_report_path``
+    Path to the directory where the point cloud representing the training
+    support points (those used as the centers of the input neighborhoods) will
+    be exported.
+
+-- ``support_points_report_path``
+    Path to the directory where the point cloud representing the support
+    points (those used as the centers of the input neighborhoods) will be
+    exported.
+
+
+
+
+
+
 
 
 .. _Optimizers section:
