@@ -1834,8 +1834,14 @@ at a lower learning rate than the original model to avoid losing what
 has been learned before, as typical in fine-tuning.
 
 
-Working example
-==================
+
+
+
+
+
+
+Working example : PointNet-like model
+========================================
 
 This example shows how to define two different pipelines, one to train a model
 and export it as a :class:`.PredictivePipeline`, the other to use the
@@ -2155,6 +2161,372 @@ misclassified (red) points.
 .. figure:: ../img/pnetclassif_unseen.png
     :scale: 35
     :alt: Figure representing the semantic segmentation of a PointNet-based
+            classifier on previously unseen data.
+
+    Visualization of the semantic segmentation model applied to previously
+    unseen data. The bottom image shows correctly classified points in gray and
+    misclassified points in red. The predictions and reference images use the
+    same color code for the classes.
+
+
+
+
+
+
+
+
+Working example : KPConv-based model
+========================================
+
+This example shows how to define two different pipelines, one to train a model
+and export it as a :class:`.PredictivePipeline`, the other to use the
+predictive pipeline to compute a semantic segmentation on a previously unseen
+point cloud. Readers are referred to the
+:ref:`pipelines documentation <Pipelines page>` to read more
+about how pipelines work and to see more examples.
+
+
+
+Standardization
+------------------
+The reflectance values in the point clouds considered for this example have
+been standardized. To reproduce the standardization, build a pipeline with
+a :class:`.Standardizer` as shown below:
+
+.. code-block:: json
+
+    {
+    	"feature_transformer": "Standardizer",
+		"fnames": ["Reflectance", "HSV_Hrad", "HSV_S", "HSV_V"],
+		"center": true,
+		"scale": true,
+		"report_path": "*standardization.log"
+	}
+
+Finally, add a :class:`.PredictivePipelineWriter` as shown below so the same
+standardization can be applied to any point cloud later on:
+
+.. code-block::
+
+    {
+      "writer": "PredictivePipelineWriter",
+      "out_pipeline": "*STD.pipe",
+	  "ignore_predictions": true,
+      "include_writer": false
+      "include_imputer": false,
+      "include_feature_transformer": true,
+      "include_miner": false,
+      "include_class_transformer": false
+    }
+
+
+
+Training pipeline
+--------------------
+
+
+The training pipeline will train a :class:`.ConvAutoencPwiseClassif` for the
+multiclass urban semantic segmentation of the points. The training point cloud
+is the one given in the March 2018 epoch of the
+`Hessigheim dataset <https://ifpwww.ifp.uni-stuttgart.de/benchmark/hessigheim/default.aspx>`_
+. However, its reflectance values have been preprocessed using a
+:class:`.Standardizer` to have a convenient scale.
+
+
+The receptive fields are computed following a hierarchical furthest point
+subsampling strategy such that the hierarchy of receptive field starts with
+:math:`512` points and ends with :math:`32`. The receptive
+fields are built from 3D spherical neighborhoods with a radius) of
+:math:`3\,\mathrm{m}`.
+
+The first downsampling (i.e., the one that maps the original input neighborhood
+to the first receptive field) considers only the nearest neighbor. However,
+the second, third, fourth, and fifth dowsnamplings consider :math:`16`,
+:math:`8`, :math:`8`, and :math:`4` closest neighbors, respectively. The
+upsampling layers preserver the same number of k nearest neighbors. However,
+the first neighborhood considered by a KPConv layer knows the :math:`32`
+nearest neighbors instead of only the first one.
+
+The KPConv and strided KPConv layers start with :math:`64` output features but
+end with :math:`1024`, applying batch normalization during training. The
+kernels are activated and the influence distance of each kernel point is the
+same as the kernel radius. Strided kernel point convolutions are used for the
+downsampling instead of typical faetures downsampling strategies like
+nearest downsampling, mean, or gaussian RBF.
+
+The JSON below corresponds to the described training pipeline.
+
+.. code-block:: json
+
+    {
+      "in_pcloud": [
+        "/mnt/netapp2/Store_uscciaep/lidar_data/hessigheim/vl3d/mined/Mar18_train_hsv_std.laz"
+      ],
+      "out_pcloud": [
+        "/mnt/netapp2/Store_uscciaep/lidar_data/hessigheim/vl3d/kpconv_R/T1/*"
+      ],
+      "sequential_pipeline": [
+        {
+            "train": "ConvolutionalAutoencoderPwiseClassifier",
+            "training_type": "base",
+            "fnames": ["Reflectance", "ones"],
+            "random_seed": null,
+            "model_args": {
+                "fnames": ["Reflectance", "ones"],
+                "num_classes": 11,
+                "class_names": ["LowVeg", "ImpSurf", "Vehicle", "UrbanFurni", "Roof", "Facade", "Shrub", "Tree", "Soil/Gravel", "VertSurf", "Chimney"],
+                "pre_processing": {
+                    "pre_processor": "hierarchical_fps",
+                    "support_strategy_num_points": 60000,
+                    "to_unit_sphere": false,
+                    "support_strategy": "fps",
+                    "support_chunk_size": 2000,
+                    "support_strategy_fast": true,
+                    "center_on_pcloud": true,
+                    "neighborhood": {
+                        "type": "sphere",
+                        "radius": 3.0,
+                        "separation_factor": 0.8
+                    },
+                    "num_points_per_depth": [512, 256, 128, 64, 32],
+                    "fast_flag_per_depth": [false, false, false, false, false],
+                    "num_downsampling_neighbors": [1, 16, 8, 8, 4],
+                    "num_pwise_neighbors": [32, 16, 16, 8, 4],
+                    "num_upsampling_neighbors": [1, 16, 8, 8, 4],
+                    "nthreads": 12,
+                    "training_receptive_fields_distribution_report_path": "*/training_eval/training_receptive_fields_distribution.log",
+                    "training_receptive_fields_distribution_plot_path": "*/training_eval/training_receptive_fields_distribution.svg",
+                    "training_receptive_fields_dir": null,
+                    "receptive_fields_distribution_report_path": "*/training_eval/receptive_fields_distribution.log",
+                    "receptive_fields_distribution_plot_path": "*/training_eval/receptive_fields_distribution.svg",
+                    "receptive_fields_dir": null,
+                    "training_support_points_report_path": "*/training_eval/training_support_points.laz",
+                    "support_points_report_path": "*/training_eval/support_points.laz"
+                },
+                "feature_extraction": {
+                    "type": "KPConv",
+                    "operations_per_depth": [2, 1, 1, 1, 1],
+                    "feature_space_dims": [64, 64, 128, 256, 512, 1024],
+                    "bn": true,
+                    "bn_momentum": 0.0,
+                    "activate": true,
+                    "sigma": [3.0, 3.0, 3.0, 3.0, 3.0, 3.0],
+                    "kernel_radius": [3.0, 3.0, 3.0, 3.0, 3.0, 3.0],
+                    "num_kernel_points": [15, 15, 15, 15, 15, 15],
+                    "deformable": [false, false, false, false, false, false],
+                    "W_initializer": ["glorot_uniform", "glorot_uniform", "glorot_uniform", "glorot_uniform", "glorot_uniform", "glorot_uniform"],
+                    "W_regularizer": [null, null, null, null, null, null],
+                    "W_constraint": [null, null, null, null, null, null]
+                },
+                "structure_alignment": null,
+                "features_alignment": null,
+                "downsampling_filter": "strided_kpconv",
+                "upsampling_filter": "mean",
+                "upsampling_bn": true,
+                "upsampling_momentum": 0.0,
+                "conv1d_kernel_initializer": "glorot_normal",
+                "output_kernel_initializer": "glorot_normal",
+                "model_handling": {
+                    "summary_report_path": "*/model_summary.log",
+                    "training_history_dir": "*/training_eval/history",
+                    "kpconv_representation_dir": "*/training_eval/kpconv_layers/",
+                    "skpconv_representation_dir": "*/training_eval/skpconv_layers/",
+                    "class_weight": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                    "training_epochs": 300,
+                    "batch_size": 16,
+                    "checkpoint_path": "*/checkpoint.model",
+                    "checkpoint_monitor": "loss",
+                    "learning_rate_on_plateau": {
+                        "monitor": "loss",
+                        "mode": "min",
+                        "factor": 0.1,
+                        "patience": 2000,
+                        "cooldown": 5,
+                        "min_delta": 0.01,
+                        "min_lr": 1e-6
+                    }
+                },
+                "compilation_args": {
+                    "optimizer": {
+                        "algorithm": "SGD",
+                        "learning_rate": {
+                            "schedule": "exponential_decay",
+                            "schedule_args": {
+                                "initial_learning_rate": 1e-2,
+                                "decay_steps": 15000,
+                                "decay_rate": 0.96,
+                                "staircase": false
+                            }
+                        }
+                    },
+                    "loss": {
+                        "function": "class_weighted_categorical_crossentropy"
+                    },
+                    "metrics": [
+                        "categorical_accuracy"
+                    ]
+                },
+                "architecture_graph_path": "*/model_graph.png",
+                "architecture_graph_args": {
+                    "show_shapes": true,
+                    "show_dtype": true,
+                    "show_layer_names": true,
+                    "rankdir": "TB",
+                    "expand_nested": true,
+                    "dpi": 300,
+                    "show_layer_activations": true
+                }
+            },
+            "autoval_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
+            "training_evaluation_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
+            "training_class_evaluation_metrics": ["P", "R", "F1", "IoU"],
+            "training_evaluation_report_path": "*/training_eval/evaluation.log",
+            "training_class_evaluation_report_path": "*/training_eval/class_evaluation.log",
+            "training_confusion_matrix_report_path": "*/training_eval/confusion.log",
+            "training_confusion_matrix_plot_path": "*/training_eval/confusion.svg",
+            "training_class_distribution_report_path": "*/training_eval/class_distribution.log",
+            "training_class_distribution_plot_path": "*/training_eval/class_distribution.svg",
+            "training_classified_point_cloud_path": "*/training_eval/classified_point_cloud.laz",
+            "training_activations_path": null
+        },
+        {
+          "writer": "PredictivePipelineWriter",
+          "out_pipeline": "*pipe/KPC_T1.pipe",
+          "include_writer": false,
+          "include_imputer": false,
+          "include_feature_transformer": false,
+          "include_miner": false,
+          "include_class_transformer": false
+        }
+      ]
+    }
+
+
+
+The table below represents the distribution of reference and predicted labels
+on the training dataset. The class imbalance can be clearly observed. In this
+example, no specific measurements (e.g., class weights) have been applied to
+mitigate the class imbalance.
+
+.. csv-table::
+    :file: ../csv/dl_kpconvclassif_train_class_distrib.csv
+    :widths: 20 20 20 20 20
+    :header-rows: 1
+
+
+The figure below represents the distribution of the classes along the receptive
+fields. The blue histograms represent the absolute frequency (i.e., count of
+points) for each class. The red histograms count the number of receptive fields
+with at least on point of a given class. The top row counts the predictions,
+the bottom row counts the labels.
+
+.. figure:: ../img/dl_kpconvclassif_rf_distr.png
+    :scale: 40
+    :alt: Figure representing the distribution of the classes along the
+        input receptive fields representing the training data for the
+        KPConv-based classifier on training data.
+
+    Visualization of the distribution of classes along the receptive fields.
+    Blue for straightforward absolute frequencies, red for counting receptive
+    fields with at least one case of a given class.
+
+
+
+
+Predictive pipeline
+---------------------
+
+The predictive pipeline will use the model trained on the first point cloud to
+compute an urban semantic segmentation on a validation point cloud.
+More concretely, the validation point cloud corresponds to the March 2018
+epoch of the
+`Hessigheim dataset <https://ifpwww.ifp.uni-stuttgart.de/benchmark/hessigheim/default.aspx>`_.
+The same :class:`.Standardizer` used to standardize the reflectance values of
+the training point cloud has been used with the validation point cloud. Using
+the same :class:`.Standardizer` implies considering the mean and standard
+deviation from the distribution of the training dataset.
+
+The predictions will be exported through the :class:`.ClassifiedPcloudWriter`,
+which means the boolean mask on success and fail will be available. Also, the
+:class:`.ClassificationEvaluator` will be used to quantify the quality of the
+predictions through many evaluation metrics. Uncertainty measurements are also
+computed through the :class:`.ClassificationUncertaintyEvaluator`.
+
+The JSON below corresponds to the described predictive pipeline.
+
+.. code-block:: json
+
+    {
+      "in_pcloud": [
+        "/mnt/netapp2/Store_uscciaep/lidar_data/hessigheim/vl3d/mined/Mar18_val_hsv_std.laz"
+      ],
+      "out_pcloud": [
+        "/mnt/netapp2/Store_uscciaep/lidar_data/hessigheim/vl3d/kpconv_R/T1/preds/val/*"
+      ],
+      "sequential_pipeline": [
+        {
+          "predict": "PredictivePipeline",
+          "model_path": "/mnt/netapp2/Store_uscciaep/lidar_data/hessigheim/vl3d/kpconv_R/T1/pipe/KPC_T1.pipe"
+        },
+        {
+            "writer": "ClassifiedPcloudWriter",
+            "out_pcloud": "*predicted.laz"
+        },
+        {
+          "writer": "PredictionsWriter",
+          "out_preds": "*predictions.lbl"
+        },
+        {
+          "eval": "ClassificationEvaluator",
+          "class_names": ["LowVeg", "ImpSurf", "Vehicle", "UrbanFurni", "Roof", "Facade", "Shrub", "Tree", "Soil/Gravel", "VertSurf", "Chimney"],
+          "metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
+          "class_metrics": ["P", "R", "F1", "IoU"],
+          "report_path": "*report/global_eval.log",
+          "class_report_path": "*report/class_eval.log",
+          "confusion_matrix_report_path" : "*report/confusion_matrix.log",
+          "confusion_matrix_plot_path" : "*plot/confusion_matrix.svg",
+          "class_distribution_report_path": "*report/class_distribution.log",
+          "class_distribution_plot_path": "*plot/class_distribution.svg"
+        },
+        {
+            "eval": "ClassificationUncertaintyEvaluator",
+            "class_names": ["LowVeg", "ImpSurf", "Vehicle", "UrbanFurni", "Roof", "Facade", "Shrub", "Tree", "Soil/Gravel", "VertSurf", "Chimney"],
+            "include_probabilities": true,
+            "include_weighted_entropy": true,
+            "include_clusters": true,
+            "weight_by_predictions": false,
+            "num_clusters": 10,
+            "clustering_max_iters": 128,
+            "clustering_batch_size": 1000000,
+            "clustering_entropy_weights": false,
+            "clustering_reduce_function": "mean",
+            "gaussian_kernel_points": 256,
+            "report_path": "*uncertainty/uncertainty.laz",
+            "plot_path": "*uncertainty/"
+        }
+      ]
+    }
+
+
+The table below represents the class-wise evaluation metrics. It shows the
+precision, recall, F1-score, and intersection over union (IoU) for each class.
+It can be seen that it is especially problematic to differentiate soil/gravel
+terrain, as evidenced by its low recall. Besides, roofs are segmented
+with high recall and precision at the same time. Together with trees, they
+are clearly the best segmented classes.
+
+.. csv-table::
+    :file: ../csv/dl_kpconvclassif_predict_class_eval.csv
+    :widths: 20 20 20 20 20
+    :header-rows: 1
+
+The figure below shows the reference and predicted labels, as well as the
+fail/success boolean mask representing correctly classified (gray) and
+misclassified (red) points.
+
+.. figure:: ../img/kpconvclassif_unseen.png
+    :scale: 35
+    :alt: Figure representing the semantic segmentation of a KPConv-based
             classifier on previously unseen data.
 
     Visualization of the semantic segmentation model applied to previously
