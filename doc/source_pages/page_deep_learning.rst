@@ -492,8 +492,7 @@ with :math:`n_f` features. For a given depth, for example for depth three
 (as illustrated in the figure above), there is a set of downsampling stages
 followed by a set of upsampling stages.
 
-At a given depth :math:`d`, there is
-a non downsampled structrue space
+At a given depth :math:`d`, there is a non downsampled structure space
 :math:`\pmb{X_{d-1}} \in \mathbb{R}^{R_{d-1} \times 3}` and its corresponding
 :math:`\pmb{X_{d}} \in \mathbb{R}^{R_d \times 3}` downsampled version.
 The neighborhood :math:`\mathcal{N}_d^D` can be represented with an indexing
