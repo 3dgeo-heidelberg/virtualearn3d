@@ -2195,12 +2195,12 @@ a :class:`.Standardizer` as shown below:
 .. code-block:: json
 
     {
-    	"feature_transformer": "Standardizer",
-		"fnames": ["Reflectance", "HSV_Hrad", "HSV_S", "HSV_V"],
-		"center": true,
-		"scale": true,
-		"report_path": "*standardization.log"
-	}
+        "feature_transformer": "Standardizer",
+        "fnames": ["Reflectance", "HSV_Hrad", "HSV_S", "HSV_V"],
+        "center": true,
+        "scale": true,
+        "report_path": "*standardization.log"
+    }
 
 Finally, add a :class:`.PredictivePipelineWriter` as shown below so the same
 standardization can be applied to any point cloud later on:
@@ -2210,7 +2210,7 @@ standardization can be applied to any point cloud later on:
     {
       "writer": "PredictivePipelineWriter",
       "out_pipeline": "*STD.pipe",
-	  "ignore_predictions": true,
+      "ignore_predictions": true,
       "include_writer": false
       "include_imputer": false,
       "include_feature_transformer": true,

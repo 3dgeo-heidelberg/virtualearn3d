@@ -264,14 +264,14 @@ CREATE TABLE machines (
     id serial PRIMARY KEY,
     name VARCHAR(60) UNIQUE,
     cpu TEXT,
-    cpu_max_freq INT,
+    cpu_max_freq BIGINT,
     cpu_max_cores INT,
     gpu TEXT,
-    gpu_max_freq INT,
+    gpu_max_freq BIGINT,
     gpu_max_cores INT,
     gpu_max_mem BIGINT,
     tpu TEXT,
-    tpu_max_freq INT,
+    tpu_max_freq BIGINT,
     tpu_max_cores INT,
     tpu_max_mem BIGINT,
     ram TEXT,
@@ -331,6 +331,7 @@ CREATE TABLE model_plots(
     notes TEXT,
     FOREIGN KEY(model_id) REFERENCES models(id),
     FOREIGN KEY(plot_id) REFERENCES plots(id),
+    FOREIGN KEY(plot_format_id) REFERENCES plot_formats(id),
     PRIMARY KEY(model_id, plot_id)
 );
 
@@ -486,4 +487,31 @@ CREATE TABLE classwise_distributions(
     FOREIGN KEY(dataset_id) REFERENCES datasets(id),
     FOREIGN KEY(class_id) REFERENCES classes(id),
     PRIMARY KEY(dataset_id, class_id)
+);
+
+-- TABLE: resultset_confusions
+DROP TABLE IF EXISTS resultset_confusions cascade;
+CREATE TABLE resultset_confusions(
+    resultset_id BIGINT NOT NULL,
+    ref_class_id INT NOT NULL,
+    pred_class_id INT NOT NULL,
+    recount BIGINT NOT NULL,
+    FOREIGN KEY (resultset_id) REFERENCES resultsets(id),
+    FOREIGN KEY(ref_class_id) REFERENCES classes(id),
+    FOREIGN KEY (pred_class_id) REFERENCES classes(id),
+    PRIMARY KEY(resultset_id, ref_class_id, pred_class_id)
+);
+
+-- TABLE: resultset_plots
+DROP TABLE IF EXISTS resultset_plots cascade;
+CREATE TABLE resultset_plots(
+    resultset_id BIGINT NOT NULL,
+    plot_id INT NOT NULL,
+    plot_bin bytea NOT NULL,
+    plot_format_id INT NOT NULL,
+    notes TEXT,
+    FOREIGN KEY(resultset_id) REFERENCES resultsets(id),
+    FOREIGN KEY(plot_id) REFERENCES plots(id),
+    FOREIGN KEY(plot_format_id) REFERENCES plot_formats(id),
+    PRIMARY KEY(resultset_id, plot_id)
 );
