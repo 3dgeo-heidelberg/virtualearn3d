@@ -17,7 +17,6 @@ VL3DCFG = {
     'TEST': None
 }
 
-
 def main_config_init(rootdir=''):
     """
     Initialize the main config (global variable VL3DCFG).
