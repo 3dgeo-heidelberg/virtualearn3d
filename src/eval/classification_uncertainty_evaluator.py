@@ -386,7 +386,7 @@ class ClassificationUncertaintyEvaluator(Evaluator):
         :type Zhat: :class:`np.ndarray`
         :return: A vector of point-wise Shannon's entropies such that the
             component i is the entropy corresponding to the point i.
-        :rtype: :class.`np.ndarray`
+        :rtype: :class:`np.ndarray`
         """
         E = -np.sum(Zhat * np.log2(Zhat), axis=1)
         E[np.isnan(E)] = 0  # NaN means no entropy at all (zero)

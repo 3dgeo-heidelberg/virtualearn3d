@@ -103,7 +103,8 @@ class SequentialPipeline(Pipeline):
             if comp.get("predict", None) is not None:  # Handle predict
                 if comp['predict'].lower() == 'predictivepipeline':
                     self.sequence.append(PipelineIO.read_predictive_pipeline(
-                        comp['model_path']
+                        comp['model_path'],
+                        new_nn_path=comp.get('nn_path', None)
                     ))
                 elif comp['predict'].lower() == 'modelloader':
                     model = ModelIO.read(comp['model_path'])
