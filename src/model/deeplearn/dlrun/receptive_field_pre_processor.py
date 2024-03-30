@@ -259,21 +259,21 @@ class ReceptiveFieldPreProcessor:
             return
         # Update paths
         self.training_receptive_fields_distribution_report_path = \
-            preproc['training_receptive_fields_distribution_report_path']
+            preproc.get('training_receptive_fields_distribution_report_path', None)
         self.training_receptive_fields_distribution_plot_path = \
-            preproc['training_receptive_fields_distribution_plot_path']
+            preproc.get('training_receptive_fields_distribution_plot_path', None)
         self.training_receptive_fields_dir = \
-            preproc['training_receptive_fields_dir']
+            preproc.get('training_receptive_fields_dir', None)
         self.receptive_fields_distribution_report_path = \
-            preproc['receptive_fields_distribution_report_path']
+            preproc.get('receptive_fields_distribution_report_path', None)
         self.receptive_fields_distribution_plot_path = \
-            preproc['receptive_fields_distribution_plot_path']
+            preproc.get('receptive_fields_distribution_plot_path', None)
         self.receptive_fields_dir = \
-            preproc['receptive_fields_dir']
+            preproc.get('receptive_fields_dir', None)
         self.training_support_points_report_path = \
-            preproc['training_support_points_report_path']
+            preproc.get('training_support_points_report_path', None)
         self.support_points_report_path = \
-            preproc['support_points_report_path']
+            preproc.get('support_points_report_path', None)
 
     @staticmethod
     def transform_to_unit_sphere(X):

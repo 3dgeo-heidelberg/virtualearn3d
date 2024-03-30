@@ -104,7 +104,7 @@ class PointNetPwiseClassif(PointNet):
         if self.include_transf_feats_X:
             x = x + [self.transf_feats_X]
         if self.include_postransf_feats_X:
-            x = x + [self.postransf_feats_X[:-1]]
+            x = x + self.postransf_feats_X[:-1]
         if self.include_global_feats_X:
             x = x + [X]
         if F is not None:
@@ -115,7 +115,7 @@ class PointNetPwiseClassif(PointNet):
             if self.include_transf_feats_F:
                 x = x + [self.transf_feats_F]
             if self.include_postransf_feats_F:
-                x = x + [self.postransf_feats_F[:-1]]
+                x = x + self.postransf_feats_F[:-1]
             if self.include_global_feats_F:
                 x = x + [F]
         if len(x) < 1:

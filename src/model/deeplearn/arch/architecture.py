@@ -25,6 +25,26 @@ from src.main.main_config import VL3DCFG
 import tensorflow as tf
 import os
 
+# ---  CONSTANTS  --- #
+# ------------------- #
+# Dictionary with custom objects used by DL models
+DL_CUSTOM_OBJECTS = {
+    'FeaturesOrthogonalRegularizer': FeaturesOrthogonalRegularizer,
+    'FeaturesStructuringLayer': FeaturesStructuringLayer,
+    "RBFFeatExtractLayer": RBFFeatExtractLayer,
+    'RBFFeatProcessingLayer': RBFFeatProcessingLayer,
+    'FeaturesDownsamplingLayer': FeaturesDownsamplingLayer,
+    'FeaturesUpsamplingLayer': FeaturesUpsamplingLayer,
+    'GroupingPointNetLayer': GroupingPointNetLayer,
+    'KPConvLayer': KPConvLayer,
+    'StridedKPConvLayer': StridedKPConvLayer
+}
+
+# ---  GLOBALS  --- #
+# ----------------- #
+# Global variable so deserialization supports path updates
+new_nn_path = None
+
 
 # ---   CLASS   --- #
 # ----------------- #
@@ -310,7 +330,7 @@ class Architecture:
         # Must rebuild the architecture (it was not serialized)
         self.pre_runnable = state['pre_runnable']
         self.post_runnable = state['post_runnable']
-        self.nn_path = state['nn_path']
+        self.nn_path = state['nn_path'] if new_nn_path is None else new_nn_path
         self.build_args = state['build_args']
         self.architecture_graph_path = None
         self.architecture_graph_args = None
@@ -325,19 +345,7 @@ class Architecture:
                 print()
             self.nn = tf.keras.models.load_model(
                 self.nn_path,
-                custom_objects={
-                    'FeaturesOrthogonalRegularizer':
-                        FeaturesOrthogonalRegularizer,
-                    'FeaturesStructuringLayer': FeaturesStructuringLayer,
-                    "RBFFeatExtractLayer": RBFFeatExtractLayer,
-                    'RBFFeatProcessingLayer': RBFFeatProcessingLayer,
-                    'FeaturesDownsamplingLayer': FeaturesDownsamplingLayer,
-                    'FeaturesUpsamplingLayer': FeaturesUpsamplingLayer,
-                    'GroupingPointNetLayer': GroupingPointNetLayer,
-                    'KPConvLayer': KPConvLayer,
-                    'StridedKPConvLayer': StridedKPConvLayer
-
-                },
+                custom_objects=DL_CUSTOM_OBJECTS,
                 compile=False
             )
         elif self.build_args is not None:  # Otherwise, rebuild

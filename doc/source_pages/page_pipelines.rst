@@ -527,7 +527,8 @@ components, as shown in the JSON below:
     "sequential_pipeline":[
         {
             "predict": "PredictivePipeline",
-            "model_path": "/my/pipelines/leaf_wood.pipe"
+            "model_path": "/my/pipelines/leaf_wood.pipe",
+            "nn_path": null
         },
         {
             "writer": "PredictionsWriter",
@@ -539,7 +540,13 @@ In the JSON example above, the defined sequential pipeline loads a predictive
 pipeline from `/my/pipelines/leaf_wood.pipe` and then uses it to compute
 a leaf-wood segmentation on the input point cloud. Afterwards, the
 computed predictions are exported to a single-column text file representing
-the predicted labels `predictions.lbl`.
+the predicted labels `predictions.lbl`. Alternatively, the ```nn_path```
+element can be used to specify the path to a neural network (typically stored
+as a `.keras` file). This specification is useful when loading a predictive
+pipeline that deserializes a deep learning model whose path to the neural
+network has changed, i.e., the one stored during serialization is no longer
+available.
+
 
 
 .. _Predictive pipeline writer args:

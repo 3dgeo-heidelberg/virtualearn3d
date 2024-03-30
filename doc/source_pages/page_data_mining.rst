@@ -214,7 +214,7 @@ point. The JSON below shows how to define a :class:`.HeightFeatsMiner`:
             "separation_factor": 0.35
         },
         "outlier_filter": null,
-        "fnames": ["floor_distance", "ceil_distance"],
+        "fnames": ["floor_distance", "ceil_distance"]
     }
 
 The JSON above defines a :class:`.HeightFeatsMiner` that computes the distance
@@ -241,8 +241,10 @@ a rectangular neighborhood for the support points with side length
 
 -- ``neighborhood``
     The neighborhood definition. The type can be either ``"Rectangular2D"``
-    (in which case ``"k"`` must be given) or ``"Cylinder"`` (in which case
-    ``"radius"`` must be given).
+    (the radius describes half of the side) or ``"Cylinder"`` (the radius
+    describes the disk of the cylinder). The separation factor governs the
+    separation of the support points considering the radius.
+    See :class:`.GridSubsamplingPreProcessor` for more details.
 
 -- ``outlier_filter``
     The strategy to filter outlier points (it can be None). Supported

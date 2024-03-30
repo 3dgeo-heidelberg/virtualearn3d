@@ -2,6 +2,7 @@
 # ------------------- #
 from src.inout.io_utils import IOUtils
 from src.pipeline.predictive_pipeline import PredictivePipeline
+from src.model.deeplearn.arch import architecture
 import joblib
 import os
 
@@ -18,11 +19,15 @@ class PipelineIO:
     # ---  READ / LOAD  --- #
     # --------------------- #
     @staticmethod
-    def read_predictive_pipeline(path):
+    def read_predictive_pipeline(path, new_nn_path=None):
         """
         Read a predictive pipeline file.
 
         :param path: Path to the pipeline file.
+        :param new_nn_path: Path to the serialized neural network when loading
+            predictive pipelines with deep learning models. It can be None, in
+            which case the `nn_path` attribute of the serialized
+            :class:`.Architecture` will be considered.
         :type path: str
         :return:
         """
@@ -32,6 +37,7 @@ class PipelineIO:
             'Cannot find model file at given input path:'
         )
         # Read and return predictive pipeline
+        architecture.new_nn_path = new_nn_path
         predictive_pipeline = joblib.load(path)
         if not isinstance(predictive_pipeline, PredictivePipeline):
             raise TypeError(

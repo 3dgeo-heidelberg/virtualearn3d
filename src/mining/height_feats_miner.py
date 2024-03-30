@@ -243,7 +243,7 @@ class HeightFeatsMiner(Miner):
                         f'outlier filter "{self.outlier_filter}".'
                     )
             # Return
-            return np.array([height_f(z) for height_f in height_functions])
+            return np.hstack([height_f(z) for height_f in height_functions])
         # Prepare chunk strategy
         num_chunks, chunk_size = 1, len(sup_X)
         if self.support_chunk_size > 0:
