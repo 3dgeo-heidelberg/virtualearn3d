@@ -281,6 +281,9 @@ class ReceptiveFieldFPS(ReceptiveField):
             the exact computation (False). The fast approximation is computed
             through uniform down sample.
         :type fast: bool
+        :param o3d_vector_class: The class (typically from Open3D utility)
+            to wrap the input matrix X.
+        :type o3d_vector_class: class
         :return: The subsampled point cloud.
         :rtype: :class:`np.ndarray`
         """
@@ -303,4 +306,3 @@ class ReceptiveFieldFPS(ReceptiveField):
                 )
             )
         return np.asarray(o3d_cloud.points)
-
