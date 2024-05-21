@@ -189,17 +189,21 @@ class ClassificationEvaluator(Evaluator):
         # Evaluate : confusion matrix
         conf_mat = confusion_matrix(y, yhat)
         # Evaluate : metrics
-        scores = np.array([
-            self.metricf[i](y, yhat) for i in range(len(self.metricf))
-        ])
+        scores = None
+        if self.metricf is not None:
+            scores = np.array([
+                self.metricf[i](y, yhat) for i in range(len(self.metricf))
+            ])
         # Evaluate : class-wise metrics
-        class_scores = np.array([  # [i][j] is metric i on class j
-            [
-                self.class_metricf[i](y, yhat, j)
-                for j in range(len(class_names))
-            ]
-            for i in range(len(self.class_metricf))
-        ])
+        class_scores = None
+        if self.class_metricf is not None:
+            class_scores = np.array([  # [i][j] is metric i on class j
+                [
+                    self.class_metricf[i](y, yhat, j)
+                    for j in range(len(class_names))
+                ]
+                for i in range(len(self.class_metricf))
+            ])
         # Log execution time
         end = time.perf_counter()
         LOGGING.LOGGER.info(

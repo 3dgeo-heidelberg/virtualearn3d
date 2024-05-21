@@ -11,13 +11,16 @@ import src.main.main_logger as LOGGING
 from src.main.main_mine import MainMine
 from src.main.main_train import MainTrain
 from src.main.main_eval import MainEval
+from src.main.main_clustering import MainClustering
 from src.mining.miner import Miner
+from src.clustering.clusterer import Clusterer
 from src.utils.imput.imputer import Imputer
 from src.utils.ftransf.feature_transformer import FeatureTransformer
 from src.utils.ctransf.class_transformer import ClassTransformer
 from src.utils.imputer_utils import ImputerUtils
 from src.utils.ftransf_utils import FtransfUtils
 from src.utils.ctransf_utils import CtransfUtils
+from src.utils.ptransf.fps_decorator_transformer import FPSDecoratorTransformer
 from src.model.model_op import ModelOp
 from src.inout.writer import Writer
 from src.inout.writer_utils import WriterUtils
@@ -71,6 +74,12 @@ class SequentialPipeline(Pipeline):
                 miner_class = MainMine.extract_miner_class(comp)
                 miner = miner_class(**miner_class.extract_miner_args(comp))
                 self.sequence.append(miner)
+            if comp.get('clustering', None) is not None:  # Handle clustering
+                clusterer_class = MainClustering.extract_clusterer_class(comp)
+                clusterer = clusterer_class(
+                    **clusterer_class.extract_clustering_args(comp)
+                )
+                self.sequence.append(clusterer)
             if comp.get("imputer", None) is not None:  # Handle imputer
                 imputer_class = ImputerUtils.extract_imputer_class(comp)
                 imputer = imputer_class(
@@ -199,11 +208,25 @@ class SequentialPipeline(Pipeline):
         header = None  # Header of the concatenated point cloud
         # Load the concatenated input point cloud
         for i, concat in enumerate(self.in_pcloud_concat):
+            start = time.perf_counter()
             in_pcloud_i = concat['in_pcloud']
             conditions_i = concat.get('conditions', None)
             # Load and filter input point cloud i
             pcloud_i = PointCloudFactoryFacade.make_from_file(in_pcloud_i)
             pcloud_i = PointCloudFilter(conditions_i).filter(pcloud_i)
+            # Apply furthest point sampling transformation, if requested
+            if concat.get('fps_transformer', None):
+                fpst = FPSDecoratorTransformer(**concat['fps_transformer'])
+                m_i = pcloud_i.get_num_points()
+                if fpst.eval_num_points(m=m_i) < m_i:
+                    fps_start = time.perf_counter()
+                    pcloud_i = fpst.transform_pcloud(pcloud_i, fnames=None)
+                    fps_end = time.perf_counter()
+                    LOGGING.LOGGER.info(
+                        'Input point cloud with concatenation transformed '
+                        f'{m_i} points to {pcloud_i.get_num_points()} points '
+                        f'in {fps_end-fps_start:.3f} seconds.'
+                    )
             if i == 0:  # Get feature names and header from first point cloud
                 fnames = pcloud_i.get_features_names()
                 header = pcloud_i.get_header()
@@ -213,6 +236,13 @@ class SequentialPipeline(Pipeline):
                 F.append(pcloud_i.get_features_matrix(fnames))
             if pcloud_i.has_classes():
                 y.append(pcloud_i.get_classes_vector())
+            # Report time
+            end = time.perf_counter()
+            LOGGING.LOGGER.info(
+                'Input point cloud with concatenation loaded point cloud at '
+                f'"{in_pcloud_i}" with {pcloud_i.get_num_points()} points in '
+                f'{end-start:.3f} seconds.'
+            )
         # Concatenations to arrays
         X = np.vstack(X)
         F = np.vstack(F)
@@ -316,6 +346,9 @@ class SequentialPipeline(Pipeline):
                 sp.sequence.append(comp)
             if isinstance(comp, Miner) and \
                     kwargs.get('include_miner', True):
+                sp.sequence.append(comp)
+            if isinstance(comp, Clusterer) and \
+                    kwargs.get('include_clustering', True):
                 sp.sequence.append(comp)
         LOGGING.LOGGER.debug(
             'Sequence of original sequential pipeline has {m} components.\n'

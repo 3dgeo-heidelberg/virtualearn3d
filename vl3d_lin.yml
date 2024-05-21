@@ -10,6 +10,7 @@ dependencies:
   - matplotlib>=3.5.1
   - scipy>=1.10.0
   - scikit-learn>=1.2.0
+  - imbalanced-learn>=0.12.2
   - numpy>=1.21.5
   - dill>=0.3.7
   - pyaml>=5.4.1

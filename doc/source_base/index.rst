@@ -16,6 +16,7 @@ Welcome to VirtuaLearn3D's documentation!
    page_deep_learning
    page_transformers
    page_imputers
+   page_clustering
    page_writers
    page_evaluators
    page_pipelines

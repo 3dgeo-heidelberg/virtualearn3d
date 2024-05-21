@@ -107,10 +107,19 @@ class HyperRandomSearch(HyperTuner):
             model.model,
             self.build_distributions(self.distributions),
             n_iter=self.iterations,
+            scoring=(
+                self.scores[0]
+                if isinstance(self.scores, list) and len(self.scores) == 1 else
+                self.scores
+            ),
             cv=self.num_folds,
             n_jobs=self.nthreads,
             pre_dispatch=self.pre_dispatch,
-            refit=False
+            refit=(
+                False if self.scores is None or len(self.scores) == 1 else
+                self.scores[0] if isinstance(self.scores, (list, tuple)) else
+                list(self.scores.keys())[0]
+            )
         )
         rs = HyperTuner.search(model, rs, pcloud)
         end = time.perf_counter()
@@ -118,7 +127,7 @@ class HyperRandomSearch(HyperTuner):
             f'Computed random search in {end-start:.3f} seconds.'
         )
         # Report results
-        hsreport = HyperSearchReport(rs.cv_results_)
+        hsreport = HyperSearchReport(rs.cv_results_, scores=rs.scoring)
         LOGGING.LOGGER.info(
             f'Hyperparameter random search report:\n{hsreport}'
         )

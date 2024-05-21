@@ -218,6 +218,12 @@ class ClassificationReport(Report):
             # Extract iteration variables
             report_name = report_names[i]
             path = paths[i]
+            if path is None:
+                LOGGING.LOGGER.debug(
+                    f'ClassificationReport skips "{report_name}" report '
+                    'because no path was given.'
+                )
+                continue
             check = checks[i]
             to_string = to_strings[i]
             # Check info

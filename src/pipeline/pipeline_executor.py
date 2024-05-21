@@ -4,15 +4,19 @@ from src.main.vl3d_exception import VL3DException
 from src.pcloud.point_cloud_factory_facade import PointCloudFactoryFacade
 from src.pcloud.point_cloud import PointCloud
 from src.mining.miner import Miner
+from src.clustering.clusterer import Clusterer
 from src.utils.imput.imputer import Imputer
 from src.utils.ftransf.feature_transformer import FeatureTransformer, \
     FeatureTransformerException
+from src.utils.ftransf.explicit_selector import ExplicitSelector
 from src.utils.ctransf.class_transformer import ClassTransformer
 from src.model.model_op import ModelOp
 from src.eval.evaluator import Evaluator
 from src.inout.writer import Writer
 from src.inout.model_writer import ModelWriter
 from src.pipeline.predictive_pipeline import PredictivePipeline
+from src.pipeline.handle.pipeline_decoration_handler import \
+    PipelineDecorationHandler
 from src.inout.predictive_pipeline_writer import PredictivePipelineWriter
 from src.inout.predictions_writer import PredictionsWriter
 from src.inout.classified_pcloud_writer import ClassifiedPcloudWriter
@@ -68,6 +72,9 @@ class PipelineExecutor:
         self.maker = maker
         self.out_prefix = kwargs.get('out_prefix', None)
         self.pre_fnames = None
+        self.pipeline_decoration_handler = PipelineDecorationHandler(
+            out_prefix=self.out_prefix
+        )
         # Validate
         if self.maker is None:
             raise PipelineExecutorException(
@@ -132,18 +139,24 @@ class PipelineExecutor:
 
         See :meth:`pipeline_executor.PipelineExecutor.__call__`.
         """
+        # Handle pre-process decoration
+        self.pipeline_decoration_handler.handle_preprocess_decoration(
+            state, comp, comp_id, comps
+        )
         # Fill fnames automatically, if requested
         fnames_comp = comp  # First, extract component with fnames
         if isinstance(comp, ModelOp):
             fnames_comp = comp.model
         # Then, extract fnames
         fnames = getattr(fnames_comp, 'fnames', None)
+        if hasattr(fnames_comp, 'get_decorated_fnames'):
+            fnames = fnames_comp.get_decorated_fnames()
         if fnames is not None and len(fnames) > 0:  # If feat. names are given
             if fnames[0] == "AUTO":  # If AUTO is requested
                 fnames_comp.fnames = state.fnames  # Take from state
             else:  # Otherwise
                 self.pre_fnames = state.fnames  # Cache fnames before update
-                state.fnames = fnames_comp.fnames  # Set the state
+                state.fnames = fnames  # Set the state
         # Handle lazy preparation
         if hasattr(comp, 'lazy_prepare'):
             comp.lazy_prepare(state)
@@ -158,13 +171,26 @@ class PipelineExecutor:
         # Execute component
         if isinstance(comp, Miner):  # Handle miner
             LOGGING.LOGGER.info(
-                f'Running {comp.__class__.__name__} data miner...'
+                f'Running {comp.__class__.__name__} data miner ...'
             )
             start = time.perf_counter()
             state.update(comp, new_pcloud=comp.mine(state.pcloud))
             end = time.perf_counter()
             LOGGING.LOGGER.info(
                 f'{comp.__class__.__name__} data miner executed in '
+                f'{end-start:.3f} seconds.'
+            )
+        elif isinstance(comp, Clusterer):  # Handle clustering
+            LOGGING.LOGGER.info(
+                f'Running {comp.__class__.__name__} clustering ...'
+            )
+            start = time.perf_counter()
+            state.update(comp, new_pcloud=comp.fit_cluster_and_post_process(
+                state.pcloud, out_prefix=self.out_prefix
+            ))
+            end = time.perf_counter()
+            LOGGING.LOGGER.info(
+                f'{comp.__class__.__name__} clustering executed in '
                 f'{end-start:.3f} seconds.'
             )
         elif isinstance(comp, Imputer):  # Handle imputer
@@ -281,12 +307,23 @@ class PipelineExecutor:
         """
         # Update the state's fnames considering posterior renames
         if isinstance(comp, FeatureTransformer):
-            try:  # Try to obtain the transformed names without input fnames
-                state.fnames = comp.get_names_of_transformed_features()
-            except FeatureTransformerException as ftex:  # Try explicit input
-                state.fnames = comp.get_names_of_transformed_features(
-                    fnames=comp.fnames
-                )
+            # Update previous feature names when an explicit selector is used
+            if isinstance(comp, ExplicitSelector):
+                if comp.preserve:  # On preserve selection
+                    self.pre_fnames = comp.fnames
+                else:  # On discard selection
+                    self.pre_fnames = [
+                        fname for fname in self.pre_fnames
+                        if fname not in comp.fnames
+                    ]
+                state.fnames = self.pre_fnames
+            else:
+                try:  # Try to obtain transformed names without input fnames
+                    state.fnames = comp.get_names_of_transformed_features()
+                except FeatureTransformerException as ftex:  # Try explicit input
+                    state.fnames = comp.get_names_of_transformed_features(
+                        fnames=comp.fnames
+                    )
         # Merge feature names from different miners
         if isinstance(comp, Miner):
             if self.pre_fnames is not None:  # If previous fnames, merge them

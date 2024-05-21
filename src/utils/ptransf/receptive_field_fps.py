@@ -70,7 +70,7 @@ class ReceptiveFieldFPS(ReceptiveField):
         :Keyword Arguments:
             *   *num_points* (``int``) --
                 The number of points :math:`R` the input points must be reduced
-                too.
+                to.
                 In other words, for a given number of input points :math:`m_1`,
                 the reduced number of points will be :math:`R`. For another,
                 let us say different (i.e., :math:`m_1 \neq m_2`) number of
@@ -284,6 +284,8 @@ class ReceptiveFieldFPS(ReceptiveField):
         :return: The subsampled point cloud.
         :rtype: :class:`np.ndarray`
         """
+        # TODO Pending : Replace fast mode with numpy shuffle (can be faster)
+        # See FPSDecoratorTransformer.transform for an example
         o3d_cloud = open3d.geometry.PointCloud()
         o3d_cloud.points = open3d.utility.Vector3dVector(X)
         if fast:

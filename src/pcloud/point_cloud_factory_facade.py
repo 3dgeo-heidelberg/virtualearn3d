@@ -48,4 +48,4 @@ class PointCloudFactoryFacade:
         """
         return PointCloudArraysFactory(
             X, F, y=y, header=header, fnames=fnames
-        ).make()
+        ).make(scale=scale)

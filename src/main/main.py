@@ -5,6 +5,7 @@ import src.main.main_config as main_config
 from src.main.main_args import ArgsParser
 from src.inout.json_io import JsonIO
 from src.main.main_mine import MainMine
+from src.main.main_clustering import MainClustering
 from src.main.main_train import MainTrain
 from src.main.main_predict import MainPredict
 from src.main.main_eval import MainEval
@@ -61,6 +62,8 @@ def main_vl3d(subtype, rootdir=''):
     # Check subtype
     if subtype == 'mine':
         MainMine.main(spec)
+    elif subtype == 'clustering':
+        MainClustering.main(spec)
     elif subtype == 'train':
         MainTrain.main(spec)
     elif subtype == 'predict':

@@ -21,6 +21,9 @@ class HyperTuner(Tuner, ABC):
     :ivar hpnames: The names (as strings) of the hyperparameters to be
         considered.
     :vartype hpnames: list or tuple or np.ndarray
+    :ivar scores: The scores that must be optimized during hyperparameter
+        tuning (None means using the default behavior for each hyper tuner).
+    :vartype scores: str or list or dict or tuple or callable or None
     """
 
     # ---  SPECIFICATION ARGUMENTS  --- #
@@ -37,6 +40,7 @@ class HyperTuner(Tuner, ABC):
         # Initialize
         kwargs = {
             'hyperparameters': spec.get('hyperparameters', None),
+            'scores': spec.get('scores', None),
             'report_path': spec.get('report_path', None)
         }
         # Delete keys with None value
@@ -56,6 +60,9 @@ class HyperTuner(Tuner, ABC):
         super().__init__(**kwargs)
         # Basic attributes of the HyperTuner
         self.report_path = kwargs.get('report_path', None)
+        self.scores = kwargs.get('scores', None)
+        if isinstance(self.scores, str):
+            self.scores = [self.scores]  # Wrap string in list
         self.hpnames = kwargs.get('hyperparameters', None)
         if self.hpnames is None:
             raise TunerException(
@@ -99,9 +106,25 @@ class HyperTuner(Tuner, ABC):
 
         :param model: The model to be updated. See :class:`.Model`
         :param search: The search to update the model.
-        :param features: The input point cloud (OPTIONAL, i.e., can be None).
+        :param pcloud: The input point cloud (OPTIONAL, i.e., can be None).
         :return: The updated model.
         :rtype: :class:`.Model`
+        """
+        if not search.refit:
+            return HyperTuner.update_model_with_no_refit(
+                model, search, pcloud=pcloud
+            )
+        else:
+            return HyperTuner.update_model_from_refit(
+                model, search, pcloud=pcloud
+            )
+
+    @staticmethod
+    def update_model_with_no_refit(model, search, pcloud=None):
+        """
+        Compute the model update when the hyperparameter tuning ends without
+        refitting the model.
+        See :meth:`.HyperTuner.update_model`.
         """
         # Extract from search and features
         best_args = search.best_params_
@@ -120,15 +143,56 @@ class HyperTuner(Tuner, ABC):
             )
             model.model_args[model_arg_key] = best_args[model_arg_key]
         best_info += '\nExpected score with new arguments: ' \
-            f'{100*best_score:.3f} ' \
-            f'+- {100*results["std_test_score"][best_index]:.3f}\n' \
-            f'Expected training time per {num_points} points ' \
-            'with new arguments: ' \
-            f'{results["mean_fit_time"][best_index]:.3f} ' \
-            f'+- {results["std_fit_time"][best_index]:.3f} seconds'
+                     f'{100*best_score:.3f} ' \
+                     f'+- {100*results["std_test_score"][best_index]:.3f}\n' \
+                     f'Expected training time per {num_points} points ' \
+                     'with new arguments: ' \
+                     f'{results["mean_fit_time"][best_index]:.3f} ' \
+                     f'+- {results["std_fit_time"][best_index]:.3f} seconds'
         LOGGING.LOGGER.info(best_info)
         # Return updated model
         return model
+
+    @staticmethod
+    def update_model_from_refit(model, search, pcloud=None):
+        """
+        Compute the model update when the hyperparameter tuning refits the
+        model after finishing.
+        See :meth:`.HyperTuner.update_model`.
+        """
+        # Extract from search and features
+        best_args = search.best_params_
+        best_index = search.best_index_
+        best_score = search.best_score_
+        best_key = search.refit
+        results = search.cv_results_
+        score_stdev = results[[
+            key
+            for key in results.keys()
+            if key.find(f'std_test_{best_key}') > -1
+        ][0]]
+        num_points = pcloud.get_num_points() if pcloud is not None else '?'
+        # Update model (and build log message)
+        best_info = 'Consequences of search on hyperparameters space:'
+        for model_arg_key in best_args.keys():
+            best_info += '\nModel argument "{arg_name}" ' \
+                         'from {arg_old} to {arg_new}'.format(
+                arg_name=model_arg_key,
+                arg_old=model.model_args[model_arg_key],
+                arg_new=best_args[model_arg_key]
+            )
+            model.model_args[model_arg_key] = best_args[model_arg_key]
+        best_info += f'\nExpected score {best_key} with new arguments: ' \
+                     f'{100*best_score:.3f} ' \
+                     f'+- {100*score_stdev[best_index]:.3f}\n' \
+                     f'Expected training time per {num_points} points ' \
+                     'with new arguments: ' \
+                     f'{results["mean_fit_time"][best_index]:.3f} ' \
+                     f'+- {results["std_fit_time"][best_index]:.3f} seconds'
+        LOGGING.LOGGER.info(best_info)
+        # Return updated model
+        return model
+
 
     # ---   STATIC UTILS   --- #
     # ------------------------ #

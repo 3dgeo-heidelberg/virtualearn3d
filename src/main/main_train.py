@@ -109,11 +109,14 @@ class MainTrain:
         model_low = model.lower()
         if model_low == 'randomforestclassifier':
             return RandomForestClassificationModel
-        if model_low == 'pointnetpwiseclassifier':
+        elif model_low == 'fpsdecorated':
+            from src.model.fps_decorated_model import FPSDecoratedModel
+            return FPSDecoratedModel
+        elif model_low == 'pointnetpwiseclassifier':
             return PointNetPwiseClassifModel
-        if model_low == 'rbfnetpwiseclassifier':
+        elif model_low == 'rbfnetpwiseclassifier':
             return RBFNetPwiseClassifModel
-        if (
+        elif (
             model_low == 'convolutionalautoencoderpwiseclassifier' or
             model_low == 'hierarchicalautoencoderpwiseclassifier'
         ):

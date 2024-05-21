@@ -2,6 +2,7 @@
 # ------------------- #
 from abc import abstractmethod
 from src.main.vl3d_exception import VL3DException
+from src.model.tdcomp.training_data_component import TrainingDataComponent
 from src.utils.dict_utils import DictUtils
 from src.utils.imputer_utils import ImputerUtils
 from src.utils.tuner_utils import TunerUtils
@@ -63,6 +64,12 @@ class Model:
     :ivar stratkfold_plot_path: The path where the plot representing the
         evaluation of the k-folding procedure must be written.
     :vartype stratkfold_plot_path: str
+    :ivar training_data_pipeline: List of dictionaries such that each
+        dictionary provides a key-word specification of a component to be used
+        to transform or select the training data. Note that the components
+        will be sequentially applied to the data in the same order they are
+        given in the list.
+    :vartype training_data_pipeline: list of dict
     """
 
     # ---  SPECIFICATION ARGUMENTS  --- #
@@ -88,7 +95,8 @@ class Model:
             'fnames': spec.get('fnames', None),
             'stratkfold_report_path': spec.get('stratkfold_report_path', None),
             'stratkfold_plot_path': spec.get('stratkfold_plot_path', None),
-            'model_args': spec.get('model_args', None)
+            'model_args': spec.get('model_args', None),
+            'training_data_pipeline': spec.get('training_data_pipeline', None)
         }
         # Delete keys with None value
         kwargs = DictUtils.delete_by_val(kwargs, None)
@@ -122,7 +130,7 @@ class Model:
             self.hypertuner = hypertuner_class(
                 **hypertuner_class.extract_tuner_args(self.hypertuner)
             )
-        # Get feature names straight forward
+        # Get feature names straightforward
         self.fnames = kwargs.get("fnames", None)
         # Validate feature names
         if self.fnames is None:
@@ -134,6 +142,15 @@ class Model:
         )
         self.stratkfold_plot_path = kwargs.get('stratkfold_plot_path', None)
         self.model_args = kwargs.get("model_args", None)
+        self.training_data_pipeline_spec = kwargs.get(
+            'training_data_pipeline', None
+        )
+        if self.training_data_pipeline_spec is not None:
+            self.training_data_pipeline = TrainingDataComponent.build_pipeline(
+                self.training_data_pipeline_spec
+            )
+        else:
+            self.training_data_pipeline = None
 
     # ---   MODEL METHODS   --- #
     # ------------------------- #
@@ -293,6 +310,9 @@ class Model:
         pcloud.proxy_dump()  # Save memory from point cloud data if necessary
         if self.imputer is not None:
             X, y = self.imputer.impute(X, y)
+        if self.training_data_pipeline is not None:
+            for comp in self.training_data_pipeline:
+                X, y = comp(X, y)
         self.training(X, y)
         self.on_training_finished(X, y)
         return self
@@ -318,6 +338,9 @@ class Model:
         pcloud.proxy_dump()  # Save memory from point cloud data if necessary
         if self.imputer is not None:
             X, y = self.imputer.impute(X, y)
+        if self.training_data_pipeline is not None:
+            for comp in self.training_data_pipeline:
+                X, y = comp(X, y)
         Xtrain, Xtest, ytrain, ytest = train_test_split(
             X, y,
             test_size=self.autoval_size,
@@ -362,6 +385,9 @@ class Model:
         pcloud.proxy_dump()  # Save memory from point cloud data if necessary
         if self.imputer is not None:
             X, y = self.imputer.impute(X, y)
+        if self.training_data_pipeline is not None:
+            for comp in self.training_data_pipeline:
+                X, y = comp(X, y)
         skf = StratifiedKFold(
             n_splits=self.num_folds,
             shuffle=self.shuffle_points,

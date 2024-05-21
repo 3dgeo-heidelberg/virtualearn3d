@@ -1,6 +1,7 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.tests.hsv_from_rgb_test import HSVFromRGBTest
+from src.tests.fps_decorator_test import FPSDecoratorTest
 from src.tests.keras_test import KerasTest
 from src.tests.receptive_field_test import ReceptiveFieldTest
 from src.tests.hierarchical_receptive_field_test import \

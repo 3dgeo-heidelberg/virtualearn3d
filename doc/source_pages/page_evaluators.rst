@@ -87,7 +87,9 @@ quick visualization.
 -- ``ignore_classes``
     Optional list of classes to be ignored when computing the evaluation
     metrics. Any point whose label matches a class in this list will be
-    excluded.
+    excluded. The classes must be given as a list of strings that matches those
+    from ``class_names``, i.e.,
+    ``ignore_classes`` :math:`\subseteq` ``class_names``.
 
 -- ``report_path``
     Path to write the evaluation of the classification to a text file.
@@ -185,7 +187,9 @@ export a point cloud and many plots to the `uncertainty` directory.
 -- ``ignore_classes``
     Optional list of classes to be ignored when computing the uncertainty
     metrics. Any point whose label matches a class in this list will be
-    excluded.
+    excluded. The classes must be given as a list of strings that matches those
+    from ``class_names``, i.e.,
+    ``ignore_classes`` :math:`\subseteq` ``class_names``.
 
 -- ``include_probabilities``
     Whether to include the probabilities in the output point cloud (True) or
