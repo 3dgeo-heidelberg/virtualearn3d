@@ -310,7 +310,7 @@ class Model:
         pcloud.proxy_dump()  # Save memory from point cloud data if necessary
         if self.imputer is not None:
             X, y = self.imputer.impute(X, y)
-        if self.training_data_pipeline is not None:
+        if getattr(self, 'training_data_pipeline', None) is not None:
             for comp in self.training_data_pipeline:
                 X, y = comp(X, y)
         self.training(X, y)
