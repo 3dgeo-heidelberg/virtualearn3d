@@ -101,9 +101,18 @@ class HyperGridSearch(HyperTuner):
             model.model,
             self.grid,
             cv=self.num_folds,
+            scoring=(
+                self.scores[0]
+                if isinstance(self.scores, list) and len(self.scores) == 1 else
+                self.scores
+            ),
             n_jobs=self.nthreads,
             pre_dispatch=self.pre_dispatch,
-            refit=False
+            refit=(
+                False if self.scores is None or len(self.scores) == 1 else
+                self.scores[0] if isinstance(self.scores, (list, tuple)) else
+                list(self.scores.keys())[0]
+            )
         )
         gs = HyperTuner.search(model, gs, pcloud)
         end = time.perf_counter()

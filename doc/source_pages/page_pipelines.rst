@@ -37,6 +37,48 @@ the following **arguments** each:
 -- ``in_pcloud``
     The path to the input point cloud.
 
+-- ``fps_transformer``
+    Optional specification to transform the input point cloud of :math:`m`
+    points to a transformed version of :math:`R < m` points through the
+    :class:`.FPSDecoratorTransformer`. The specification is similar to the
+    :ref:`FPS decorated model <FPS decorated model>`
+    (:class:`.FPSDecoratedModel`) and the
+    :ref:`FPS decorated miner <FPS decorated miner>`
+    (:class:`.FPSDecoratedMiner`).
+
+    -- ``num_points``
+        The target number of points :math:`R` for the transformed point cloud.
+        It can be an integer or an expression that will be evaluated with
+        :math:`m` representing the number of points of the original point
+        cloud, e.g., ``"m/2"`` will downscale the point cloud to half the
+        number of points.
+
+    -- ``fast``
+        Whether to use exact furthest point sampling (``false``) or a faster
+        stochastic approximation (``true``).
+
+    -- ``num_encoding_neighbors``
+        How many closest neighbors in the original point cloud are considered
+        for each point in the transformed point cloud to reduce from the
+        original space to the transformed one.
+
+    -- ``num_decoding_neighbors``
+        How many closest neighbors in the transformed point cloud are
+        considered for each point in the original point cloud to propagate back
+        from the transformed space to the original one.
+
+    -- ``release_encoding_neighborhoods``
+        Whether the encoding neighborhoods can be released after computing the
+        transformation (``true``) or not (``false``). Releasing these
+        neighborhoods means the :meth:`.FPSDecoratorTransformer.reduce` method
+        must not be called, otherwise errors will arise. Setting this flag to
+        true can help saving memory when needed.
+
+    -- ``threads``
+        The number of parallel threads to consider for the parallel
+        computations. Note that ``-1`` means using as many threads as available
+        cores.
+
 -- ``conditions``
     A list of dictionary-like conditions to filter the points before
     concatenating the point cloud. It is governed by four parameters:
@@ -225,6 +267,7 @@ a Random Forest classifier, as shown in the JSON below:
           "include_feature_transformer": false,
           "include_miner": true,
           "include_class_transformer": false,
+          "include_clustering": false,
           "ignore_predictions": false
         }
       ]
@@ -573,6 +616,9 @@ The arguments that can be specified through a JSON to build a
 
 -- ``include_class_transformer``
     Whether to include class transformers in the predictive pipeline.
+
+-- ``include_clustering``
+    Whether to include clustering components in the predictive pipeline.
 
 -- ``ignore_predictions``
     When set to ``true``, it means that the predictive pipeline must yield

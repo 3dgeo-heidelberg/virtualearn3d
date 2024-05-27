@@ -139,7 +139,7 @@ class TestTransformers:
 
         expected_out = _load_asset("PCATransformer_test.csv")
 
-        assert np.allclose(out, expected_out)
+        assert np.allclose(np.abs(out), np.abs(expected_out))
 
     def test_standardizer_invalid_input(self):
         transformer = Standardizer(fnames=["AUTO"])

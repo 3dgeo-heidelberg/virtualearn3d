@@ -492,3 +492,101 @@ neighbor.
 The generated output is a point cloud where the features correspond to the
 closest neighbor in the pool, assuming there is at least one neighbor that
 is closer than the ``distance upper bound``.
+
+
+
+
+
+
+
+
+Decorators
+================
+
+.. _FPS decorated miner:
+
+Furthest point sampling decorator
+--------------------------------------------
+
+The :class:`.FPSDecoratedMiner` can be used to decorate a data miner such that
+the computations can take place in a transformed space of reduced
+dimensionality. Typically, the domain of a data miner is the entire point
+cloud, let us say :math:`m` points. When using a :class:`.FPSDecoratedMiner`
+this domain will be transformed to a subset of the original point cloud with
+:math:`R` points, such that :math:`m \geq R`. Decorating a data miner with this
+decorator can be useful to reduce its execution time.
+
+
+.. code-block:: json
+
+    {
+        "miner": "FPSDecorated",
+        "fps_decorator": {
+            "num_points": "m/3",
+            "fast": true,
+            "num_encoding_neighbors": 1,
+            "num_decoding_neighbors": 1,
+            "release_encoding_neighborhoods": false,
+            "threads": 16,
+            "representation_report_path": "*/fps_repr/geom_r3_representation.laz"
+        },
+        "decorated_miner": {
+            "miner": "GeometricFeatures",
+            "in_pcloud": null,
+            "out_pcloud": null,
+            "radius": 3.0,
+            "fnames": ["linearity", "planarity", "surface_variation", "verticality", "anisotropy", "PCA1", "PCA2"],
+            "frenames": ["linearity_r3", "planarity_r3", "surface_variation_r3", "verticality_r3", "anisotropy_r3", "PCA1_r3", "PCA2_r3"],
+            "nthreads": 16
+        }
+    }
+
+**Arguments**
+
+-- ``fps_decorator``
+    The specification of the furthest point sampling (FPS) decoration carried
+    out through the :class:`.FPSDecoratorTransformer`.
+
+    -- ``num_points``
+        The target number of points :math:`R` for the transformed point cloud.
+        It can be an integer or an expression that will be evaluated with
+        :math:`m` representing the number of points of the original point
+        cloud, e.g., ``"m/2"`` will downscale the point cloud to half the
+        number of points.
+
+    -- ``fast``
+        Whether to use exact furthest point sampling (``false``) or a faster
+        stochastic approximation (``true``).
+
+    -- ``num_encoding_neighbors``
+        How many closest neighbors in the original point cloud are considered
+        for each point in the transformed point cloud to reduce from the
+        original space to the transformed one.
+
+    -- ``num_decoding_neighbors``
+        How many closest neighbors in the transformed point cloud are
+        considered for each point in the original point cloud to propagate back
+        from the transformed space to the original one.
+
+    -- ``release_encoding_neighborhoods``
+        Whether the encoding neighborhoods can be released after computing the
+        transformation (``true``) or not (``false``). Releasing these
+        neighborhoods means the :meth:`.FPSDecoratorTransformer.reduce` method
+        must not be called, otherwise errors will arise. Setting this flag to
+        true can help saving memory when needed.
+
+    -- ``threads``
+        The number of parallel threads to consider for the parallel
+        computations. Note that ``-1`` means using as many threads as available
+        cores.
+
+    -- ``representation_report_path``
+        Where to export the transformed point cloud. In general, it should be
+        ``null`` to prevent unnecessary operations. However, it can be enabled
+        (by given any valid path to write a point cloud file) to visualize the
+        points that are seen by the data miner.
+
+-- ``decorated_miner``
+    A typical data mining specification. See
+    :ref:`the Geometric features miner <Geometric features miner>`
+    for an example.

@@ -69,6 +69,7 @@ class MainMine:
             logged when the given input path is not valid. It supports a
             "{path}" format field that will be replaced by the invalid path
             in the message.
+        :type invalid_path_msg: str
         :return: Input path as string.
         :rtype: str
         """
@@ -121,15 +122,18 @@ class MainMine:
         miner_low = miner.lower()
         if miner_low == 'geometricfeatures':
             return GeomFeatsMiner
-        if miner_low == "covariancefeatures":
+        elif miner_low == "covariancefeatures":
             return CovarFeatsMiner
-        if miner_low == 'heightfeatures':
+        elif miner_low == 'heightfeatures':
             return HeightFeatsMiner
-        if miner_low == 'hsvfromrgb':
+        elif miner_low == 'hsvfromrgb':
             return HSVFromRGBMiner
-        if miner_low == 'smoothfeatures':
+        elif miner_low == 'smoothfeatures':
             return SmoothFeatsMiner
-        if miner_low == 'takeclosestminer':
+        elif miner_low == 'takeclosestminer':
             return TakeClosestMiner
+        elif miner_low == 'fpsdecorated':
+            from src.mining.fps_decorated_miner import FPSDecoratedMiner
+            return FPSDecoratedMiner
         # An unknown miner was specified
         raise ValueError(f'There is no known miner "{miner}"')

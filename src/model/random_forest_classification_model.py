@@ -97,6 +97,28 @@ class RandomForestClassificationModel(ClassificationModel):
         self.decision_plot_path = kwargs.get('decision_plot_path', None)
         self.decision_plot_trees = kwargs.get('decision_plot_trees', 0)
         self.decision_plot_max_depth = kwargs.get('decision_plot_max_depth', 5)
+        # Correct class_weights to transform string-like integers in the keys
+        if self.model_args is not None and 'class_weight' in self.model_args:
+            cw = self.model_args['class_weight']
+            if cw is not None and isinstance(list(cw.keys())[0], str):
+                try:
+                    keys_str = list(cw.keys())
+                    keys_int = [int(key) for key in keys_str]
+                    cw_int = {}
+                    for key_int, key_str in zip(keys_int, keys_str):
+                        cw_int[key_int] = cw[key_str]
+                    self.model_args['class_weight'] = cw_int
+                    LOGGING.LOGGER.debug(
+                        'RandomForestClassificationModel successfully '
+                        'converted the string-like class labels in the '
+                        'class_weight dictionary to integer keys.'
+                    )
+                except Exception as ex:
+                    LOGGING.LOGGER.warning(
+                        'RandomForestClassificationModel failed to convert '
+                        'string-like class labels to integers for the '
+                        'class_weight dictionary (see model_args).'
+                    )
 
     # ---   MODEL METHODS   --- #
     # ------------------------- #
@@ -139,10 +161,12 @@ class RandomForestClassificationModel(ClassificationModel):
                 f'{end-start:.3f} seconds.'
             )
 
-    def on_training_finished(self, X, y):
+    def on_training_finished(self, X, y, yhat=None):
         """
         See :meth:`model.Model.on_training_finished`.
         """
+        # Call parent's on_training_finished
+        super().on_training_finished(X, y, yhat=yhat)
         # Report feature importances and plot decision trees
         start = time.perf_counter()
         ev = RandForestEvaluator(

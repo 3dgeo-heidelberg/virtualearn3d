@@ -5,6 +5,7 @@ from src.eval.classification_evaluator import ClassificationEvaluator
 from src.eval.classification_uncertainty_evaluation import \
     ClassificationUncertaintyEvaluation
 from src.model.classification_model import ClassificationModel
+from src.model.fps_decorated_model import FPSDecoratedModel
 from src.model.deeplearn.point_net_pwise_classif_model import \
     PointNetPwiseClassifModel
 from src.model.deeplearn.rbf_net_pwise_classif_model import \
@@ -275,11 +276,14 @@ class ClassificationUncertaintyEvaluator(Evaluator):
             )
 
         if not isinstance(model, ClassificationModel):
-            raise EvaluatorException(
-                'ClassificationUncertaintyEvaluator received a '
-                f'"{type(model)}" model which is not a ClassificationModel. '
-                'This is not supported.'
-            )
+            if not isinstance(model, FPSDecoratedModel) and not isinstance(
+                model.decorated_model, ClassificationModel
+            ):
+                raise EvaluatorException(
+                    'ClassificationUncertaintyEvaluator received a '
+                    f'"{type(model)}" model which is not a ClassificationModel. '
+                    'This is not supported.'
+                )
         # Determine input type from model
         X = None
         if isinstance(
@@ -330,22 +334,38 @@ class ClassificationUncertaintyEvaluator(Evaluator):
                     'available.'
                 )
         # Ignore points for certain classes (if requested)
+        nonignored_class_names = list(self.class_names)
         if self.ignore_classes is not None and y is not None:
             ignore_classes_indices = \
                 ClassificationEvaluator.get_indices_from_names(
                     self.class_names, self.ignore_classes
                 )
+            nonignored_class_names = [
+                class_name
+                for i, class_name in enumerate(self.class_names)
+                if i not in ignore_classes_indices
+
+            ]
+            Zhat = np.delete(
+                Zhat,
+                [i for i in ignore_classes_indices if i < Zhat.shape[1]],
+                axis=1
+            )
             ignore_mask = ClassificationEvaluator.find_ignore_mask(
                 y, ignore_classes_indices
             )
             y = ClassificationEvaluator.remove_indices(y, ignore_mask)
             yhat = ClassificationEvaluator.remove_indices(yhat, ignore_mask)
             Zhat = ClassificationEvaluator.remove_indices(Zhat, ignore_mask)
-            F = ClassificationEvaluator.remove_indices(F, ignore_mask)
+            if F is not None:
+                F = ClassificationEvaluator.remove_indices(F, ignore_mask)
             X = ClassificationEvaluator.remove_indices(X, ignore_mask)
         # Obtain evaluation
         pcloud.proxy_dump()  # Save memory from point cloud data if necessary
+        _class_names = self.class_names
+        self.class_names = nonignored_class_names
         ev = self.eval(Zhat, X=X, y=y, yhat=yhat, F=F)
+        self.class_names = _class_names
         out_prefix = kwargs.get('out_prefix', None)
         if ev.can_report() and self.report_path is not None:
             report = ev.report()

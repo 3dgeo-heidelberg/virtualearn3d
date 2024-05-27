@@ -4,6 +4,8 @@ ErrorTestSuites:
     - HSVFromRGBTest
   Input/Output:
     - LASInoutTest
+  Utils:
+    - FPSDecoratorTest
 
 WarningTestSuites:
   Deep learning:

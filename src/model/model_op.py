@@ -4,6 +4,7 @@ from src.model.model import Model
 from src.model.classification_model import ClassificationModel
 from src.model.random_forest_classification_model import \
     RandomForestClassificationModel
+from src.model.fps_decorated_model import FPSDecoratedModel
 from src.model.deeplearn.handle.dl_model_handler import DLModelHandler
 from src.main.vl3d_exception import VL3DException
 from enum import Enum
@@ -238,6 +239,20 @@ class ModelOp:
                 self.model.decision_plot_path = ModelOp.merge_path(
                     out_prefix, decision_plot_path
                 )
+        # Handle FPSDecoratedModel paths
+        if isinstance(self.model, FPSDecoratedModel):
+            representation_report_path = \
+                self.model.fps_decorator.representation_report_path
+            old_paths['representation_report_path'] = representation_report_path
+            if ModelOp.path_needs_update(representation_report_path):
+                self.model.fps_decorator.representation_report_path = \
+                    ModelOp.merge_path(out_prefix, representation_report_path)
+            # Update paths for decorated model too
+            # TODO Pending : Recursively decorated models not supported yet
+            decorator_model = self.model
+            self.model = self.model.decorated_model
+            self.update_model_paths(out_prefix)
+            self.model = decorator_model
         # Handle deep learning paths
         if self.model.is_deep_learning_model():
             self.update_dl_model_paths(out_prefix, old_paths)
@@ -464,6 +479,17 @@ class ModelOp:
             self.model.decision_plot_path = old_paths.get(
                 'decision_plot_path'
             )
+        # Restore FPSDecoratedModel paths
+        if isinstance(self.model, FPSDecoratedModel):
+            self.model.fps_decorator.representation_report_path = old_paths.get(
+                'representation_report_path'
+            )
+            # Restore paths for decorated model too
+            # TODO Pending : Recursively decorated models not supported yet
+            decorator_model = self.model
+            self.model = self.model.decorated_model
+            self.restore_model_paths(old_paths)
+            self.model = decorator_model
         # Restore deep learning paths
         if self.model.is_deep_learning_model():
             self.restore_dl_model_paths(old_paths)

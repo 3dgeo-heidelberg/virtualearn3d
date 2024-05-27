@@ -123,7 +123,8 @@ class PointCloud:
         except Exception as ex:
             raise PointCloudException(
                 'PointCloud get_features_matrix method received unexpected '
-                'feature names. Supported feature names for the particular '
+                f'feature names:\n{fnames}'
+                '\n\nSupported feature names for the particular '
                 f'point cloud are:\n{self.get_features_names()}'
             ) from ex
 
@@ -186,7 +187,7 @@ class PointCloud:
         :rtype: :class:`np.ndarray`
         """
         self.proxy_load()
-        return np.array(self.las['prediction'])
+        return np.array(self.las['Prediction'])
 
     def has_predictions(self):
         """
@@ -273,7 +274,9 @@ class PointCloud:
         if len(fnames) != nfeats:
             raise PointCloudException(
                 "There is no one-to-one relationship between features and "
-                "names."
+                "names.\n"
+                f'Feature names ({len(fnames)}): {fnames}\n'
+                f'Number of features: {nfeats}'
             )
         # Handle single type specification
         if not isinstance(ftypes, (list, tuple)):

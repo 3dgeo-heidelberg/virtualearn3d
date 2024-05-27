@@ -284,11 +284,18 @@ class GridSubsamplingPreProcessor(ReceptiveFieldPreProcessor):
         # Support points by furthest point sampling
         elif support_strategy_low == 'fps':
             # Compute the FPS
-            sup_X = ReceptiveFieldFPS.compute_fps_on_3D_pcloud(
-                X,
-                num_points=support_strategy_num_points,
-                fast=support_strategy_fast
-            )
+            if X.shape[-1] == 2:
+                sup_X = ReceptiveFieldFPS.compute_fps_on_3D_pcloud(
+                    np.hstack([X, np.zeros((X.shape[0], 1))]),
+                    num_points=support_strategy_num_points,
+                    fast=support_strategy_fast
+                )[:, :2]
+            else:
+                sup_X = ReceptiveFieldFPS.compute_fps_on_3D_pcloud(
+                    X,
+                    num_points=support_strategy_num_points,
+                    fast=support_strategy_fast
+                )
             center_on_X = False  # Not necessary when using FPS
         else:
             raise DeepLearningException(
