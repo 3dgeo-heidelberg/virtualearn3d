@@ -380,8 +380,9 @@ threads.
 
 -- ``neighborhood``
     The definition of the neighborhood to be used. Supported neighborhoods are
-    ``"knn"`` (for which a ``"k"`` value must be given), and ``"sphere"``
-    (for which a ``"radius"`` value must be given).
+    ``"knn"`` (for which a ``"k"`` value must be given), ``"sphere"``
+    (for which a ``"radius"`` value must be given), and ``"cylinder"`` (the
+    ``"radius"`` refers to the disk of the cylinder).
 
 -- ``weighted_mean_omega``
     The :math:`\omega` parameter for the weighted mean strategy (see
@@ -409,7 +410,7 @@ threads.
 
 **Output**
 
-The figure below represents the smoothed saturation computed for a two
+The figure below represents the smoothed saturation computed for two
 spherical neighborhoods with :math:`25\,\mathrm{cm}` and :math:`3\,\mathrm{m}`
 radius, respectively. The point cloud is the March2018 validation one from the
 `Hessigheim dataset <https://ifpwww.ifp.uni-stuttgart.de/benchmark/hessigheim/default.aspx>`_.
@@ -422,6 +423,217 @@ radius, respectively. The point cloud is the March2018 validation one from the
     Figure representing the smoothed saturation for two different spherical
     neighborhoods with :math:`25\,\mathrm{cm}` and :math:`3\,\mathrm{m}`
     radius, respectively.
+
+
+
+Recount miner
+================
+
+The :class:`.RecountMiner` can be used to derive features based on counting
+the number of points. In doing so, many condition-based filters can be applied
+to filter the points. Furthermore, the recount of points can be used as a
+feature directly but also to derive the relative frequency, the surface density
+(points per area), the volume density (points per volume), and the number of
+vertical segments along a cylinder that contain at least one point passing the
+filters. The JSON below shows how to define a :class:`.RecountMiner`:
+
+.. code-block:: json
+
+    {
+        "miner": "Recount",
+        "chunk_size": 100000,
+        "subchunk_size": 1000,
+        "nthreads": 16,
+        "neighborhood": {
+            "type": "cylinder",
+            "radius": 3.0
+        },
+        "input_fnames": ["vegetation", "tower", "PointWiseEntropy", "Prediction"],
+        "filters": [
+            {
+                "filter_name": "pdensity",
+                "ignore_nan": false,
+                "absolute_frequency": true,
+                "relative_frequency": false,
+                "surface_density": true,
+                "volume_density": true,
+                "vertical_segments": 0,
+                "conditions": null
+            },
+            {
+                "filter_name": "maybe_tower",
+                "ignore_nan": true,
+                "absolute_frequency": true,
+                "relative_frequency": true,
+                "surface_density": true,
+                "volume_density": true,
+                "vertical_segments": 0,
+                "conditions": [
+                    {
+                        "value_name": "tower",
+                        "condition_type": "greater_than_or_equal_to",
+                        "value_target": 0.333333
+
+                    }
+                ]
+            },
+            {
+                "filter_name": "as_tower",
+                "ignore_nan": true,
+                "absolute_frequency": true,
+                "relative_frequency": true,
+                "surface_density": true,
+                "volume_density": true,
+                "vertical_segments": 8,
+                "conditions": [
+                    {
+                        "value_name": "Prediction",
+                        "condition_type": "equals",
+                        "value_target": 4
+                    }
+                ]
+            },
+            {
+                "filter_name": "unsure_veg",
+                "ignore_nan": true,
+                "absolute_frequency": true,
+                "relative_frequency": true,
+                "surface_density": false,
+                "volume_density": false,
+                "vertical_segments": 0,
+                "conditions": [
+                    {
+                        "value_name": "Prediction",
+                        "condition_type": "equals",
+                        "value_target": 2
+                    },
+                    {
+                        "value_name": "PointWiseEntropy",
+                        "condition_type": "greater_than_or_equal_to",
+                        "value_target": 0.1
+                    }
+                ]
+            },
+            {
+                "filter_name": "unsure_veg2",
+                "ignore_nan": true,
+                "absolute_frequency": true,
+                "relative_frequency": true,
+                "surface_density": false,
+                "volume_density": false,
+                "vertical_segments": 0,
+                "conditions": [
+                    {
+                        "value_name": "Prediction",
+                        "condition_type": "equals",
+                        "value_target": 2
+                    },
+                    {
+                        "value_name": "vegetation",
+                        "condition_type": "less_than",
+                        "value_target": 0.666667
+                    }
+                ]
+            }
+        ]
+    }
+
+
+The JSON above defines a :class:`.RecountMiner` that computes features from
+a previously classified point cloud. First, it computes the absolute frequency,
+and the densities considering all points.
+Then, it computes the frequencies and densities for
+points whose likelihood to be a tower is equal to or above
+:math:`0.\overline{3}`.
+Afterwards, the frequencies, densities, and counts how many of eight vertical
+segments contain at least one point, considering points predicted as tower.
+Later, the frequencies for points that have been predicted as vegetation and
+have a point-wise entropy greater than or equal to :math:`0.1`. Finally, the
+frequencies for points predicted as vegetation with a likelihood less than
+:math:`0.\overline{6}`.
+
+**Arguments**
+
+-- ``chunk_size``
+    How many points per chunk must be considered for parallel computations.
+
+-- ``subchunk_size``
+    How many neighborhoods per iteration must be considered when computing a
+    chunk. It can be useful to prevent memory exhaustion scenarios.
+
+-- ``nthreads``
+    The number of threads to be used for parallel computations (-1 means as
+    many threads as available cores).
+
+-- ``neighborhood``
+    The definition of the neighborhood to be used. Supported neighborhoods are
+    ``"knn"`` (for which a ``"k"`` value must be given), ``"sphere"``
+    (for which a ``"radius"`` value must be given), and ``"cylinder"`` (the
+    ``"radius"`` refers to the disk of the cylinder).
+
+-- ``input_fnames``
+    The names of the features to be considered when filtering the points.
+
+-- ``filters``
+    A list with all the filters that must be computed. One set of output
+    features will be generated for each filter. Any filter can consist of none
+    or many conditions. The filters can be defined such that:
+
+    -- ``filter_name``
+        The name for the filter. It will be used to name the generated
+        features.
+
+    -- ``ignore_nan``
+        A flag governing how to handle nans. When set to ``true``, the filters
+        will ignore points with nan values, i.e., they will not be counted.
+
+    -- ``absolute_frequency``
+        Whether to generate a feature with the absolute frequency or raw count
+        (``true``) or not (``false``). The generated feature will be named by
+        appending ``"_abs"`` to the filter name.
+
+    -- ``relative_frequency``
+        Whether to generate a feature with the relative frequency (``true``)
+        or not (``false``). The generated feature will be named by appending
+        ``"_rel"`` to the filter name.
+
+    -- ``surface_density``
+        Whether to generate a feature by dividing the number of points by the
+        surface area. The surface density is computed assuming the area of
+        a circle. The radius of the circle will be the given one when using
+        spherical or cylindrical neighborhoods but it will be derived as the
+        distance between the center point and the furthest neighbor for
+        knn neighborhoods. The generated feature will be named by appending
+        ``"_sd"`` to the filter name.
+
+    -- ``volume_density``
+        Whether to generate a feature by dividing the number of points by the
+        volume. The volume is computed assuming a sphere. The radius of the
+        sphere will be the given one when using spherical neighborhoods but
+        it will be derived as the distance between the center point and the
+        furthest neighbor for knn neighborhoods. For cylindrical neighborhoods,
+        a circle will be considered instead of the sphere, and the volume
+        will be computed as the area of the circle along the boundaries of the
+        vertical axis. The generated feature will be named by appending
+        ``"_vd"`` to the filter name.
+
+    -- ``vertical_segments``
+        Whether to generate a feature by dividing the neighborhood into
+        linearly spaced segments along the vertical axis and counting how many
+        partitions contain at least one point satisfying the conditions. The
+        generated feature will be named by appending ``"_vs"`` to the filter
+        name.
+
+    -- ``conditions``
+        The list of conditions is a list of elements defined in the same way
+        as the conditions of the
+        :ref:`Advanced input <Advanced input>`
+        but without the ``action`` parameter, that is always assumed to be
+        ``"preserve"``.
+
+**Output**
+
+The generated output is a point cloud that includes the recount-based features.
 
 
 

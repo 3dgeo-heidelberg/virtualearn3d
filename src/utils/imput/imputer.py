@@ -14,7 +14,7 @@ class ImputerException(VL3DException):
     :author: Alberto M. Esmoris Pena
 
     Class for exceptions related to imputation components.
-    See :class:`.VL3DException`
+    See :class:`.VL3DException`.
     """
     def __init__(self, message=''):
         # Call parent VL3DException

@@ -21,7 +21,7 @@ class ReceptiveField:
     # ---   RECEPTIVE FIELD METHODS   --- #
     # ----------------------------------- #
     @abstractmethod
-    def fit(self, X, x):
+    def fit(self, X, x, structure_float_type=np.float64):
         """
         Fit the receptive field to represent the given points.
 
@@ -30,6 +30,8 @@ class ReceptiveField:
         :param x: The center point used to define the origin of the receptive
             field.
         :type x: :class:`np.ndarray`
+        :param structure_float_type: The decimal type for the structure space.
+        :type structure_float_type: :class:`np.dtype`
         :return: The fit receptive field itself (for fluent programming).
         :rtype: :class:`.ReceptiveField`
         """

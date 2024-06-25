@@ -2,7 +2,6 @@
 # ------------------- #
 import src.main.main_logger as LOGGING
 import yaml
-import sys
 import os
 
 
@@ -12,6 +11,7 @@ import os
 VL3DCFG = {
     'IO': None,
     'EVAL': None,
+    'REPORT': None,
     'MINING': None,
     'MODEL': None,
     'TEST': None
@@ -34,6 +34,8 @@ def main_config_init(rootdir=''):
     main_config_subdict_init(rootdir, 'config/io.yml', 'IO')
     # Load evaluator/evaluation config
     main_config_subdict_init(rootdir, 'config/eval.yml', 'EVAL')
+    # Load report config
+    main_config_subdict_init(rootdir, 'config/report.yml', 'REPORT')
     # Load data mining config
     main_config_subdict_init(rootdir, 'config/mining.yml', 'MINING')
     # Load model config

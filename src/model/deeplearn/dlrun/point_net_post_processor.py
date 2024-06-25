@@ -55,7 +55,7 @@ class PointNetPostProcessor:
 
     # ---   RUN/CALL   --- #
     # -------------------- #
-    def __call__(self, inputs):
+    def __call__(self, inputs, reducer=None):
         """
         Executes the post-processing logic.
 
@@ -65,6 +65,8 @@ class PointNetPostProcessor:
             that must be propagated back to the :math:`m` points of the
             original point cloud.
         :type inputs: dict
+        :param reducer: The prediction reducer for the post-processor, if any.
+        :type reducer: :class:`.PredictionReducer`
         :return: The :math:`m` point-wise predictions.
         """
-        return self.post_processor(inputs)
+        return self.post_processor(inputs, reducer=reducer)

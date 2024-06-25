@@ -17,8 +17,9 @@ class ClusterEnveloper(ClusteringPostProcessor):
     Clustering post-processor that computes the requested envelopes for each
     cluster.
     See :class:`.ClusteringPostProcessor`
+
+    :ivar envelopes: List of dictionaries defining each envelope.
     """
-    # TODO Rethink : Doc ivars
     # ---   INIT   --- #
     # ---------------- #
     def __init__(self, **kwargs):

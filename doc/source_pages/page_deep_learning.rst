@@ -166,7 +166,15 @@ as shown in the JSON below:
                     "mode": "min",
                     "min_delta": 0.01,
                     "patience": 5000
-                }
+                },
+                "prediction_reducer": {
+                    "reduce_strategy" : {
+                        "type": "MeanPredReduceStrategy"
+                    },
+                    "select_strategy": {
+                        "type": "ArgMaxPredSelectStrategy"
+                    }
+                },
             },
             "compilation_args": {
                 "optimizer": {
@@ -403,6 +411,20 @@ for class weights. The class weights can be used to handle data imbalance.
             `Keras documentation on EarlyStopping <https://keras.io/api/callbacks/early_stopping/>`_
             for more information.
 
+        -- ``prediction_reducer``
+            Can be used to modify the default prediction reduction strategies.
+            It is a dictionary that supports a ``"reduce_strategy"``
+            specification and also a ``"select_strategy"`` specification.
+
+            -- ``reduce_strategy``
+                Supported types are :class:`.SumPredReduceStrategy`,
+                :class:`.MeanPredReduceStrategy` (default),
+                :class:`.MaxPredReduceStrategy`, and
+                :class:`.EntropicPredReduceStrategy`.
+
+            -- ``select_strategy``
+                Supported types are :class:`.ArgMaxPredSelectStrategy`
+                (default).
 
     -- ``compilation_args``
         The arguments governing the model's compilation. They include the
@@ -1030,7 +1052,13 @@ readers are referred to
                     "deformable": [false, false, false, false, false, false],
                     "W_initializer": ["glorot_uniform", "glorot_uniform", "glorot_uniform", "glorot_uniform", "glorot_uniform", "glorot_uniform"],
                     "W_regularizer": [null, null, null, null, null, null],
-                    "W_constraint": [null, null, null, null, null, null]
+                    "W_constraint": [null, null, null, null, null, null],
+                    "unary_convolution_wrapper": {
+                        "activation": "relu",
+                        "initializer": "glorot_uniform",
+                        "bn": true,
+                        "bn_momentum": 0.98
+                    }
                 },
                 "structure_alignment": null,
                 "features_alignment": null,
@@ -1230,6 +1258,35 @@ and another of reflectances.
             See
             `the keras documentation on constraints <https://keras.io/api/layers/constraints/>`_
             for more details.
+
+        -- ``unary_convolution_wrapper``
+            The specification of the unary convolutions (aka SharedMLPs) to
+            be applied before the KPConv layer to half the feature
+            dimensionality and also after to restore it.
+
+            -- ``activation``
+                The activation function for each unary convolution / SharedMLP.
+                See
+                `the keras documentation on activations <https://keras.io/api/layers/activations/>`_
+                for more details.
+
+            -- ``initializer``
+                The initialization method for the point-wise unary convolutions
+                (SharedMLPs. See
+                `the keras documentation on initializers <https://keras.io/2.15/api/layers/initializers/>`_
+                for more details.
+
+            -- ``bn``
+                Whether to enable batch normalization (``True``) or not
+                (``False``).
+
+            -- ``bn_momentum``
+                Momentum for the moving average of the batch normalization,
+                such that
+                ``new_mean = old_mean * momentum + batch_mean * (1 - momentum)``.
+                See the
+                `Keras documentation on batch normalization <https://keras.io/api/layers/normalization_layers/batch_normalization/>`_
+                for more details.
 
     -- ``structure_alignment``
         When given, this specification will govern the alignment of the
@@ -1470,7 +1527,11 @@ cloud.
     will use a significantly faster random sampling-based approximation of the
     furthest point subsampling strategy. Note that this approximation is only
     reliable for high enough values of ``"support_strategy_num_points"``
-    (at least thousands).
+    (at least thousands). Alternatively, it can be set to ``2`` to use an even
+    faster approximation. However, this faster approach will be slower than the
+    fast one when the selected number of points is proportionally too small
+    compared to the total number of points, e.g., when selecting 10,000 points
+    from 80 millions.
 
 -- ``training_class_distribution``
     When given, the support points to be considered as the centers of the
@@ -1497,7 +1558,11 @@ cloud.
 -- ``fast``
     When ``true`` the FPS computation will be accelerated using a uniform point
     sampling strategy. It is recommended only when the number of points is
-    too high to be computed deterministically.
+    too high to be computed deterministically. Alternatively, it is possible
+    to use ``2`` for an even faster approach. However, this faster approach
+    will be slower than the fast one when the selected number of points is
+    proportionally too small compared to the total number of points, e.g.,
+    when selecting 10,000 points from 80 millions.
 
 .. _FPS neighborhood:
 
@@ -1659,7 +1724,11 @@ on points from the input point cloud.
     will use a significantly faster random sampling-based approximation of the
     furthest point subsampling strategy. Note that this approximation is only
     reliable for high enough values of ``"support_strategy_num_points"``
-    (at least thousands).
+    (at least thousands). Alternatively, it can be set to ``2`` to
+    use an even faster approximation. However, this faster approach will be
+    slower than the fast one when the selected number of points is
+    proportionally too small compared to the total number of points, e.g., when
+    selecting 10,000 points from 80 millions.
 
 -- ``center_on_pcloud``
     When ``true`` the neighborhoods will be centered on a point from the
@@ -1676,7 +1745,11 @@ on points from the input point cloud.
 
 -- ``fast_flag_per_depth``
     Whether to use a faster random sampling-based approximation for the FPS
-    at each depth level.
+    at each depth level. Alternatively, it is possible
+    to use ``2`` for an even faster approach. However, this faster approach
+    will be slower than the fast one when the selected number of points is
+    proportionally too small compared to the total number of points, e.g.,
+    when selecting 10,000 points from 80 millions.
 
 -- ``num_downsampling_neighbors``
     How many closest neighbors consider for the downsampling neighborhoods at
@@ -1803,6 +1876,102 @@ On top of that, the VL3D framework provides some custom loss functions.
     useful to mitigate class imbalance in multiclass point-wise classification
     tasks.
 
+
+
+
+
+
+
+
+Sequencers and data augmentation
+===================================
+
+Deep learning models can handle the input data using a sequencer like the
+:class:`.DLSequencer`. Sequencers govern how the batches are fed into the
+neural network, especially during training time. Data augmentation components
+like the :class:`.SimpleDataAugmentor` can be used through sequencers.
+Sequencers can be defined for any deep learning model by adding a
+``"training_sequencer"`` dictionary inside the ``"model_handling"``
+specification.
+
+
+
+Deep learning sequencer
+--------------------------
+
+One of the most simple sequencers is the deep learning sequencer
+(:class:`.DLSequencer`). It can be used simply to load the data in the GPU
+batch by batch instead of considering all the data at the same time. Morever,
+it can be used to randomly swap the order of all the elements (along the
+different batches) at the end of each training epoch. A
+:class:`.SimpleDataAugmentor` can be configured through the ``"augmentor"``
+element. The JSON below shows an example of how to configure a KPConv-like
+model with a :class:`.DLSequencer`:
+
+
+.. code-block:: json
+
+    "training_sequencer": {
+        "type": "DLSequencer",
+        "random_shuffle_indices": true,
+        "augmentor": {
+            "transformations": [
+                {
+                    "type": "Rotation",
+                    "axis": [0, 0, 1],
+                    "angle_distribution": {
+                        "type": "uniform",
+                        "start": -3.141592,
+                        "end": 3.141592
+                    }
+                },
+                {
+                    "type": "Scale",
+                    "scale_distribution": {
+                        "type": "uniform",
+                        "start": 0.99,
+                        "end": 1.01
+                    }
+                },
+                {
+                    "type": "Jitter",
+                    "noise_distribution": {
+                        "type": "normal",
+                        "mean": 0,
+                        "stdev": 0.001
+                    }
+                }
+            ]
+        }
+    }
+
+In the JSON above a :class:`.DLSequencer` is configured to randomly reorder the
+input data at the end of each epoch and to provide data augmentation.
+More concretely, the data augmentation will start by rotating all the points
+with an angle taken from a uniform distribution inside the interval
+:math:`[-\pi, \pi]`, then it will apply a random scale factor taken from
+another uniform distribution inside the interval :math:`[0.99, 1.01]`, and
+finally some jitter where the displacement for each coordinate will follow a
+normal distribution with mean :math:`\mu=0` and standard deviation
+:math:`\sigma=0.001`.
+
+
+**Arguments**
+
+-- ``type``
+    The type of sequencer to be used. It must be ``"DLSequencer"`` to use a
+    :class:`.DLSequencer`.
+
+-- ``random_shuffle_indices``
+    Whether to randomly shuffle the indices of the elements along the many
+    batches (``True``) or not (``False``).
+
+-- ``augmentor``
+    The data augmentation specification. For :class:`.DLSequencer` only
+    the :class:`.SimpleDataAugmentor` is supported, so it can be directly
+    specified as a dictionary with one element ``"transformations"`` that
+    consists of a list of ``"Rotation"``, ``"Scale"``, and ``"Jitter"``
+    transformations, each following either a uniform or a normal distribution.
 
 
 

@@ -333,7 +333,7 @@ class ModelSerializationTest(VL3DTest):
                         }
                     },
                     "loss": {
-                        "function": "class_weighted_binary_crossentropy"
+                        "function": "class_weighted_categorical_crossentropy"
                     },
                     "metrics": [
                         "binary_accuracy",
@@ -664,7 +664,7 @@ class ModelSerializationTest(VL3DTest):
                         }
                     },
                     "loss": {
-                        "function": "class_weighted_binary_crossentropy"
+                        "function": "class_weighted_categorical_crossentropy"
                     },
                     "metrics": [
                         "binary_accuracy"

@@ -5,6 +5,7 @@ ErrorTestSuites:
   Input/Output:
     - LASInoutTest
   Utils:
+    - PredictionReducerTest
     - FPSDecoratorTest
 
 WarningTestSuites:

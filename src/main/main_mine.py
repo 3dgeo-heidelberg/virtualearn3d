@@ -10,6 +10,7 @@ from src.mining.height_feats_miner import HeightFeatsMiner
 from src.mining.hsv_from_rgb_miner import HSVFromRGBMiner
 from src.mining.smooth_feats_miner import SmoothFeatsMiner
 from src.mining.take_closest_miner import TakeClosestMiner
+from src.mining.recount_miner import RecountMiner
 import os
 import time
 
@@ -130,8 +131,10 @@ class MainMine:
             return HSVFromRGBMiner
         elif miner_low == 'smoothfeatures':
             return SmoothFeatsMiner
-        elif miner_low == 'takeclosestminer':
+        elif miner_low == 'takeclosestminer' or miner_low == 'takeclosest':
             return TakeClosestMiner
+        elif miner_low == 'recount':
+            return RecountMiner
         elif miner_low == 'fpsdecorated':
             from src.mining.fps_decorated_miner import FPSDecoratedMiner
             return FPSDecoratedMiner

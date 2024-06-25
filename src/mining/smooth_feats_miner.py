@@ -20,7 +20,7 @@ class SmoothFeatsMiner(Miner):
     See :class:`.Miner`.
 
     The smooth features miner considers each point in the point cloud
-    :math:`\pmb{x_{i*}}` and finds either each knn or its spherical
+    :math:`\pmb{x_{i*}}` and finds either the knn or its spherical
     neighborhood :math:`\mathcal{N}`. Now, let :math:`j` index the points
     in the neighborhood. For then, a given feature :math:`f` can be
     smoothed by considering all the points in the neighborhood. In the most
@@ -224,17 +224,9 @@ class SmoothFeatsMiner(Miner):
         # Obtain coordinates and features
         X = pcloud.get_coordinates_matrix()
         F = pcloud.get_features_matrix(self.input_fnames)
-        # Determine neighborhood function
-        neighborhood_type_low = self.neighborhood['type']
-        if neighborhood_type_low == 'knn':
-            neighborhood_function = self.knn_neighborhood_f
-        elif neighborhood_type_low == 'sphere':
-            neighborhood_function = self.sphere_neighborhood_f
-        else:
-            raise MinerException(
-                'SmoothFeatsMiner does not support given neighborhood type '
-                f'"{self.neighborhood["type"]}".'
-            )
+        # Prepare neighborhood handling and KDTree
+        neighborhood_radius, neighborhood_function, kdt = \
+            SmoothFeatsMiner.prepare_mining(self, X)
         # Determine smooth functions
         smooth_functions = []
         for fname in self.fnames:
@@ -250,24 +242,11 @@ class SmoothFeatsMiner(Miner):
                     'SmoothFeatsMiner was requested to compute an unexpected '
                     f'smooth feature: "{fname}".'
                 )
-        # Build KDTree
-        start = time.perf_counter()
-        kdt = dill.dumps(  # Serialized KDT
-            KDT(X, leafsize=16, compact_nodes=True, copy_data=False)
-        )
-        end = time.perf_counter()
-        LOGGING.LOGGER.debug(
-            f'SmoothFeatsMiner built KDTree in {end-start:.3f} seconds.'
-        )
         # Chunkify the computation of smooth features
-        m = len(X)
-        chunk_size = self.chunk_size
-        if chunk_size == 0:
-            chunk_size = m
-        num_chunks = int(np.ceil(m/chunk_size))
+        num_chunks, chunk_size = SmoothFeatsMiner.prepare_chunks(self, X)
         LOGGING.LOGGER.debug(
-            f'SmoothFeatsMiner computing {int(np.ceil(m/chunk_size))} chunks '
-            f'of {chunk_size} points each for a total of {m} points ...'
+            f'SmoothFeatsMiner computing {num_chunks} chunks '
+            f'of {chunk_size} points each for a total of {len(X)} points ...'
         )
         Fhat = joblib.Parallel(n_jobs=self.nthreads)(joblib.delayed(
             self.compute_smooth_features
@@ -320,25 +299,22 @@ class SmoothFeatsMiner(Miner):
             start = time.perf_counter()
         # Compute neighborhoods in chunks (subchunks wrt original problem)
         Fhat_chunk = None
-        m = len(X_chunk)
-        subchunk_size = self.subchunk_size
-        if subchunk_size == 0:
-            subchunk_size = m
-        num_chunks = int(np.ceil(m/subchunk_size))
-        kdt = dill.loads(kdt)  # Deserialized KDTree
-        for subchunk_idx in range(num_chunks):
-            a_idx = subchunk_idx*subchunk_size  # Subchunk start index
-            b_idx = (subchunk_idx+1)*subchunk_size  # Subchunk end index
-            X_sub = X_chunk[a_idx:b_idx]  # Subchunk coordinates
-            I = neighborhood_f(kdt, X_sub)  # Neighborhood indices
-            Fhat_sub = np.hstack([  # Compute smooth features for subchunk
+        num_subchunks, subchunk_size, kdt = SmoothFeatsMiner.prepare_chunk(
+            self, X_chunk, kdt
+        )
+        for subchunk_idx in range(num_subchunks):
+            # Obtain subchunk coordinates and neighborhood indices
+            X_sub, I = SmoothFeatsMiner.prepare_subchunk(
+                self, subchunk_idx, subchunk_size, X_chunk, kdt, neighborhood_f
+            )
+            # Compute smooth features for the subchunk
+            Fhat_sub = np.hstack([
                 smooth_f(X, F, X_sub, I) for smooth_f in smooth_funs
             ])
             # Merge subchunk smooth features with chunk smooth features
-            if Fhat_chunk is None:
-                Fhat_chunk = Fhat_sub
-            else:
-                Fhat_chunk = np.vstack([Fhat_chunk, Fhat_sub])
+            Fhat_chunk = SmoothFeatsMiner.prepare_mined_features_chunk(
+                Fhat_chunk, Fhat_sub
+            )
         # Report time for first chunk : end
         if chunk_idx == 0:
             end = time.perf_counter()
@@ -419,7 +395,8 @@ class SmoothFeatsMiner(Miner):
 
     # ---  NEIGHBORHOOD FUNCTIONS  --- #
     # -------------------------------- #
-    def knn_neighborhood_f(self, kdt, X_sub):
+    @staticmethod
+    def knn_neighborhood_f(miner, kdt, X_sub):
         """
         The k nearest neighbors (KNN) neighborhood function.
 
@@ -430,11 +407,12 @@ class SmoothFeatsMiner(Miner):
         """
         return kdt.query(
             x=X_sub,
-            k=self.neighborhood['k'],
+            k=miner.neighborhood['k'],
             workers=1
         )[1]
 
-    def sphere_neighborhood_f(self, kdt, X_sub):
+    @staticmethod
+    def sphere_neighborhood_f(miner, kdt, X_sub):
         """
         The spherical neighborhood function.
 
@@ -445,7 +423,22 @@ class SmoothFeatsMiner(Miner):
         """
         return KDT(X_sub).query_ball_tree(
             other=kdt,
-            r=self.neighborhood['radius']
+            r=miner.neighborhood['radius']
+        )
+
+    @staticmethod
+    def cylinder_neighborhood_f(miner, kdt, X_sub):
+        """
+        The cylinder neighborhood function.
+
+        :param kdt: The KDT representing the entire point cloud (X).
+        :param X_sub: The points whose neighborhood must be found.
+        :return: The indices of the points in X that belong to the cylindrical
+            neighborhood for each point in X_sub.
+        """
+        return KDT(X_sub[:, :2]).query_ball_tree(
+            other=kdt,
+            r=miner.neighborhood['radius']
         )
 
     # ---   NAN POLICY METHODS   --- #
@@ -485,4 +478,139 @@ class SmoothFeatsMiner(Miner):
             not_nan_mask = ~nan_mask
             F[nan_mask, j] = np.mean(F[not_nan_mask, j])
         return F
+
+    # ---  PREPARATION METHODS --- #
+    # ---------------------------- #
+    @staticmethod
+    def prepare_mining(miner, X):
+        """
+        Prepare the data miner to handle the neighborhoods and build a KDTree
+        to speed up the spatial queries.
+
+        :param miner: The miner to be prepared.
+        :param X: The structure space matrix, i.e., the matrix of coordinates
+            representing the point cloud.
+        :type X: :class:`np.ndarray`
+        :return: The neighborhood radius, the function for spatial queries,
+            and the serialized KDTree.
+        :rtype: float, callable, bytes
+        """
+        # Determine neighborhood function
+        neighborhood_type_low = miner.neighborhood['type']
+        neighborhood_radius = None
+        use_2D_query = False
+        if neighborhood_type_low == 'knn':
+            neighborhood_function = SmoothFeatsMiner.knn_neighborhood_f
+        elif neighborhood_type_low == 'sphere':
+            neighborhood_function = SmoothFeatsMiner.sphere_neighborhood_f
+            neighborhood_radius = miner.neighborhood['radius']
+        elif neighborhood_type_low == 'cylinder':
+            neighborhood_function = SmoothFeatsMiner.cylinder_neighborhood_f
+            neighborhood_radius = miner.neighborhood['radius']
+            use_2D_query = True
+        else:
+            raise MinerException(
+                f'{miner.__class__.__name__} does not support given '
+                f'neighborhood type "{miner.neighborhood["type"]}".'
+            )
+        # Build KDTree
+        start = time.perf_counter()
+        if use_2D_query:
+            kdt = dill.dumps(  # Serialized KDT
+                KDT(X[:, :2], leafsize=16, compact_nodes=True, copy_data=False)
+            )
+        else:
+            kdt = dill.dumps(  # Serialized KDT
+                KDT(X, leafsize=16, compact_nodes=True, copy_data=False)
+            )
+        end = time.perf_counter()
+        LOGGING.LOGGER.debug(
+            f'{miner.__class__.__name__} built KDTree in '
+            f'{end-start:.3f} seconds.'
+        )
+        # Return prepared elements
+        return neighborhood_radius, neighborhood_function, kdt
+
+    @staticmethod
+    def prepare_chunks(miner, X):
+        """
+        Prepare the chunks for the parallel computation of the data mining.
+
+        :param miner: The miner for which the chunks must be prepared.
+        :param X: The structure space matrix, i.e., the matrix of coordinates
+            representing the point cloud.
+        :type X: :class:`np.ndarray`
+        :return: The number of chunks and the chunk size.
+        :rtype: int, int
+        """
+        m = len(X)
+        chunk_size = miner.chunk_size
+        if chunk_size == 0:
+            chunk_size = m
+        num_chunks = int(np.ceil(m/chunk_size))
+        return num_chunks, chunk_size
+
+    @staticmethod
+    def prepare_chunk(miner, X_chunk, kdt):
+        """
+        Compute the subchunk configuration and deserialize the KDTree so the
+        chunk can be computed.
+
+        :param miner: The miner for which the chunks must be prepared.
+        :param X_chunk: The structure space matrix representing the chunk.
+        :param kdt: The serialized KDTree.
+        :return: Number of subchunks, subchunk size, and deserialized KDTree
+        :rtype: int, int, KDTree
+        """
+        # Compute neighborhoods in chunks (subchunks wrt original problem)
+        m = len(X_chunk)
+        subchunk_size = miner.subchunk_size
+        if subchunk_size == 0:
+            subchunk_size = m
+        num_subchunks = int(np.ceil(m/subchunk_size))
+        kdt = dill.loads(kdt)  # Deserialized KDTree
+        # Return
+        return num_subchunks, subchunk_size, kdt
+
+    @staticmethod
+    def prepare_subchunk(
+        miner, subchunk_idx, subchunk_size, X_chunk, kdt, neighborhood_f
+    ):
+        """
+        Prepare the given subchunk, so it can be passed to the method that
+        mines the features on a given subchunk.
+
+        :param miner: The miner for which the chunks must be prepared.
+        :param subchunk_idx: The index of the subchunk to be prepared.
+        :param subchunk_size: The size of the subchunk.
+        :param X_chunk: The structure space matrix representing the chunk.
+        :param kdt: The deserialized KDTree to speed up the spatial queries.
+        :param neighborhood_f: The neighborhood function defining the
+            spatial queries.
+        :return: The structure space matrix representing the subchunk, and the
+            indices of the neighborhoods.
+        :rtype: :class:`np.ndarray`, list of list
+        """
+        a_idx = subchunk_idx*subchunk_size  # Subchunk start index
+        b_idx = (subchunk_idx+1)*subchunk_size  # Subchunk end index
+        X_sub = X_chunk[a_idx:b_idx]  # Subchunk coordinates
+        I = neighborhood_f(miner, kdt, X_sub)  # Neighborhood indices
+        return X_sub, I
+
+    @staticmethod
+    def prepare_mined_features_chunk(Fhat_chunk, Fhat_sub):
+        """
+        Prepare the mined features from the chunk considering the current
+        mined features and those for the current subchunk.
+
+        :param Fhat_chunk: The already mined features so far.
+        :param Fhat_sub: The features for the current subchunk.
+        :return: The mines features for the chunk.
+        :rtype: :class:`np.ndarray`
+        """
+        if Fhat_chunk is None:
+            Fhat_chunk = Fhat_sub
+        else:
+            Fhat_chunk = np.vstack([Fhat_chunk, Fhat_sub])
+        return Fhat_chunk
 
