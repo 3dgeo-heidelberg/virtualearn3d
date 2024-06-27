@@ -132,7 +132,7 @@ class ReceptiveFieldGS(ReceptiveField):
 
     # ---   RECEPTIVE FIELD METHODS   --- #
     # ----------------------------------- #
-    def fit(self, X, x):
+    def fit(self, X, x, structure_float_type=np.float64):
         r"""
         Fit the receptive field to represent the given points by building a
         grid containing them.
@@ -148,6 +148,8 @@ class ReceptiveFieldGS(ReceptiveField):
         :param x: The center point used to define the origin of the receptive
             field.
         :type x: :class:`np.ndarray`
+        :param structure_float_type: The decimal type for the structure space.
+        :type structure_float_type: :class:`np.dtype`
         :return: The fit receptive field itself (for fluent programming).
         :rtype: :class:`.ReceptiveFieldGS`
         """

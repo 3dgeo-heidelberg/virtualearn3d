@@ -272,7 +272,8 @@ class PointNetPwiseClassifModel(ClassificationModel):
         super().on_training_finished(X, y, yhat=yhat)
         # Evaluate computed predictions
         PointNetPwiseClassifModel.on_training_finished_evaluate(
-            self, X, y, zhat, yhat
+            self, X, y, zhat, yhat,
+            reducer=getattr(self.model, "prediction_reducer", None)
         )
 
     @staticmethod
@@ -295,7 +296,7 @@ class PointNetPwiseClassifModel(ClassificationModel):
         return zhat, yhat
 
     @staticmethod
-    def on_training_finished_evaluate(dlmodel, X, y, zhat, yhat):
+    def on_training_finished_evaluate(dlmodel, X, y, zhat, yhat, reducer=None):
         """
         See :meth:`PointNetPwiseClassifModel.on_training_finished` and
         :meth:`PointNetPwiseClassifModel.on_training_finished_predict`.
@@ -312,7 +313,7 @@ class PointNetPwiseClassifModel(ClassificationModel):
         # Write point-wise activations
         if dlmodel.training_activations_path is not None:
             start = time.perf_counter()
-            activations = dlmodel.compute_pwise_activations(X)
+            activations = dlmodel.compute_pwise_activations(X, reducer=reducer)
             end = time.perf_counter()
             LOGGING.LOGGER.info(
                 'Point-wise activations of deep learning model computed in '
@@ -386,7 +387,7 @@ class PointNetPwiseClassifModel(ClassificationModel):
         )
 
     @staticmethod
-    def do_pwise_activations(model, remodel, X):
+    def do_pwise_activations(model, remodel, X, reducer=None):
         """
         Assist the
         :meth:`PointNetPwiseClassifModel.compute_pwise_activations` method.
@@ -426,8 +427,13 @@ class PointNetPwiseClassifModel(ClassificationModel):
         I = model.arch.pre_runnable.pre_processor \
             .last_call_neighborhoods
         npoints = X[0].shape[0] if isinstance(X, list) else X.shape[0]
-        activations = GridSubsamplingPostProcessor.pwise_reduce(
-            npoints, activations.shape[-1], I, propagated_activations
-        )
+        if reducer is None:  # Use default reduction method
+            activations = GridSubsamplingPostProcessor.pwise_reduce(
+                npoints, activations.shape[-1], I, propagated_activations
+            )
+        else:  # Use given reducer
+            activations = reducer.reduce(
+                npoints, activations.shape[-1], propagated_activations, I
+            )
         # Return
         return activations

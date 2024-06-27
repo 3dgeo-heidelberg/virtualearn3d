@@ -178,7 +178,7 @@ class ReceptiveFieldHierarchicalFPS(ReceptiveField):
 
     # ---  RECEPTIVE FIELD METHODS  --- #
     # --------------------------------- #
-    def fit(self, X, x):
+    def fit(self, X, x, structure_float_type=np.float64):
         r"""
         Fit the receptive field to represent the given points by taking the
         subset of the furthest points in a recursive way leading to a hierarchy
@@ -193,6 +193,8 @@ class ReceptiveFieldHierarchicalFPS(ReceptiveField):
         :param x: The center point used to define the origin of the
             hierarchical receptive field.
         :type x: :class:`np.ndarray`
+        :param structure_float_type: The decimal type for the structure space.
+        :type structure_float_type: :class:`np.dtype`
         :return: The fitted receptive field itself (for fluent programming).
         :rtype: :class:`.ReceptiveFieldHierarchicalFPS`
         """
@@ -217,7 +219,8 @@ class ReceptiveFieldHierarchicalFPS(ReceptiveField):
             self.Ys[d] = ReceptiveFieldFPS.compute_fps_on_3D_pcloud(
                 Xd,
                 fast=self.fast_flag_per_depth[d],
-                num_points=self.num_points_per_depth[d]
+                num_points=self.num_points_per_depth[d],
+                structure_float_type=structure_float_type
             )
             # Find the downsampling matrix at depth d (NDd)
             kdt = KDT(Xd)
@@ -240,6 +243,8 @@ class ReceptiveFieldHierarchicalFPS(ReceptiveField):
             self.Ns[d] = Nd
             # Update Xd for next iteration
             Xd = self.Ys[d]
+        # Reduce memory consumption for indexing matrices
+        self.optimize_indexing_memory()
         # Return self for fluent programming
         return self
 
@@ -319,3 +324,46 @@ class ReceptiveFieldHierarchicalFPS(ReceptiveField):
         :meth:`receptive_field_fps.ReceptiveFieldFPS.undo_center_and_scale`.
         """
         return X + self.x
+
+    def optimize_indexing_memory(self):
+        """
+        Consider all the indexed neighborhoods and select the smallest int
+        type in terms of number of bits that is enough to represent all the
+        neighborhoods at a given depth.
+
+        :return: Nothing at all, but the indexing matrices of the
+            :class:`.ReceptiveFieldHierarchicalFPS` are updated inplace.
+        """
+        def int_type_from_bits(num_bits):
+            """
+            Determine the integer type from the given number of bits.
+            """
+            int_type = None
+            if num_bits <= 8:
+                int_type = np.uint8
+            elif num_bits <= 16:
+                int_type = np.uint16
+            elif num_bits <= 32:
+                int_type = np.uint32
+            return int_type
+        # Optimize memory for indexed neighborhoods
+        for d in range(self.max_depth):  # For each depth level
+            # Find the max number of points for each domain
+            max_num_points_down = self.NUs[d].shape[0]
+            max_num_points_self = self.Ns[d].shape[0]
+            max_num_points_up = self.NDs[d].shape[0]
+            # Determine required bits
+            num_bits_down = int(np.ceil(np.log2(max_num_points_down)))
+            num_bits_self = int(np.ceil(np.log2(max_num_points_self)))
+            num_bits_up = int(np.ceil(np.log2(max_num_points_up)))
+            # Determine numpy type from bits
+            int_type_down = int_type_from_bits(num_bits_down)
+            int_type_self = int_type_from_bits(num_bits_self)
+            int_type_up = int_type_from_bits(num_bits_up)
+            # Convert indices
+            if int_type_down is not None:
+                self.NDs[d] = self.NDs[d].astype(int_type_down)
+            if int_type_self is not None:
+                self.Ns[d] = self.Ns[d].astype(int_type_self)
+            if int_type_up is not None:
+                self.NUs[d] = self.NUs[d].astype(int_type_up)

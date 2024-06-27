@@ -10,6 +10,7 @@ from src.model.deeplearn.dlrun.furthest_point_subsampling_pre_processor import \
 from src.utils.ptransf.receptive_field_hierarchical_fps import \
     ReceptiveFieldHierarchicalFPS
 from src.utils.neighborhood.support_neighborhoods import SupportNeighborhoods
+from src.main.main_config import VL3DCFG
 import src.main.main_logger as LOGGING
 import scipy
 import numpy as np

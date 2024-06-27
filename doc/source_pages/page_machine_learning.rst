@@ -418,10 +418,9 @@ training data pipeline with a :class:`.SMOTE` component.
 
 **Arguments**
 
-    --
-        See the
-        `Imbalanced learn documentation on SMOTE <https://imbalanced-learn.org/stable/references/generated/imblearn.over_sampling.SMOTE.html>`_
-        for the arguments.
+See the
+`Imbalanced learn documentation on SMOTE <https://imbalanced-learn.org/stable/references/generated/imblearn.over_sampling.SMOTE.html>`_
+for the arguments.
 
 
 

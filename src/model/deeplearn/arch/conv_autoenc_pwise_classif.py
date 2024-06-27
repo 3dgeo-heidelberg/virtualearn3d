@@ -392,12 +392,13 @@ class ConvAutoencPwiseClassif(Architecture):
         Xs = self.Xs if self.aligned_Xs is None else self.aligned_Xs
         self.kpconv_layers, self.skpconv_layers = [], []
         for _ in range(ops_per_depth[0]):
+            x, Dout = self.kpconv_prewrap(x, 1, i)
             kpcl = KPConvLayer(
                 sigma=self.feature_extraction['sigma'][i],
                 kernel_radius=self.feature_extraction['kernel_radius'][i],
                 num_kernel_points=self.feature_extraction['num_kernel_points'][i],
                 deformable=self.feature_extraction['deformable'][i],
-                Dout=self.feature_extraction['feature_space_dims'][i],
+                Dout=Dout,
                 W_initializer=self.feature_extraction['W_initializer'][i],
                 W_regularizer=self.feature_extraction['W_regularizer'][i],
                 W_constraint=self.feature_extraction['W_constraint'][i],
@@ -414,6 +415,7 @@ class ConvAutoencPwiseClassif(Architecture):
                 x = tf.keras.layers.ReLU(
                     name=f'KPConv_d1_{i+1}_ReLU'
                 )(x)
+            x = self.kpconv_postwrap(x, 1, i)
             i += 1
         self.skip_links.append(x)
         for d in range(self.max_depth-1):
@@ -428,12 +430,13 @@ class ConvAutoencPwiseClassif(Architecture):
                     name=f'DOWN_d{d+2}_{i+1}_ReLU'
                 )(x)
             for _ in range(ops_per_depth[d+1]):
+                x, Dout = self.kpconv_prewrap(x, d+2, i)
                 kpcl = KPConvLayer(
                     sigma=self.feature_extraction['sigma'][i],
                     kernel_radius=self.feature_extraction['kernel_radius'][i],
                     num_kernel_points=self.feature_extraction['num_kernel_points'][i],
                     deformable=self.feature_extraction['deformable'][i],
-                    Dout=self.feature_extraction['feature_space_dims'][i],
+                    Dout=Dout,
                     W_initializer=self.feature_extraction['W_initializer'][i],
                     W_regularizer=self.feature_extraction['W_regularizer'][i],
                     W_constraint=self.feature_extraction['W_constraint'][i],
@@ -450,6 +453,7 @@ class ConvAutoencPwiseClassif(Architecture):
                     x = tf.keras.layers.ReLU(
                         name=f'KPConv_d{d+2}_{i+1}_ReLU'
                     )(x)
+                x = self.kpconv_postwrap(x, d+2, i)
                 i += 1
             self.skip_links.append(x)
         self.last_downsampling_tensor = x
@@ -596,6 +600,85 @@ class ConvAutoencPwiseClassif(Architecture):
             for layer in self.nn.layers
             if type(layer) == StridedKPConvLayer
         ]
+
+    # ---  KPCONV UTIL METHODS  --- #
+    # ----------------------------- #
+    def kpconv_prewrap(self, x, depth, idx):
+        """
+        Wrap the input before a KPConv layer with unary convolutions (also
+        known as shared MLPs).
+
+        :param x: The input to be wrapped.
+        :param depth: The depth of the KPConv being pre-wrapped.
+        :param idx: The index of the KPConv being pre-wrapped.
+        :return: A tuple with the input for the next layer and the output
+            dimensionality.
+        :rtype: tuple
+        """
+        # Get KPConv wrapper specification
+        wrap_spec = self.feature_extraction.get(
+            'unary_convolution_wrapper', None
+        )
+        # No wrapper
+        if wrap_spec is None:
+            return x, self.feature_extraction['feature_space_dims'][idx]
+        # Apply pre-wrapper
+        Din = self.feature_extraction['feature_space_dims'][idx]
+        Dout = Din//2
+        x = tf.keras.layers.Conv1D(
+            Dout,
+            kernel_size=1,
+            padding="valid",
+            kernel_initializer=wrap_spec.get('initializer', "glorot_uniform"),
+            name=f'PreWrap_d{depth}_{idx+1}'
+        )(x)
+        if wrap_spec.get('bn', False):
+            x = tf.keras.layers.BatchNormalization(
+                momentum=wrap_spec.get('bn_momentum', 0.0),
+                name=f'PreWrap_d{depth}_{idx+1}_BN'
+            )(x)
+        x = tf.keras.layers.Activation(
+            wrap_spec.get('activation', 'relu'),
+            name=f'PreWrap_d{depth}_{idx+1}_ACT'
+        )(x)
+        return x, Dout
+
+    def kpconv_postwrap(self, x, depth, idx):
+        """
+        Wrap the output of a KPConv block with unary convolutions (also known
+        as shared MLPs).
+
+        :param x: The input to be wrapped.
+        :param depth: The depth of the KPConv being post-wrapped.
+        :param idx: The index of the KPConv being post-wrapped.
+        :return: The input for the next layer
+        """
+        # Get KPConv wrapper specification
+        wrap_spec = self.feature_extraction.get(
+            'unary_convolution_wrapper', None
+        )
+        # No wrapper
+        if wrap_spec is None:
+            return x
+        # Apply post-wrapper
+        Dout = self.feature_extraction['feature_space_dims'][idx]
+        x = tf.keras.layers.Conv1D(
+            Dout,
+            kernel_size=1,
+            padding="valid",
+            kernel_initializer=wrap_spec.get('initializer', "glorot_uniform"),
+            name=f'PostWrap_d{depth}_{idx+1}'
+        )(x)
+        if wrap_spec.get('bn', False):
+            x = tf.keras.layers.BatchNormalization(
+                momentum=wrap_spec.get('bn_momentum', 0.0),
+                name=f'PostWrap_d{depth}_{idx+1}_BN'
+            )(x)
+        x = tf.keras.layers.Activation(
+            wrap_spec.get('activation', 'relu'),
+            name=f'PostWrap_d{depth}_{idx+1}_ACT'
+        )(x)
+        return x
 
     # ---  FIT LOGIC CALLBACKS  --- #
     # ----------------------------- #

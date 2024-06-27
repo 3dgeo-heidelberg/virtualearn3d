@@ -5,6 +5,7 @@ from src.model.deeplearn.loss.class_weighted_binary_crossentropy import \
     vl3d_class_weighted_binary_crossentropy
 from src.model.deeplearn.loss.class_weighted_categorical_crossentropy import \
     vl3d_class_weighted_categorical_crossentropy
+from src.model.deeplearn.sequencer.dl_sequencer import DLSequencer
 from src.report.deep_learning_model_summary_report import \
     DeepLearningModelSummaryReport
 from src.report.receptive_fields_report import ReceptiveFieldsReport
@@ -14,6 +15,8 @@ from src.plot.receptive_fields_distribution_plot import \
     ReceptiveFieldsDistributionPlot
 from src.report.training_history_report import TrainingHistoryReport
 from src.plot.training_history_plot import TrainingHistoryPlot
+from src.utils.preds.prediction_reducer import PredictionReducer
+from src.utils.preds.prediction_reducer_factory import PredictionReducerFactory
 from src.utils.dict_utils import DictUtils
 from src.inout.io_utils import IOUtils
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
@@ -71,6 +74,10 @@ class SimpleDLModelHandler(DLModelHandler):
         :meth:`simple_dl_model_handler.SimpleDLModelHandler.build_compilation_args`
         .
     :vartype compilation_args: dict
+    :ivar training_sequencer": The specification on how to build the sequencer
+        for the input data during model training. See
+        :meth:`SimpleDLModelHandler.build_sequencer`.
+    :vartype training_sequencer: dict
     :ivar fit_verbose: Whether to use silent mode (0), show a progress bar (1),
         or print one line per epoch (2). Alternatively, "auto" can be used
         which typically means (1).
@@ -122,9 +129,18 @@ class SimpleDLModelHandler(DLModelHandler):
             None
         )
         self.early_stopping = kwargs.get('early_stopping', None)
-        self.compilation_args = kwargs.get('compilation_args', None)
+        self.training_sequencer = kwargs.get('training_sequencer', None)
         self.fit_verbose = kwargs.get('fit_verbose', "auto")
         self.predict_verbose = kwargs.get('predict_verbose', "auto")
+        self.prediction_reducer = kwargs.get(
+            'prediction_reducer',
+            PredictionReducer()
+        )
+        if isinstance(self.prediction_reducer, dict):
+            self.prediction_reducer = \
+                PredictionReducerFactory.make_from_dict(
+                    self.prediction_reducer
+                )
 
     # ---   MODEL HANDLER   --- #
     # ------------------------- #
@@ -170,6 +186,10 @@ class SimpleDLModelHandler(DLModelHandler):
                     msg='Cannot find DL model checkpoint at:'
                 )
                 self.compiled.load_weights(self.checkpoint_path)
+                LOGGING.LOGGER.debug(
+                    'SimpleDLModelHandler restored weights from '
+                    f'"{self.checkpoint_path}".'
+                )
             except FileNotFoundError as fnferr:
                 LOGGING.LOGGER.warning(
                     'SimpleDLModelHandler failed to restore DL model weights '
@@ -214,8 +234,10 @@ class SimpleDLModelHandler(DLModelHandler):
             ):
                 zhat = self.compiled.predict(X, batch_size=self.batch_size)
                 X_rf = X[0] if isinstance(X, list) else X
+                F_rf = X[1] if isinstance(X, list) else None
                 self.handle_receptive_fields_plots_and_reports(
                     X_rf=X_rf,
+                    F_rf=F_rf,
                     zhat_rf=zhat,
                     y=y,
                     training=True
@@ -251,8 +273,11 @@ class SimpleDLModelHandler(DLModelHandler):
         if hasattr(self.arch, 'prefit_logic_callback'):
             self.arch.prefit_logic_callback(fit_cache_map)
         # Fit logic
+        input_X, input_y = X, y_rf
+        if self.training_sequencer is not None:
+            input_X, input_y = self.build_sequencer(X, y_rf), None
         self.history = self.compiled.fit(
-            X, y_rf,
+            input_X, input_y,
             epochs=self.training_epochs,
             callbacks=callbacks,
             batch_size=self.batch_size,
@@ -295,20 +320,25 @@ class SimpleDLModelHandler(DLModelHandler):
                 zhat_rf = self.compiled.predict(
                     X_rf, batch_size=self.batch_size
                 )
-        zhat = self.arch.run_post({'X': X, 'z': zhat_rf})
+        zhat = self.arch.run_post(
+            {'X': X, 'z': zhat_rf},
+            reducer=self.prediction_reducer
+        )
         if zout is not None:  # When z is not None it must be a list
             zout.append(zhat)  # Append propagated zhat to z list
 
         # Final predictions
-        yhat = np.argmax(zhat, axis=1) if len(zhat.shape) > 1 \
-            else np.round(zhat)
+        yhat = self.prediction_reducer.select(zhat)
         # Do plots and reports
         if plots_and_reports:
             _X_rf = X_rf[0] if isinstance(X_rf, list) else X_rf
+            _F_rf = X_rf[1] if isinstance(X_rf, list) else None
             self.handle_receptive_fields_plots_and_reports(
                 X_rf=_X_rf,
+                F_rf=_F_rf,
                 zhat_rf=zhat_rf,
-                y=y
+                y=y,
+                training=False
             )
         # Return
         return yhat
@@ -375,6 +405,12 @@ class SimpleDLModelHandler(DLModelHandler):
                     spec_handling['learning_rate_on_plateau']
             if 'early_stopping' in spec_handling_keys:
                 self.early_stopping = spec_handling['early_stopping']
+            if 'training_sequencer' in spec_handling_keys:
+                self.training_sequencer = spec_handling['training_sequencer']
+            if 'prediction_reducer' in spec_handling_keys:
+                self.prediction_reducer = PredictionReducerFactory.make_from_dict(
+                    spec_handling['prediction_reducer']
+                )
 
     def update_paths(self, model_args):
         """
@@ -638,7 +674,7 @@ class SimpleDLModelHandler(DLModelHandler):
             new_y = []
             for i in range(len(y)):
                 new_y.append(label_binarizer.transform(y[i].flatten()))
-            y = np.array(new_y)
+            y = np.array(new_y, dtype=y.dtype)
         if (
             loss_low == 'sparse_categorical_crossentropy' and
             self.class_weight is not None
@@ -662,7 +698,7 @@ class SimpleDLModelHandler(DLModelHandler):
         return y
 
     def handle_receptive_fields_plots_and_reports(
-        self, X_rf, zhat_rf, y=None, training=False
+        self, X_rf, zhat_rf, y=None, F_rf=None, training=False
     ):
         """
         Handle any plot and reports related to the receptive fields.
@@ -676,6 +712,9 @@ class SimpleDLModelHandler(DLModelHandler):
         :param y: The expected class for each point (considering original
             points, i.e., not the receptive fields).
         :type y: :class:`np.ndarray`
+        :param F_rf: The features for each receptive field such that F_rf[i] is
+            the matrix of features of the i-th receptive field. It can be None.
+        :type F_rf: :class:`np.ndarray` or None
         :param training: Whether the considered receptive fields are those
             used for training (True) or not (False).
         :type training: bool
@@ -720,12 +759,18 @@ class SimpleDLModelHandler(DLModelHandler):
         ):
             return
         # Compute the predicted and expected classes for each receptive field
-        yhat_rf = np.array([  # Predictions (for each receptive field)
-            np.argmax(zhat_rf_i, axis=1)
-            if len(zhat_rf_i.shape) > 1 and zhat_rf_i.shape[-1] != 1
-            else np.round(np.squeeze(zhat_rf_i))
-            for zhat_rf_i in zhat_rf
-        ])
+        if self.prediction_reducer is not None:  # Use prediction reducer
+            yhat_rf = np.array([  # Predictions (for each receptive field)
+                self.prediction_reducer.select(zhat_rf_i)
+                for zhat_rf_i in zhat_rf
+            ])
+        else:  # Use default approach
+            yhat_rf = np.array([  # Predictions (for each receptive field)
+                np.argmax(zhat_rf_i, axis=1)
+                if len(zhat_rf_i.shape) > 1 and zhat_rf_i.shape[-1] != 1
+                else np.round(np.squeeze(zhat_rf_i))
+                for zhat_rf_i in zhat_rf
+            ])
         y_rf = self.arch.pre_runnable.pre_processor.reduce_labels(
             # Reduced expected classes (for each receptive field)
             X_rf, y
@@ -734,10 +779,12 @@ class SimpleDLModelHandler(DLModelHandler):
         if rf_dir is not None:
             ReceptiveFieldsReport(
                 X_rf=X_rf,  # X (for each receptive field)
+                F_rf=F_rf,  # F (for each receptive field
                 zhat_rf=zhat_rf,  # Softmax scores (for each receptive field)
                 yhat_rf=yhat_rf,  # Predictions (for each receptive field)
                 y_rf=y_rf,  # Expected (for each receptive field, can be None)
-                class_names=self.class_names
+                class_names=self.class_names,
+                fnames=self.arch.fnames
             ).to_file(rf_dir, self.out_prefix)
         # Report receptive fields distribution, if requested
         if rf_dist_report_path:
@@ -754,6 +801,35 @@ class SimpleDLModelHandler(DLModelHandler):
                 class_names=self.class_names,
                 path=rf_dist_plot_path
             ).plot(out_prefix=self.out_prefix, logging=True)
+
+    def build_sequencer(self, X, y_rf):
+        """
+        Build/instantiate a sequencer from the given input data and
+        specification.
+
+        :param X: The input data.
+        :param y_rf: The input reference values.
+        :return: The built sequencer.
+        :rtype: :class:`.DLSequencer`
+        """
+        seq_type = self.training_sequencer['type']
+        seq_type_low = seq_type.lower()
+        if seq_type_low == 'dlsequencer':
+            return DLSequencer(
+                X,
+                y_rf,
+                self.batch_size,
+                arch=self.arch,
+                augmentor=self.training_sequencer.get('augmentor', None),
+                random_shuffle_indices=self.training_sequencer.get(
+                    'random_shuffle_indices', False
+                )
+            )
+        else:
+            raise DeepLearningException(
+                'SimpleDLModelHandler did not expect the sequencer '
+                f'"{seq_type}" so it could not be built.'
+            )
 
     # ---   SERIALIZATION   --- #
     # ------------------------- #
@@ -786,8 +862,10 @@ class SimpleDLModelHandler(DLModelHandler):
         state['learning_rate_on_plateau'] = self.learning_rate_on_plateau
         state['early_stopping'] = self.early_stopping
         state['compilation_args'] = self.compilation_args
+        state['training_sequencer'] = self.training_sequencer
         state['fit_verbose'] = self.fit_verbose
         state['predict_verbose'] = self.predict_verbose
+        state['prediction_reducer'] = self.prediction_reducer
         # Return Simple DL Model Handler state (for serialization)
         return state
 
@@ -827,5 +905,7 @@ class SimpleDLModelHandler(DLModelHandler):
         self.learning_rate_on_plateau = state['learning_rate_on_plateau']
         self.early_stopping = state['early_stopping']
         self.compilation_args = state['compilation_args']
+        self.training_sequencer = state.get('training_sequencer', None)
         self.fit_verbose = state['fit_verbose']
         self.predict_verbose = state['predict_verbose']
+        self.prediction_reducer = state.get('prediction_reducer', None)

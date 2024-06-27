@@ -97,8 +97,9 @@ class ClassifiedPcloudReport(Report):
         # Build output features : success mask
         if self.y is not None:
             fnames.append('Success')
-            success = (self.y == self.yhat).astype(int).reshape((-1, 1))
+            success = (self.y == self.yhat).astype(np.uint8).reshape((-1, 1))
             feats = np.hstack([feats, success])
+            success = None
         # Build output features : class-wise scores
         if self.zhat is not None:
             if len(self.zhat.shape) == 1:  # Handle binary classif case

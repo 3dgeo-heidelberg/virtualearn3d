@@ -1,6 +1,7 @@
 # ---   IMPORTS   --- #
 # ------------------- #
 from src.model.deeplearn.deep_learning_exception import DeepLearningException
+from src.main.main_config import VL3DCFG
 import joblib
 import numpy as np
 from abc import abstractmethod
@@ -355,14 +356,22 @@ class ReceptiveFieldPreProcessor:
         :return: The self.fit_receptive_fields attribute after the update.
         :rtype: list
         """
+        # Determine float type for the structure space
+        structure_space_bits = \
+            VL3DCFG['MODEL']['ReceptiveField']['structure_space_bits']
+        structure_float_type = np.float64
+        if structure_space_bits == 32:
+            structure_float_type = np.float32
+        # Compute receptive fields
         self.last_call_receptive_fields = joblib.Parallel(n_jobs=self.nthreads)(
             joblib.delayed(
                 self.last_call_receptive_fields[i].fit
             )(
-                X[Ii], sup_X[i]
+                X[Ii], sup_X[i], structure_float_type
             )
             for i, Ii in enumerate(I)
         )
+        # Return computed receptive fields
         return self.last_call_receptive_fields
 
     def handle_features_reduction(self, F, num_neighborhoods, rv, Xout=None):

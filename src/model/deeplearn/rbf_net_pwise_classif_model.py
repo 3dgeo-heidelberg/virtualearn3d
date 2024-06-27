@@ -196,7 +196,8 @@ class RBFNetPwiseClassifModel(ClassificationModel):
         super().on_training_finished(X, y, yhat=yhat)
         # Evaluate computed predictions
         PointNetPwiseClassifModel.on_training_finished_evaluate(
-            self, X, y, zhat, yhat
+            self, X, y, zhat, yhat,
+            reducer=getattr(self.model, "prediction_reducer", None)
         )
 
     # ---  PREDICTION METHODS  --- #

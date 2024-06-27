@@ -1,0 +1,10 @@
+---
+# Default configuration of receptive fields report
+ReceptiveFieldsReport:
+  include_entropies: true
+  include_likelihoods: true
+  include_predictions: true
+  include_references: true
+  include_success: true
+  include_features: true
+...

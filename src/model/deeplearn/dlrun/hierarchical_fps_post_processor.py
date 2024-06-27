@@ -43,7 +43,7 @@ class HierarchicalFPSPostProcessor:
 
     # ---   RUN/CALL   --- #
     # -------------------- #
-    def __call__(self, inputs):
+    def __call__(self, inputs, reducer=None):
         """
         Executes the post-processing logic.
 
@@ -53,6 +53,8 @@ class HierarchicalFPSPostProcessor:
             (i.e., at depth :math:`d=1`) that must be propagated back to the
             :math:`m` points of the original point cloud.
         :type inputs: dict
+        :param reducer: The prediction reducer for the post-processor, if any.
+        :type reducer: :class:`.PredictionReducer`
         :return: The :math:`m` point-wise predictions derived from the
             :math:`R` input predictions on the receptive field.
         """
@@ -67,7 +69,8 @@ class HierarchicalFPSPostProcessor:
             _inputs,
             self.hfps_preproc.last_call_receptive_fields,
             self.hfps_preproc.last_call_neighborhoods,
-            nthreads=self.hfps_preproc.nthreads
+            nthreads=self.hfps_preproc.nthreads,
+            reducer=reducer
         )
         end = time.perf_counter()
         LOGGING.LOGGER.info(
