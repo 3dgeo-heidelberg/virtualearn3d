@@ -1,0 +1,194 @@
+{
+  "in_pcloud": [
+    "/mnt/netapp2/Store_uscciaep/lidar_data/pnoa2/mined/RGBIr_MERGE_147_minmaxnorm.laz"
+  ],
+  "out_pcloud": [
+    "/mnt/netapp2/Store_uscciaep/lidar_data/pnoa2/vl3d/pnet_final_XRGB_alt/T2/*"
+  ],
+  "sequential_pipeline": [
+	{
+        "class_transformer": "ClassReducer",
+        "on_predictions": false,
+        "input_class_names": [
+			"miss0", "noclass", "ground", "lowveg", "midveg",
+			"highveg", "building", "noise", "miss8", "water",
+			"miss10", "miss11", "overlap", "miss13", "miss14",
+			"miss15", "miss16", "bridge", "miss18"
+		],
+        "output_class_names": ["vegetation", "other", "ignore"],
+        "class_groups": [
+			["lowveg", "midveg", "highveg"],
+			["ground", "building", "water", "bridge"],
+			[
+				"noclass", "noise", "overlap",
+				"miss0", "miss8", "miss10", "miss11", "miss13",
+				"miss14", "miss15", "miss16", "miss18"
+			]
+		],
+        "report_path": "*class_reduction.log",
+        "plot_path": "*class_reduction.svg"
+	},
+    {
+		"train": "PointNetPwiseClassifier",
+        "pretrained_model": "/mnt/netapp2/Store_uscciaep/lidar_data/pnoa2/vl3d/pnet_final_XRGB_alt/T1/pipe/PNet_T1.model",
+		"fnames": ["norm_red", "norm_green", "norm_blue"],
+		"training_type": "base",
+		"random_seed": null,
+		"model_args": {
+		    "fnames": ["norm_red", "norm_green", "norm_blue"],
+		    "num_classes": 3,
+		    "class_names": ["vegetation", "other", "ignore"],
+		    "num_pwise_feats": 32,
+		    "pre_processing": {
+		        "pre_processor": "furthest_point_subsampling",
+		        "to_unit_sphere": false,
+		        "support_strategy": "fps",
+		        "support_chunk_size": 2000,
+				"support_strategy_num_points": 40000,
+		        "support_strategy_fast": false,
+		        "center_on_pcloud": true,
+		        "num_points": 1024,
+		        "num_encoding_neighbors": 1,
+		        "fast": false,
+		        "neighborhood": {
+		            "type": "rectangular3D",
+		            "radius": 50.0,
+		            "separation_factor": 0.8
+		        },
+		        "nthreads": 12,
+		        "training_receptive_fields_distribution_report_path": "*/training_eval/training_receptive_fields_distribution.log",
+		        "training_receptive_fields_distribution_plot_path": "*/training_eval/training_receptive_fields_distribution.svg",
+		        "_training_receptive_fields_dir": "*/training_eval/training_receptive_fields/",
+		        "receptive_fields_distribution_report_path": "*/training_eval/receptive_fields_distribution.log",
+		        "receptive_fields_distribution_plot_path": "*/training_eval/receptive_fields_distribution.svg",
+		        "_receptive_fields_dir": "*/training_eval/receptive_fields/",
+		        "training_support_points_report_path": "*/training_eval/training_support_points.las",
+		        "support_points_report_path": "*/training_eval/support_points.las"
+		    },
+		    "kernel_initializer": "he_normal",
+		    "pretransf_feats_spec": [
+		        {
+		            "filters": 64,
+		            "name": "prefeats64_A"
+		        },
+		        {
+		            "filters": 64,
+		            "name": "prefeats_64B"
+		        },
+		        {
+		            "filters": 128,
+		            "name": "prefeats_128"
+		        },
+		        {
+		            "filters": 256,
+		            "name": "prefeats_256"
+		        },
+				{
+		            "filters": 768,
+		            "name": "prefeats_768"
+		        }
+		    ],
+		    "postransf_feats_spec": [
+		        {
+		            "filters": 512,
+		            "name": "posfeats_512"
+		        },
+		        {
+		            "filters": 1024,
+		            "name": "posfeats_1024"
+		        },
+		        {
+		            "filters": 256,
+		            "name": "posfeats_end_256"
+		        }
+		    ],
+		    "tnet_pre_filters_spec": [64, 128, 256, 320],
+		    "tnet_post_filters_spec": [320, 256, 128, 64],
+		    "final_shared_mlps": [768, 512, 256, 128],
+		    "skip_link_features_X": false,
+		    "include_pretransf_feats_X": false,
+		    "include_transf_feats_X": true,
+		    "include_postransf_feats_X": false,
+		    "include_global_feats_X": true,
+		    "skip_link_features_F": false,
+		    "include_pretransf_feats_F": false,
+		    "include_transf_feats_F": true,
+		    "include_postransf_feats_F": false,
+		    "include_global_feats_F": true,
+		    "model_handling": {
+		        "summary_report_path": "*/model_summary.log",
+		        "training_history_dir": "*/training_eval/history",
+		        "class_weight": [1, 1, 0],
+		        "training_epochs": 400,
+		        "batch_size": 16,
+		        "checkpoint_path": "*/checkpoint.model",
+		        "checkpoint_monitor": "loss",
+		        "learning_rate_on_plateau": {
+		            "monitor": "loss",
+		            "mode": "min",
+		            "factor": 0.1,
+		            "patience": 2000,
+		            "cooldown": 5,
+		            "min_delta": 0.01,
+		            "min_lr": 1e-6
+		        },
+		        "early_stopping": {
+		            "monitor": "loss",
+		            "mode": "min",
+		            "min_delta": 0.01,
+		            "patience": 5000
+		        }
+		    },
+		    "compilation_args": {
+		        "optimizer": {
+		            "algorithm": "SGD",
+		            "learning_rate": {
+		                "schedule": "exponential_decay",
+		                "schedule_args": {
+		                    "initial_learning_rate": 1e-3,
+		                    "decay_steps": 10000,
+		                    "decay_rate": 0.96,
+		                    "staircase": false
+		                }
+		            }
+		        },
+		        "loss": {
+		            "function": "class_weighted_categorical_crossentropy"
+		        },
+		        "metrics": [
+		            "categorical_accuracy"
+		        ]
+		    },
+		    "architecture_graph_path": "*/model_graph.png",
+		    "architecture_graph_args": {
+		        "show_shapes": true,
+		        "show_dtype": true,
+		        "show_layer_names": true,
+		        "rankdir": "TB",
+		        "expand_nested": true,
+		        "dpi": 300,
+		        "show_layer_activations": true
+		    }
+		},
+		"training_evaluation_metrics": ["OA", "P", "R", "F1", "IoU", "wP", "wR", "wF1", "wIoU", "MCC", "Kappa"],
+		"training_class_evaluation_metrics": ["P", "R", "F1", "IoU"],
+		"training_evaluation_report_path": "*/training_eval/evaluation.log",
+		"training_class_evaluation_report_path": "*/training_eval/class_evaluation.log",
+		"training_confusion_matrix_report_path": "*/training_eval/confusion.log",
+		"training_confusion_matrix_plot_path": "*/training_eval/confusion.svg",
+		"training_class_distribution_report_path": "*/training_eval/class_distribution.log",
+		"training_class_distribution_plot_path": "*/training_eval/class_distribution.svg",
+		"training_classified_point_cloud_path": "*/training_eval/classified_point_cloud.las",
+		"_training_activations_path": "*/training_eval/activations.las"
+	},
+    {
+      "writer": "PredictivePipelineWriter",
+      "out_pipeline": "*pipe/PNet_T2.pipe",
+      "include_writer": false,
+      "include_imputer": false,
+      "include_feature_transformer": false,
+      "include_miner": false,
+      "include_class_transformer": false
+    }
+  ]
+}
