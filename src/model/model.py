@@ -486,14 +486,22 @@ class Model:
         :rtype: tuple of :class:`np.ndarray`
         """
         # Handle data types of input data to optimize memory consumption
-        if VL3DCFG['MODEL']['structure_space_bits'] == 32:
+        structure_space_bits = VL3DCFG['MODEL']['structure_space_bits']
+        if structure_space_bits < 64:
             if isinstance(X, list) and len(X) > 1:
                 # Compute center of bounding box
-                # TODO Restore : Below
                 a, b = np.min(X[0], axis=0), np.max(X[0], axis=0)
                 c = (a+b)/2.0
                 # Apply shift before reducing bits to avoid position corruption
-                X[0] = (X[0]-c).astype(np.float32)
+                if structure_space_bits == 32:
+                    X[0] = (X[0]-c).astype(np.float32)
+                elif structure_space_bits == 16:
+                    X[0] = (X[0]-c).astype(np.float16)
+                else:
+                    raise ModelException(
+                        'Model could not change the data type for the '
+                        'structure space.'
+                    )
         if VL3DCFG['MODEL']['feature_space_bits'] == 32:
             if isinstance(X, np.ndarray):
                 X = X.astype(np.float32)

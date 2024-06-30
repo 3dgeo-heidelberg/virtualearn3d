@@ -4,7 +4,7 @@
 # Default configuration for all models
 structure_space_bits: 64
 feature_space_bits: 64
-classification_space_bits: 8
+classification_space_bits: 32
 
 
 # ---  MACHINE LEARNING  --- #

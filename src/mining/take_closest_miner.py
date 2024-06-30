@@ -119,7 +119,7 @@ class TakeClosestMiner(Miner):
         :rtype: :class:`.PointCloud`
         """
         # Obtain coordinates
-        X = pcloud.get_coordinates_matrix()
+        X = self.get_structure_space_matrix(pcloud)
         # Prepare fnames
         fnames = []
         take_classes = False
@@ -131,9 +131,10 @@ class TakeClosestMiner(Miner):
         if len(fnames) < 1:
             fnames = None
         # Initialize distances, features, and labels matrices and vectors
-        D = np.empty(X.shape[0], dtype=float)
+        ftype = Miner.get_feature_type()
+        D = np.empty(X.shape[0], dtype=ftype)
         D.fill(np.inf)
-        F = np.empty((X.shape[0], len(fnames)), dtype=float)
+        F = np.empty((X.shape[0], len(fnames)), dtype=ftype)
         F.fill(np.nan)
         y = np.empty(X.shape[0], dtype=int)
         y.fill(self.y_default)

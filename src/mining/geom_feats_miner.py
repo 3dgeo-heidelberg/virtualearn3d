@@ -102,6 +102,8 @@ class GeomFeatsMiner(Miner):
         """
         # Obtain coordinates matrix
         X = pcloud.get_coordinates_matrix()
+        # Below is commented because jakteristics demands double
+        #X = self.get_structure_space_matrix(pcloud)
         # Validate coordinates matrix
         if X.shape[1] != 3:
             raise MinerException(
@@ -116,4 +118,5 @@ class GeomFeatsMiner(Miner):
             num_threads=self.nthreads
         )
         # Return point cloud extended with geometric features
-        return pcloud.add_features(self.frenames, feats)
+        X = None
+        return pcloud.add_features(self.frenames, feats, ftypes=feats.dtype)

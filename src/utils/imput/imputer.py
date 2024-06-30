@@ -34,6 +34,12 @@ class Imputer:
     :vartype target_val: str or int or float
     :ivar fnames: The names of the features to be imputed (by default).
     :vartype fnames: list or tuple
+    :ivar impute_coordinates: Whether to consider the point-wise coordinates for
+        the imputation (True) or not (False, default).
+    :vartype impute_coordinates: bool
+    :ivar impute_references: Whether to consider the point-wise references for
+        the imputation (True) or not (False, default).
+    :vartype impute_references: bool
     """
 
     # ---  SPECIFICATION ARGUMENTS  --- #
@@ -68,6 +74,8 @@ class Imputer:
         # Fundamental initialization of any imputer
         self.target_val = kwargs.get("target_val", np.NaN)
         self.fnames = kwargs.get('fnames', None)
+        self.impute_coordinates = kwargs.get('impute_coordinates', False)
+        self.impute_references = kwargs.get('impute_references', False)
 
     # ---   IMPUTER METHODS   --- #
     # --------------------------- #
@@ -103,37 +111,71 @@ class Imputer:
             taken from the internal fnames of the imputer. If those are None
             too, then an exception will raise.
         :type fnames: list or tuple
-        :return: A new point cloud that is the imputed version of the input
-            point cloud.
+        :return: The updated point cloud after the imputations.
         :rtype: :class:`.PointCloud`
         """
-        # Check feature names
-        if fnames is None:
-            if self.fnames is None:
-                raise ImputerException(
-                    'The features of a point cloud cannot be imputed if '
-                    'they are not specified.'
-                )
-            else:
-                fnames = self.fnames
+        # Check and get feature names
+        fnames = self.find_fnames(fnames=fnames)
         # Obtain points and classes
-        P = np.hstack([
-            pcloud.get_coordinates_matrix(),
-            pcloud.get_features_matrix(fnames)
-        ])
-        y = pcloud.get_classes_vector()
-        pcloud_header = pcloud.las.header
+        P = self.extract_pcloud_matrix(pcloud, fnames)
+        y = pcloud.get_classes_vector() if self.impute_references else None
         pcloud.proxy_dump()  # Save memory from point cloud data if necessary
         # Impute
         if y is None:
             P = self.impute(P)
         else:
             P, y = self.impute(P, y=y)
-        # Return new point cloud
-        return PointCloudFactoryFacade.make_from_arrays(
-            P[:, :P.shape[1]-len(fnames)],
-            P[:, P.shape[1]-len(fnames):],
-            y=y,
-            header=pcloud_header,
-            fnames=fnames
-        )
+        # Return updated point cloud
+        pcloud.remove_features(fnames)
+        if self.impute_coordinates:
+            pcloud.set_coordinates(P[:, :3])
+            pcloud.add_features(fnames, P[:, 3:])
+        else:
+            pcloud.add_features(fnames, P)
+        if y is not None:
+            pcloud.set_classes_vector(y)
+        return pcloud
+
+    # ---   UTIL METHODS   --- #
+    # ------------------------ #
+    def find_fnames(self, fnames=None):
+        """
+        Find the feature names. First, given ones will be considered. If they
+        are not given, then member feature names will be considered if
+        available. Otherwise, an exception will be thrown.
+
+        :param fnames: The list of features to be imputed. If None, it will be
+            taken from the memember feature names of the imputer. If those are
+            not available, then an exception will be thrown.
+        :return: The found feature names.
+        :rtype: list of str
+        """
+        # Check feature names
+        if fnames is None:
+            if self.fnames is None:  # ERROR: No given or member feature names
+                raise ImputerException(
+                    'The features of a point cloud cannot be imputed if '
+                    'they are not specified.'
+                )
+            else:  # Take member feature names
+                fnames = self.fnames
+        # Return feature names
+        return fnames
+
+    def extract_pcloud_matrix(self, pcloud, fnames):
+        """
+        Extract values from the point cloud to build a matrix representing it.
+
+        :param fnames: The names of the features that must be considered.
+        :return: The matrix representing the point cloud.
+        :rtype: :class:`np.ndarray`
+        """
+        # The matrix representing the point cloud must include the coordinates
+        if self.impute_coordinates:
+            P = np.hstack([
+                pcloud.get_coordinates_matrix(),
+                pcloud.get_features_matrix(fnames)
+            ])
+        else:  # Features only
+            P = pcloud.get_features_matrix(fnames)
+        return P

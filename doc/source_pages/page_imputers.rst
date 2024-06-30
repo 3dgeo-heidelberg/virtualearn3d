@@ -43,8 +43,10 @@ The JSON below shows an example of :class:`.RemovalImputer`.
 
     {
         "imputer": "RemovalImputer",
-        "fnames": ["AUTO"]
+        "fnames": ["AUTO"],
         "target_val": "NaN",
+        "impute_coordinates": false,
+        "impute_references": false
     }
 
 In the JSON above the target value is NaN and all the features considered
@@ -64,6 +66,14 @@ target value (``"AUTO"``).
 -- ``target_val``
     It can be the "NaN" string (it will be understood as NaN), or any integer
     or decimal number.
+
+--  ``impute_coordinates``
+    Boolean flag to specify whether to impute the point-wise coordinates
+    (``true``) or not (``false``, default).
+
+--  ``impute_references``
+    Boolean flag to specify whether to impute the reference values (``true``),
+    e.g., classes, or not (``false``).
 
 
 
@@ -94,7 +104,9 @@ The JSON below shows an example of :class:`.UnivariateImputer`.
         "fnames": ["AUTO"],
         "target_val": "NaN",
         "strategy": "mean",
-        "constant_val": 0
+        "constant_val": 0,
+        "impute_coordinates": false,
+        "impute_references": false
     }
 
 In the JSON above the target value is NaN and all the features considered at
@@ -123,3 +135,11 @@ the NaN is automatically derived as the mean.
 -- ``constant_val``
     Defines the new value when the strategy is to replace by a given constant
     value.
+
+--  ``impute_coordinates``
+    Boolean flag to specify whether to impute the point-wise coordinates
+    (``true``) or not (``false``, default).
+
+--  ``impute_references``
+    Boolean flag to specify whether to impute the reference values (``true``),
+    e.g., classes, or not (``false``).

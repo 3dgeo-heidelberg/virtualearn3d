@@ -105,8 +105,8 @@ class RecountMiner(Miner):
         :rtype: :class:`.PointCloud`
         """
         # Obtain coordinates and features
-        X = pcloud.get_coordinates_matrix()
-        F = pcloud.get_features_matrix(self.input_fnames)
+        X = self.get_structure_space_matrix(pcloud)
+        F = self.get_feature_space_matrix(pcloud, self.input_fnames)
         # Prepare neighborhood handling and KDTree
         neighborhood_radius, neighborhood_function, kdt = \
             SmoothFeatsMiner.prepare_mining(self, X)
@@ -132,7 +132,9 @@ class RecountMiner(Miner):
             for chunk_idx in range(num_chunks)
         )
         # Return point cloud extended with recounts
-        return pcloud.add_features(self.frenames, np.vstack(Fhat))
+        return pcloud.add_features(
+            self.frenames, np.vstack(Fhat), ftypes=F.dtype
+        )
 
     # ---   UTIL METHODS   --- #
     # ------------------------ #

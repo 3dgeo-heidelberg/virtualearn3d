@@ -1,4 +1,8 @@
 ---
+# Default configuration for all miners
+structure_space_bits: 64
+feature_space_bits: 64
+
 # Default configuration of geometric features miner
 GeomFeatsMiner:
   radius: 0.3

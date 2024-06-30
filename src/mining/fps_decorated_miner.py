@@ -127,7 +127,8 @@ class FPSDecoratedMiner(Miner):
         pcloud.proxy_dump()
         # Mine the point cloud
         start = time.perf_counter()
-        F = self.decorated_miner.mine(rf_pcloud).get_features_matrix(
+        F = Miner.get_feature_space_matrix(
+            self.decorated_miner.mine(rf_pcloud),
             self.decorated_miner.frenames
         )
         end = time.perf_counter()
@@ -147,7 +148,9 @@ class FPSDecoratedMiner(Miner):
             f'{end-start:.3f} seconds.'
         )
         # Return point cloud extended with propagated features
-        return pcloud.add_features(self.decorated_miner.frenames, F)
+        return pcloud.add_features(
+            self.decorated_miner.frenames, F, ftypes=F.dtype
+        )
 
     def get_decorated_fnames(self):
         """
