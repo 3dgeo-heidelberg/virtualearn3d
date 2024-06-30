@@ -154,7 +154,7 @@ class HeightFeatsMiner(Miner):
         :rtype: :class:`.PointCloud`
         """
         # Obtain coordinates matrix
-        X = pcloud.get_coordinates_matrix()
+        X = self.get_structure_space_matrix(pcloud)
         # Validate coordinates matrix
         if X.shape[1] != 3:
             raise MinerException(
@@ -164,7 +164,7 @@ class HeightFeatsMiner(Miner):
         # Compute height features
         feats = self.compute_height_features(X)
         # Return point cloud extended with height features
-        return pcloud.add_features(self.frenames, feats)
+        return pcloud.add_features(self.frenames, feats, ftypes=feats.dtype)
 
     # ---  HEIGHT FEATURES METHODS  --- #
     # --------------------------------- #
@@ -224,7 +224,7 @@ class HeightFeatsMiner(Miner):
         :rtype: tuple (:class:`np.ndarray`, :class:`np.ndarrray`)
         """
         # Function to compute height features for a given support neighborhood
-        def compute_pwise_support_feats(z, height_functions):
+        def compute_pwise_support_feats(z, height_functions, ftype=float):
             # Outlier filtering
             if self.outlier_filter is not None:
                 filter_low = self.outlier_filter.lower()
@@ -243,7 +243,10 @@ class HeightFeatsMiner(Miner):
                         f'outlier filter "{self.outlier_filter}".'
                     )
             # Return
-            return np.hstack([height_f(z) for height_f in height_functions])
+            F = np.hstack([height_f(z) for height_f in height_functions])
+            if F.dtype != ftype:
+                F = F.astype(ftype)
+            return F
         # Prepare chunk strategy
         num_chunks, chunk_size = 1, len(sup_X)
         if self.support_chunk_size > 0:
@@ -292,10 +295,15 @@ class HeightFeatsMiner(Miner):
             if len(I) > 0:
                 non_empty_sup_X.append(chunk_sup_X)
                 # Compute height features for each neighborhood
+                ftype = Miner.get_feature_type()
                 Z = [X[Ii][:, 2] for Ii in I]
                 F = F + joblib.Parallel(n_jobs=self.nthreads)(joblib.delayed(
                     lambda Zi: np.vstack([
-                        compute_pwise_support_feats(Zi[k], height_functions)
+                        compute_pwise_support_feats(
+                            Zi[k],
+                            height_functions,
+                            ftype=ftype
+                        )
                         for k in range(len(Zi))
                     ])
                 )(

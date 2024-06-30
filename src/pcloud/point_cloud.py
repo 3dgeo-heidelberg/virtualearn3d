@@ -262,12 +262,20 @@ class PointCloud:
             a feature and each row a point (as a numpy array). See
             :class:`np.ndarray`.
         :param ftypes: The list or tuple of types representing the type for
-            each new feature. If it is a single type, then all feature are
+            each new feature. If it is a single type, then all features are
             assumed to have the same type.
         :return: The updated point cloud.
         :rtype: :class:`.PointCloud`
         """
         self.proxy_load()
+        # Correct ftypes because < 32 bits per float is not supported
+        if ftypes == np.float16:
+            ftypes = np.float32
+            LOGGING.LOGGER.warning(
+                'PointCloud.add_features changed the feature type from 16 '
+                'bits to 32 bits because the former is not supported for '
+                'output point clouds.'
+            )
         # Extract useful information
         nfeats = feats.shape[1]
         # Check each feature has its own name
@@ -367,6 +375,23 @@ class PointCloud:
         self.las = None
         if proxy_release:
             self.proxy.release()
+
+    def set_coordinates(self, X):
+        """
+        Set the point-wise coordinates of the point cloud from the given
+        structure space matrix X.
+
+        :param X: The structure space matrix, i.e., a matrix where rows are
+            points and columns represent coordinates.
+        :return: The updated point cloud.
+        :rtype: :class:`.PointCloud`
+        """
+        self.proxy_load()
+        scales, offsets = self.las.header.scales, self.las.header.offsets
+        self.las.X = (X[:, 0] - offsets[0])/scales[0]
+        self.las.Y = (X[:, 1] - offsets[1])/scales[1]
+        self.las.Z = (X[:, 2] - offsets[2])/scales[2]
+        return self
 
     # ---   PROXY METHODS   --- #
     # ------------------------- #

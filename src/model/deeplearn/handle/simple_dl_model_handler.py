@@ -908,4 +908,7 @@ class SimpleDLModelHandler(DLModelHandler):
         self.training_sequencer = state.get('training_sequencer', None)
         self.fit_verbose = state['fit_verbose']
         self.predict_verbose = state['predict_verbose']
-        self.prediction_reducer = state.get('prediction_reducer', None)
+        self.prediction_reducer = state.get(
+            'prediction_reducer',
+            PredictionReducer()
+        )

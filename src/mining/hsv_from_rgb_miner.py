@@ -78,7 +78,10 @@ class HSVFromRGBMiner(Miner):
                 'are no RGB components available in the point cloud.'
             )
         # Extract RGB components
-        RGB = pcloud.get_features_matrix(['red', 'green', 'blue'])
+        RGB = pcloud.get_features_matrix(['red', 'green', 'blue'])  # TODO Restore
+        ftype = Miner.get_feature_type()
+        if RGB.dtype != ftype:
+            RGB = RGB.astype(ftype)
         R, G, B = RGB[:, 0], RGB[:, 1], RGB[:, 2]
         RGB = None
         # Transform RGB to HSV
@@ -88,7 +91,7 @@ class HSVFromRGBMiner(Miner):
         )
         HSV = np.hstack([H.reshape(-1, 1), S.reshape(-1, 1), V.reshape(-1, 1)])
         # Return point cloud extended with HSV as features
-        return pcloud.add_features(self.frenames, HSV)
+        return pcloud.add_features(self.frenames, HSV, ftypes=HSV.dtype)
 
     # ---   HSV METHODS   --- #
     # ----------------------- #
