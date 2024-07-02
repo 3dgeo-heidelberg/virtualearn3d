@@ -319,6 +319,7 @@ class PointCloud:
         :return: The updated point cloud.
         :rtype: :class:`.PointCloud`
         """
+        self.proxy_load()
         fnames = [  # Filter out names of non-extra dims features
             fname for fname in fnames if fname not in NON_EXTRA_DIMS_FEATURES
         ]
