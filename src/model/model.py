@@ -486,33 +486,37 @@ class Model:
         :rtype: tuple of :class:`np.ndarray`
         """
         # Handle data types of input data to optimize memory consumption
-        structure_space_bits = VL3DCFG['MODEL']['structure_space_bits']
-        if structure_space_bits < 64:
-            if isinstance(X, list) and len(X) > 1:
-                # Compute center of bounding box
-                a, b = np.min(X[0], axis=0), np.max(X[0], axis=0)
-                c = (a+b)/2.0
-                # Apply shift before reducing bits to avoid position corruption
-                if structure_space_bits == 32:
-                    X[0] = (X[0]-c).astype(np.float32)
-                elif structure_space_bits == 16:
-                    X[0] = (X[0]-c).astype(np.float16)
-                else:
-                    raise ModelException(
-                        'Model could not change the data type for the '
-                        'structure space.'
-                    )
-        if VL3DCFG['MODEL']['feature_space_bits'] == 32:
-            if isinstance(X, np.ndarray):
-                X = X.astype(np.float32)
-            elif isinstance(X, list) and len(X) > 1:
-                X[1] = X[1].astype(np.float32)
+        if X is not None:
+            structure_space_bits = VL3DCFG['MODEL']['structure_space_bits']
+            if structure_space_bits < 64:
+                if isinstance(X, list) and len(X) > 1:
+                    # Compute center of bounding box
+                    a, b = np.min(X[0], axis=0), np.max(X[0], axis=0)
+                    c = (a+b)/2.0
+                    # Shift before reducing bits to avoid position corruption
+                    if structure_space_bits == 32:
+                        X[0] = (X[0]-c).astype(np.float32)
+                    elif structure_space_bits == 16:
+                        X[0] = (X[0]-c).astype(np.float16)
+                    else:
+                        raise ModelException(
+                            'Model could not change the data type for the '
+                            'structure space.'
+                        )
+            if VL3DCFG['MODEL']['feature_space_bits'] == 32:
+                if isinstance(X, np.ndarray):
+                    X = X.astype(np.float32)
+                elif isinstance(X, list) and len(X) > 1:
+                    X[1] = X[1].astype(np.float32)
         # Handle data types of reference data to optimize memory consumption
-        if VL3DCFG['MODEL']['classification_space_bits'] == 8:
-            y = y.astype(np.uint8)
-        elif VL3DCFG['MODEL']['classification_space_bits'] == 16:
-            y = y.astype(np.uint16)
-        elif VL3DCFG['MODEL']['classification_space_bits'] == 32:
-            y = y.astype(np.uint32)
-        # Return optimized data
-        return X, y
+        if y is not None:
+            if VL3DCFG['MODEL']['classification_space_bits'] == 8:
+                y = y.astype(np.uint8)
+            elif VL3DCFG['MODEL']['classification_space_bits'] == 16:
+                y = y.astype(np.uint16)
+            elif VL3DCFG['MODEL']['classification_space_bits'] == 32:
+                y = y.astype(np.uint32)
+            # Return optimized data and references
+            return X, y
+        # Return optimized data without references
+        return X
