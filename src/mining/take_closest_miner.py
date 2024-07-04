@@ -119,7 +119,9 @@ class TakeClosestMiner(Miner):
         :rtype: :class:`.PointCloud`
         """
         # Obtain coordinates
-        X = self.get_structure_space_matrix(pcloud)
+        #X = self.get_structure_space_matrix(pcloud)  # Must not be used here
+        # Because the shift for < 64 bits will cause problems with knn
+        X = pcloud.get_coordinates_matrix()  # Use 64 bits always instead
         # Prepare fnames
         fnames = []
         take_classes = False
@@ -134,8 +136,10 @@ class TakeClosestMiner(Miner):
         ftype = Miner.get_feature_type()
         D = np.empty(X.shape[0], dtype=ftype)
         D.fill(np.inf)
-        F = np.empty((X.shape[0], len(fnames)), dtype=ftype)
-        F.fill(np.nan)
+        F = None
+        if fnames is not None:
+            F = np.empty((X.shape[0], len(fnames)), dtype=ftype)
+            F.fill(np.nan)
         y = np.empty(X.shape[0], dtype=int)
         y.fill(self.y_default)
         # Find features from closest neighbor in pool

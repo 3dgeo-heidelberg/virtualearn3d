@@ -100,7 +100,11 @@ class RandomForestClassificationModel(ClassificationModel):
         # Correct class_weights to transform string-like integers in the keys
         if self.model_args is not None and 'class_weight' in self.model_args:
             cw = self.model_args['class_weight']
-            if cw is not None and isinstance(list(cw.keys())[0], str):
+            if (
+                cw is not None and
+                hasattr(cw, 'keys') and
+                isinstance(list(cw.keys())[0], str)
+            ):
                 try:
                     keys_str = list(cw.keys())
                     keys_int = [int(key) for key in keys_str]
