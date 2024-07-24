@@ -264,6 +264,19 @@ class PointNetPwiseClassifModel(ClassificationModel):
         """
         See :meth:`model.Model.on_training_finished`.
         """
+        # TODO Rethink : Abstract common logic also for
+        # conv_autoenc_pwise_classif_model and rbf_net_pwise_classif_model
+        # Skip predictions-based after-training evaluation if not needed
+        if (
+            self.training_evaluation_report_path is None and
+            self.training_class_evaluation_report_path is None and
+            self.training_confusion_matrix_report_path is None and
+            self.training_confusion_matrix_plot_path is None and
+            self.training_class_distribution_report_path is None and
+            self.training_class_distribution_plot_path is None and
+            self.training_classified_point_cloud_path is None
+        ):
+            return
         # Compute predictions on training data
         zhat, yhat = PointNetPwiseClassifModel.on_training_finished_predict(
             self, X, y, yhat
@@ -285,9 +298,12 @@ class PointNetPwiseClassifModel(ClassificationModel):
         start = time.perf_counter()
         zhat = None
         if yhat is None:
-            zhat = []
+            zhat = None if getattr(
+                dlmodel, "training_classified_point_cloud_path", None
+            ) is None else []
             yhat = dlmodel._predict(X, F=None, y=y, zout=zhat)
-            zhat = zhat[-1]
+            if zhat is not None:
+                zhat = zhat[-1]
         end = time.perf_counter()
         LOGGING.LOGGER.info(
             'After-training deep learning model '

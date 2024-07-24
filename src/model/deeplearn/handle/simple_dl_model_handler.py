@@ -24,7 +24,7 @@ from src.main.main_config import VL3DCFG
 import src.main.main_logger as LOGGING
 import tensorflow as tf
 from tensorflow.python.framework.errors_impl import ResourceExhaustedError as \
-    TFResourceExhaustedError
+    TFResourceExhaustedError, InternalError as TFInternalError
 from sklearn.preprocessing import LabelBinarizer
 import numpy as np
 import copy
@@ -232,7 +232,18 @@ class SimpleDLModelHandler(DLModelHandler):
                 'training_receptive_fields_distribution_plot_path',
                 None
             ):
-                zhat = self.compiled.predict(X, batch_size=self.batch_size)
+                try:
+                    zhat = self.compiled.predict(X, batch_size=self.batch_size)
+                except (TFResourceExhaustedError, TFInternalError) as tferr:
+                    LOGGING.LOGGER.debug(
+                        'SimpleDLModelHandler could not compute predictions '
+                        f'on {len(X)} receptive fields using the GPU.\n '
+                        'Trying CPU instead ...'
+                    )
+                    with tf.device("cpu:0"):
+                        zhat = self.compiled.predict(
+                            X, batch_size=self.batch_size
+                        )
                 X_rf = X[0] if isinstance(X, list) else X
                 F_rf = X[1] if isinstance(X, list) else None
                 self.handle_receptive_fields_plots_and_reports(
@@ -310,10 +321,11 @@ class SimpleDLModelHandler(DLModelHandler):
                 batch_size=self.batch_size,
                 verbose=self.predict_verbose
             )
-        except TFResourceExhaustedError as resexherr:
+        except (TFResourceExhaustedError, TFInternalError) as tferr:
+            m = len(X_rf[0]) if isinstance(X_rf, list) else len(X_rf)
             LOGGING.LOGGER.debug(
                 'SimpleDLModelHandler could not compute predictions for '
-                f'{X_rf.shape} points using the GPU.\n'
+                f'{m} points using the GPU.\n'
                 'Trying CPU instead ...'
             )
             with tf.device("cpu:0"):
@@ -328,7 +340,7 @@ class SimpleDLModelHandler(DLModelHandler):
             zout.append(zhat)  # Append propagated zhat to z list
 
         # Final predictions
-        yhat = self.prediction_reducer.select(zhat)
+        yhat, zhat = self.prediction_reducer.select(zhat), None
         # Do plots and reports
         if plots_and_reports:
             _X_rf = X_rf[0] if isinstance(X_rf, list) else X_rf
